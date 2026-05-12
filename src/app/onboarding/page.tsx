@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, X, ChevronRight, Check, GripVertical } from 'lucide-react';
 import { TEAMS, USERS } from '@/lib/mock-data';
-import type { Team, FanTeam } from '@/lib/types';
+import type { Team, FanTeam, FandomLevel } from '@/lib/types';
 
 type Step = 1 | 2 | 3;
 
@@ -30,7 +30,7 @@ export default function OnboardingPage() {
   );
 
   const addTeam = (team: Team) => {
-    setFanTeams((prev) => [...prev, { team, rank: prev.length + 1 }]);
+    setFanTeams((prev) => [...prev, { team, rank: prev.length + 1, fandomLevel: 'casual' as FandomLevel }]);
     setTeamSearch('');
   };
 

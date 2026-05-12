@@ -37,6 +37,7 @@ export default function NeighborhoodPage() {
   const [aiQuery, setAiQuery] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [debates, setDebates] = useState<Debate[]>(
     DEBATES.filter((d) => d.chatId === id)
@@ -480,19 +481,26 @@ export default function NeighborhoodPage() {
                       </Link>
                     )}
                     {tag && (
-                      <div className={`mb-1 flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-bold text-paper self-start uppercase tracking-wider ${tag.bg}`}>
+                      <div className={`mb-1 flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-bold text-paper self-start uppercase tracking-wider rounded-full ${tag.bg}`}>
                         <span>{tag.emoji}</span><span>{tag.label}</span>
                       </div>
                     )}
                     <div
-                      className={`relative px-4 py-2.5 text-sm leading-relaxed cursor-pointer ${
+                      className={`relative px-4 py-2.5 text-sm leading-relaxed cursor-pointer rounded-2xl ${
+                        isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'
+                      } ${
                         isAI ? 'bg-paper-dark text-ink border border-rule'
                           : isMe ? 'bg-ink text-paper'
-                          : tag ? `border text-ink ${tag.border} ${tag.surface.split(' ')[0]}`
-                          : 'bg-paper-dark text-ink border border-rule/50'
+                          : msg.tag === 'hot-take' ? 'bg-press/10 text-ink msg-hot-take'
+                          : msg.tag === 'debate' ? 'bg-navy/10 text-ink msg-debate'
+                          : msg.tag === 'bet' ? 'bg-field/10 text-ink msg-bet'
+                          : 'bg-paper-dark text-ink'
                       }`}
                       onDoubleClick={() => setShowReactionsFor(showReactionsFor === msg.id ? null : msg.id)}
                       onContextMenu={(e) => { e.preventDefault(); setTagPickerFor(tagPickerFor === msg.id ? null : msg.id); }}
+                      onTouchStart={() => { longPressTimer.current = setTimeout(() => setTagPickerFor(msg.id), 500); }}
+                      onTouchEnd={() => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }}
+                      onTouchMove={() => { if (longPressTimer.current) clearTimeout(longPressTimer.current); }}
                     >
                       {isAI ? (
                         <div>{msg.content.split('\n').map((line, i) => (
@@ -501,14 +509,14 @@ export default function NeighborhoodPage() {
                       ) : msg.content}
                     </div>
 
-                    {tagPickerFor === msg.id && !isMe && !isAI && (
-                      <div className="mt-1 flex items-center gap-1 bg-paper border border-rule px-3 py-2 shadow-xl">
+                    {tagPickerFor === msg.id && !isAI && (
+                      <div className="mt-1 flex items-center gap-1 bg-paper border border-rule px-3 py-2 shadow-xl rounded-2xl">
                         <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted mr-1">Tag:</span>
                         {(['hot-take', 'debate', 'bet'] as MessageTag[]).map((t) => (
                           <button
                             key={t}
                             onClick={() => tagExistingMessage(msg.id, t)}
-                            className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-paper uppercase tracking-wider ${tagConfig[t].bg}`}
+                            className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-paper uppercase tracking-wider rounded-full ${tagConfig[t].bg}`}
                           >
                             {tagConfig[t].emoji} {tagConfig[t].label}
                           </button>
@@ -610,7 +618,7 @@ export default function NeighborhoodPage() {
                   <button
                     key={tag}
                     onClick={() => setPendingTag(isActive ? null : tag)}
-                    className={`flex items-center gap-1 border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                    className={`flex items-center gap-1 border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-full ${
                       isActive ? `${cfg.bg} text-paper border-transparent` : 'border-rule text-ink-muted hover:border-rule-dark hover:text-ink'
                     }`}
                   >
@@ -621,7 +629,7 @@ export default function NeighborhoodPage() {
               <div className="ml-auto">
                 <button
                   onClick={() => { setShowAI(true); setShowReactionsFor(null); }}
-                  className="flex items-center gap-1 border border-rule px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-ink-muted hover:border-ink hover:text-ink transition-colors"
+                  className="flex items-center gap-1 border border-rule px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-ink-muted hover:border-ink hover:text-ink transition-colors rounded-full"
                 >
                   <Sparkles size={10} /> Ask AI
                 </button>
@@ -634,12 +642,12 @@ export default function NeighborhoodPage() {
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                 placeholder={pendingTag ? `Drop your ${tagConfig[pendingTag].label.toLowerCase()}...` : 'Message...'}
-                className="flex-1 border border-rule bg-paper-dark px-4 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors"
+                className="flex-1 border border-rule bg-paper-dark px-4 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors rounded-full"
               />
               <button
                 onClick={sendMessage}
                 disabled={!inputText.trim()}
-                className="flex h-9 w-9 items-center justify-center bg-ink text-paper hover:bg-ink/80 disabled:opacity-40 transition-colors"
+                className="flex h-9 w-9 items-center justify-center bg-ink text-paper hover:bg-ink/80 disabled:opacity-40 transition-colors rounded-full btn-3d shrink-0"
               >
                 <Send size={15} />
               </button>

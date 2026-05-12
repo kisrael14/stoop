@@ -23,10 +23,10 @@ export const USERS: User[] = [
     avatar: '🤙',
     bio: 'Born & raised in the Bronx. Bleed blue. If you talk crazy about the Giants or Knicks, I\'m ready.',
     fanTeams: [
-      { team: TEAMS[0], rank: 1 },
-      { team: TEAMS[1], rank: 2 },
-      { team: TEAMS[2], rank: 3 },
-      { team: TEAMS[3], rank: 4 },
+      { team: TEAMS[0], rank: 1, fandomLevel: 'diehard' },
+      { team: TEAMS[1], rank: 2, fandomLevel: 'diehard' },
+      { team: TEAMS[2], rank: 3, fandomLevel: 'supporter' },
+      { team: TEAMS[3], rank: 4, fandomLevel: 'fair-weather' },
     ],
     stats: {
       debatesWon: 7,
@@ -49,8 +49,8 @@ export const USERS: User[] = [
     avatar: '👑',
     bio: 'Chiefs Kingdom forever. Laker Nation. Don\'t @ me.',
     fanTeams: [
-      { team: TEAMS[4], rank: 1 },
-      { team: TEAMS[5], rank: 2 },
+      { team: TEAMS[4], rank: 1, fandomLevel: 'diehard' },
+      { team: TEAMS[5], rank: 2, fandomLevel: 'supporter' },
     ],
     stats: {
       debatesWon: 4,
@@ -73,8 +73,8 @@ export const USERS: User[] = [
     avatar: '🦅',
     bio: 'E-A-G-L-E-S. Trust the process. Ring the bell.',
     fanTeams: [
-      { team: TEAMS[6], rank: 1 },
-      { team: TEAMS[7], rank: 2 },
+      { team: TEAMS[6], rank: 1, fandomLevel: 'diehard' },
+      { team: TEAMS[7], rank: 2, fandomLevel: 'supporter' },
     ],
     stats: {
       debatesWon: 9,
@@ -97,8 +97,8 @@ export const USERS: User[] = [
     avatar: '💪',
     bio: 'Bay Area born. Warriors until I die. 49ers faithful.',
     fanTeams: [
-      { team: TEAMS[8], rank: 1 },
-      { team: TEAMS[9], rank: 2 },
+      { team: TEAMS[8], rank: 1, fandomLevel: 'diehard' },
+      { team: TEAMS[9], rank: 2, fandomLevel: 'fair-weather' },
     ],
     stats: {
       debatesWon: 5,
@@ -121,8 +121,8 @@ export const USERS: User[] = [
     avatar: '⭐',
     bio: 'America\'s Team. If you know, you know.',
     fanTeams: [
-      { team: TEAMS[10], rank: 1 },
-      { team: TEAMS[11], rank: 2 },
+      { team: TEAMS[10], rank: 1, fandomLevel: 'diehard' },
+      { team: TEAMS[11], rank: 2, fandomLevel: 'casual' },
     ],
     stats: {
       debatesWon: 3,

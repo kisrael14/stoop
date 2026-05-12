@@ -7,9 +7,19 @@ export interface Team {
   color: string;
 }
 
+export type FandomLevel = 'diehard' | 'supporter' | 'fair-weather' | 'casual';
+
+export const FANDOM_LABELS: Record<FandomLevel, string> = {
+  diehard: 'Diehard',
+  supporter: 'Supporter',
+  'fair-weather': 'Fair Weather',
+  casual: 'Casual',
+};
+
 export interface FanTeam {
   team: Team;
   rank: number;
+  fandomLevel: FandomLevel;
 }
 
 export interface UserStats {

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Users, Flame, Swords, Handshake } from 'lucide-react';
+import { Plus, Search, Swords, Handshake, Flame } from 'lucide-react';
 import { CHATS, DEBATES, BETS, HOT_TAKES, getUserById } from '@/lib/mock-data';
 import { timeAgo } from '@/lib/utils';
 
@@ -16,29 +16,37 @@ export default function NeighborhoodsPage() {
   return (
     <div className="flex flex-col bg-paper min-h-full">
       {/* Masthead */}
-      <div className="sticky top-0 z-10 bg-paper/97 backdrop-blur-sm px-5 pt-10 pb-4 border-b-2 border-ink">
-        <div className="flex items-center justify-between mb-1">
-          <h1 className="font-display text-2xl font-bold text-ink">My Neighborhoods</h1>
-          <button className="flex items-center gap-1.5 bg-ink px-4 py-2 text-xs font-bold text-paper uppercase tracking-wider hover:bg-ink/80 transition-colors">
+      <div className="bg-ink px-5 pt-10 pb-5">
+        <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-paper/40 mb-1">Stoop Sports</p>
+        <h1 className="font-display text-3xl font-black text-paper leading-none">My Neighborhoods</h1>
+        <div className="h-px bg-paper/20 my-3" />
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-paper/40" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search neighborhoods..."
+              className="w-full bg-paper/10 border border-paper/20 py-2 pl-9 pr-4 text-sm text-paper placeholder-paper/40 outline-none focus:border-paper/50 transition-colors rounded-full"
+            />
+          </div>
+          <button className="flex items-center gap-1.5 bg-paper text-ink px-4 py-2 text-xs font-bold uppercase tracking-wider btn-3d rounded-full shrink-0">
             <Plus size={14} />
             New
           </button>
         </div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink-faint mb-3">Your Group Chats</p>
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search neighborhoods..."
-            className="w-full border border-rule bg-paper-dark py-2.5 pl-9 pr-4 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors rounded-none"
-          />
-        </div>
       </div>
 
-      <div className="flex flex-col gap-0 py-4 px-0">
-        {filtered.map((chat, index) => {
+      {/* Section divider */}
+      <div className="section-header px-5 flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-ink">Active Chats</span>
+        <span className="text-[10px] text-ink-faint font-mono">{filtered.length} neighborhood{filtered.length !== 1 ? 's' : ''}</span>
+      </div>
+
+      {/* Newspaper grid */}
+      <div className="grid grid-cols-2 border-l-2 border-t-2 border-ink">
+        {filtered.map((chat) => {
           const lastMessage = chat.messages[chat.messages.length - 1];
           const lastSender = lastMessage ? getUserById(lastMessage.userId) : null;
           const members = chat.memberIds.map((id) => getUserById(id)).filter(Boolean);
@@ -50,110 +58,112 @@ export default function NeighborhoodsPage() {
             <Link
               key={chat.id}
               href={`/neighborhoods/${chat.id}`}
-              className={`block bg-paper hover:bg-paper-dark transition-colors border-b border-rule ${index === 0 ? 'border-t border-rule' : ''}`}
+              className="border-r-2 border-b-2 border-ink block bg-paper hover:bg-paper-dark transition-colors"
             >
-              {/* Header */}
-              <div className="flex items-start gap-4 px-5 pt-4 pb-3">
-                <div className="flex h-14 w-14 items-center justify-center bg-ink text-2xl shrink-0 rounded-sm">
-                  <span>{chat.emoji}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <p className="font-display font-bold text-ink text-lg leading-tight">{chat.name}</p>
-                    {lastMessage && (
-                      <span className="text-[10px] text-ink-faint shrink-0 font-mono">{timeAgo(lastMessage.timestamp)}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <Users size={10} className="text-ink-faint" />
-                    <p className="text-[11px] text-ink-faint uppercase tracking-wide font-semibold">{members.length} members</p>
+              {/* Card header — dark ink */}
+              <div className="bg-ink px-3 py-3">
+                <div className="flex items-start gap-2">
+                  <span className="text-2xl leading-none mt-0.5 shrink-0">{chat.emoji}</span>
+                  <div className="min-w-0">
+                    <p className="font-display font-bold text-paper text-sm leading-tight">{chat.name}</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-paper/50 mt-0.5">{members.length} members</p>
                   </div>
                 </div>
               </div>
 
-              {/* Member avatars */}
-              <div className="flex items-center gap-1.5 px-5 pb-3">
-                {members.slice(0, 5).map((m) => (
-                  <div
-                    key={m!.id}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-paper-dark border border-rule text-sm"
-                    title={m!.displayName}
-                  >
-                    {m!.avatar}
-                  </div>
-                ))}
-                {members.length > 5 && (
-                  <span className="text-[10px] text-ink-faint ml-1">+{members.length - 5}</span>
-                )}
-              </div>
-
-              {/* Last message preview */}
-              {lastMessage && (
-                <div className="px-5 pb-3 flex items-center gap-1.5">
-                  {lastMessage.tag && (
-                    <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 border ${
-                      lastMessage.tag === 'hot-take' ? 'border-press/40 text-press bg-press/10' :
-                      lastMessage.tag === 'debate' ? 'border-navy/40 text-navy bg-navy/10' :
-                      'border-field/40 text-field bg-field/10'
-                    }`}>
-                      {lastMessage.tag === 'hot-take' ? '🔥 Take' : lastMessage.tag === 'debate' ? '⚔️ Debate' : '🤝 Bet'}
-                    </span>
-                  )}
-                  <p className="text-sm text-ink-muted truncate">
-                    <span className="text-ink font-semibold">
-                      {lastSender?.id === 'me' ? 'You' : lastSender?.displayName?.split(' ')[0]}:
-                    </span>{' '}
-                    {lastMessage.content}
-                  </p>
-                </div>
-              )}
-
-              {/* Activity stats bar */}
-              <div className="border-t border-rule/50 px-5 py-2.5 flex items-center gap-4 bg-paper-dark">
+              {/* Stats grid */}
+              <div className="grid grid-cols-3 border-b border-rule/60 divide-x divide-rule/60">
                 <Link
                   href={`/neighborhoods/${chat.id}?tab=debates`}
                   onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-navy hover:underline transition-colors"
+                  className="py-2.5 text-center hover:bg-paper-deeper transition-colors"
                 >
-                  <Swords size={11} />
-                  <span>{activeDebates} debate{activeDebates !== 1 ? 's' : ''}</span>
+                  <p className="text-base font-bold text-navy font-mono">{activeDebates}</p>
+                  <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint">Debates</p>
                 </Link>
                 <Link
                   href={`/neighborhoods/${chat.id}?tab=bets`}
                   onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-field hover:underline transition-colors"
+                  className="py-2.5 text-center hover:bg-paper-deeper transition-colors"
                 >
-                  <Handshake size={11} />
-                  <span>{activeBets} bet{activeBets !== 1 ? 's' : ''}</span>
+                  <p className="text-base font-bold text-field font-mono">{activeBets}</p>
+                  <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint">Bets</p>
                 </Link>
                 <Link
                   href={`/neighborhoods/${chat.id}?tab=hot-takes`}
                   onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1 text-[11px] font-semibold text-press hover:underline transition-colors"
+                  className="py-2.5 text-center hover:bg-paper-deeper transition-colors"
                 >
-                  <Flame size={11} />
-                  <span>{recentTakes} take{recentTakes !== 1 ? 's' : ''}</span>
+                  <p className="text-base font-bold text-press font-mono">{recentTakes}</p>
+                  <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint">Takes</p>
                 </Link>
-                <Link
-                  href={`/neighborhoods/${chat.id}?tab=chat`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="ml-auto text-[11px] font-bold uppercase tracking-wider text-masthead hover:underline transition-colors"
-                >
+              </div>
+
+              {/* Last message preview */}
+              <div className="px-3 py-2.5 min-h-[52px]">
+                {lastMessage ? (
+                  <>
+                    {lastMessage.tag && (
+                      <span className={`inline-flex items-center gap-0.5 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 mb-1 ${
+                        lastMessage.tag === 'hot-take' ? 'bg-press/15 text-press'
+                        : lastMessage.tag === 'debate' ? 'bg-navy/15 text-navy'
+                        : 'bg-field/15 text-field'
+                      }`}>
+                        {lastMessage.tag === 'hot-take' ? '🔥' : lastMessage.tag === 'debate' ? '⚔️' : '🤝'}
+                        {' '}{lastMessage.tag === 'hot-take' ? 'Take' : lastMessage.tag === 'debate' ? 'Debate' : 'Bet'}
+                      </span>
+                    )}
+                    <p className="text-[10px] text-ink-muted leading-tight line-clamp-2">
+                      <span className="font-bold text-ink">
+                        {lastSender?.id === 'me' ? 'You' : lastSender?.displayName?.split(' ')[0]}:
+                      </span>{' '}
+                      {lastMessage.content}
+                    </p>
+                    <p className="text-[9px] text-ink-faint font-mono mt-1">{timeAgo(lastMessage.timestamp)}</p>
+                  </>
+                ) : (
+                  <p className="text-[10px] text-ink-faint italic">No messages yet</p>
+                )}
+              </div>
+
+              {/* Open chat CTA */}
+              <div className="border-t border-rule/60 px-3 py-2">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-masthead">
                   Open Chat →
-                </Link>
+                </span>
               </div>
             </Link>
           );
         })}
-
-        {filtered.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-5">
-            <p className="font-display text-4xl mb-3 text-ink-faint">🏘️</p>
-            <p className="font-display font-bold text-ink text-lg mb-1">No neighborhoods yet</p>
-            <p className="text-sm text-ink-muted italic">Create one or get added by a friend</p>
-          </div>
-        )}
       </div>
+
+      {filtered.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 text-center px-5">
+          <p className="font-display text-4xl mb-3 text-ink-faint">🏘️</p>
+          <p className="font-display font-bold text-ink text-lg mb-1">No neighborhoods yet</p>
+          <p className="text-sm text-ink-muted italic">Create one or get added by a friend</p>
+        </div>
+      )}
+
+      {/* Activity feed footer */}
+      {filtered.length > 0 && (
+        <div className="section-header px-5 mt-0 flex items-center gap-2">
+          <Swords size={10} className="text-navy" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">
+            {DEBATES.filter((d) => d.status === 'active').length} live debates
+          </span>
+          <span className="text-rule mx-1">·</span>
+          <Handshake size={10} className="text-field" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">
+            {BETS.filter((b) => b.status !== 'resolved').length} open bets
+          </span>
+          <span className="text-rule mx-1">·</span>
+          <Flame size={10} className="text-press" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">
+            {HOT_TAKES.length} takes
+          </span>
+        </div>
+      )}
     </div>
   );
 }

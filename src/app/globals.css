@@ -53,3 +53,85 @@ body {
   background: var(--rule);
   border-radius: 2px;
 }
+
+/* ── Tagged message animated borders ──────────────────── */
+
+@keyframes fire-glow {
+  0%, 100% {
+    border-color: #c84b0c;
+    box-shadow: 0 0 0 1px rgba(200, 75, 12, 0.3), 0 0 10px rgba(255, 100, 0, 0.3);
+  }
+  50% {
+    border-color: #ff6b00;
+    box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.25), 0 0 18px rgba(255, 150, 0, 0.4);
+  }
+}
+
+@keyframes debate-pulse {
+  0%, 100% {
+    border-color: #0c1f40;
+    box-shadow: 0 0 0 1px rgba(12, 31, 64, 0.3), 0 0 10px rgba(30, 80, 200, 0.2);
+  }
+  50% {
+    border-color: #3b7ad4;
+    box-shadow: 0 0 0 3px rgba(59, 122, 212, 0.25), 0 0 18px rgba(59, 130, 246, 0.35);
+  }
+}
+
+@keyframes bet-glow {
+  0%, 100% {
+    border-color: #1a4a22;
+    box-shadow: 0 0 0 1px rgba(26, 74, 34, 0.3), 0 0 10px rgba(34, 120, 58, 0.2);
+  }
+  50% {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25), 0 0 18px rgba(34, 197, 94, 0.35);
+  }
+}
+
+.msg-hot-take {
+  border: 2px solid #c84b0c !important;
+  animation: fire-glow 1.8s ease-in-out infinite;
+}
+
+.msg-debate {
+  border: 2px solid #0c1f40 !important;
+  animation: debate-pulse 1.8s ease-in-out infinite;
+}
+
+.msg-bet {
+  border: 2px solid #1a4a22 !important;
+  animation: bet-glow 1.8s ease-in-out infinite;
+}
+
+/* ── 3D buttons ────────────────────────────────────────── */
+
+.btn-3d {
+  box-shadow: 0 4px 0 0 rgba(0, 0, 0, 0.28), 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.1s ease, transform 0.1s ease;
+  position: relative;
+  top: 0;
+}
+
+.btn-3d:hover {
+  box-shadow: 0 5px 0 0 rgba(0, 0, 0, 0.28), 0 3px 6px rgba(0, 0, 0, 0.12);
+}
+
+.btn-3d:active {
+  box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.28);
+  transform: translateY(3px);
+}
+
+/* ── Newspaper column rule ─────────────────────────────── */
+
+.col-rule {
+  border-right: 1px solid var(--rule);
+}
+
+/* ── Newspaper section header ──────────────────────────── */
+
+.section-header {
+  border-top: 3px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  padding: 3px 0;
+}
