@@ -14,29 +14,31 @@ export default function NeighborhoodsPage() {
   );
 
   return (
-    <div className="flex flex-col bg-slate-950 min-h-full">
-      <div className="sticky top-0 z-10 bg-slate-950/95 backdrop-blur-sm px-5 pt-10 pb-4 border-b border-slate-800">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-white">My Neighborhoods</h1>
-          <button className="flex items-center gap-1.5 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors">
-            <Plus size={16} />
+    <div className="flex flex-col bg-paper min-h-full">
+      {/* Masthead */}
+      <div className="sticky top-0 z-10 bg-paper/97 backdrop-blur-sm px-5 pt-10 pb-4 border-b-2 border-ink">
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="font-display text-2xl font-bold text-ink">My Neighborhoods</h1>
+          <button className="flex items-center gap-1.5 bg-ink px-4 py-2 text-xs font-bold text-paper uppercase tracking-wider hover:bg-ink/80 transition-colors">
+            <Plus size={14} />
             New
           </button>
         </div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink-faint mb-3">Your Group Chats</p>
         <div className="relative">
-          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search neighborhoods..."
-            className="w-full rounded-full border border-slate-700 bg-slate-900 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-500 outline-none focus:border-slate-600 transition-colors"
+            className="w-full border border-rule bg-paper-dark py-2.5 pl-9 pr-4 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors rounded-none"
           />
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 px-5 py-5">
-        {filtered.map((chat) => {
+      <div className="flex flex-col gap-0 py-4 px-0">
+        {filtered.map((chat, index) => {
           const lastMessage = chat.messages[chat.messages.length - 1];
           const lastSender = lastMessage ? getUserById(lastMessage.userId) : null;
           const members = chat.memberIds.map((id) => getUserById(id)).filter(Boolean);
@@ -48,55 +50,57 @@ export default function NeighborhoodsPage() {
             <Link
               key={chat.id}
               href={`/neighborhoods/${chat.id}`}
-              className="block rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden hover:border-slate-700 transition-colors"
+              className={`block bg-paper hover:bg-paper-dark transition-colors border-b border-rule ${index === 0 ? 'border-t border-rule' : ''}`}
             >
               {/* Header */}
-              <div className="flex items-center gap-4 px-4 pt-4 pb-3">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-800 text-2xl shrink-0">
-                  {chat.emoji}
+              <div className="flex items-start gap-4 px-5 pt-4 pb-3">
+                <div className="flex h-14 w-14 items-center justify-center bg-ink text-2xl shrink-0 rounded-sm">
+                  <span>{chat.emoji}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-white text-base">{chat.name}</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <Users size={11} className="text-slate-500" />
-                    <p className="text-xs text-slate-500">{members.length} members</p>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="font-display font-bold text-ink text-lg leading-tight">{chat.name}</p>
+                    {lastMessage && (
+                      <span className="text-[10px] text-ink-faint shrink-0 font-mono">{timeAgo(lastMessage.timestamp)}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Users size={10} className="text-ink-faint" />
+                    <p className="text-[11px] text-ink-faint uppercase tracking-wide font-semibold">{members.length} members</p>
                   </div>
                 </div>
-                {lastMessage && (
-                  <span className="text-xs text-slate-600 shrink-0">{timeAgo(lastMessage.timestamp)}</span>
-                )}
               </div>
 
               {/* Member avatars */}
-              <div className="flex items-center gap-1.5 px-4 pb-3">
+              <div className="flex items-center gap-1.5 px-5 pb-3">
                 {members.slice(0, 5).map((m) => (
                   <div
                     key={m!.id}
-                    className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-sm ring-2 ring-slate-900"
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-paper-dark border border-rule text-sm"
                     title={m!.displayName}
                   >
                     {m!.avatar}
                   </div>
                 ))}
                 {members.length > 5 && (
-                  <span className="text-xs text-slate-500 ml-1">+{members.length - 5}</span>
+                  <span className="text-[10px] text-ink-faint ml-1">+{members.length - 5}</span>
                 )}
               </div>
 
               {/* Last message preview */}
               {lastMessage && (
-                <div className="px-4 pb-3 flex items-center gap-1.5">
+                <div className="px-5 pb-3 flex items-center gap-1.5">
                   {lastMessage.tag && (
-                    <span className={`text-[10px] font-bold rounded-full px-1.5 py-0.5 ${
-                      lastMessage.tag === 'hot-take' ? 'bg-orange-900/60 text-orange-400' :
-                      lastMessage.tag === 'debate' ? 'bg-blue-900/60 text-blue-400' :
-                      'bg-green-900/60 text-green-400'
+                    <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 border ${
+                      lastMessage.tag === 'hot-take' ? 'border-press/40 text-press bg-press/10' :
+                      lastMessage.tag === 'debate' ? 'border-navy/40 text-navy bg-navy/10' :
+                      'border-field/40 text-field bg-field/10'
                     }`}>
-                      {lastMessage.tag === 'hot-take' ? '🔥' : lastMessage.tag === 'debate' ? '⚔️' : '🤝'}
+                      {lastMessage.tag === 'hot-take' ? '🔥 Take' : lastMessage.tag === 'debate' ? '⚔️ Debate' : '🤝 Bet'}
                     </span>
                   )}
-                  <p className="text-sm text-slate-400 truncate">
-                    <span className="text-slate-300 font-medium">
+                  <p className="text-sm text-ink-muted truncate">
+                    <span className="text-ink font-semibold">
                       {lastSender?.id === 'me' ? 'You' : lastSender?.displayName?.split(' ')[0]}:
                     </span>{' '}
                     {lastMessage.content}
@@ -105,35 +109,35 @@ export default function NeighborhoodsPage() {
               )}
 
               {/* Activity stats bar */}
-              <div className="border-t border-slate-800 px-4 py-2.5 flex items-center gap-4">
+              <div className="border-t border-rule/50 px-5 py-2.5 flex items-center gap-4 bg-paper-dark">
                 <Link
                   href={`/neighborhoods/${chat.id}?tab=debates`}
                   onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-400 transition-colors"
+                  className="flex items-center gap-1 text-[11px] font-semibold text-navy hover:underline transition-colors"
                 >
-                  <Swords size={12} className="text-blue-500/60" />
+                  <Swords size={11} />
                   <span>{activeDebates} debate{activeDebates !== 1 ? 's' : ''}</span>
                 </Link>
                 <Link
                   href={`/neighborhoods/${chat.id}?tab=bets`}
                   onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-green-400 transition-colors"
+                  className="flex items-center gap-1 text-[11px] font-semibold text-field hover:underline transition-colors"
                 >
-                  <Handshake size={12} className="text-green-500/60" />
+                  <Handshake size={11} />
                   <span>{activeBets} bet{activeBets !== 1 ? 's' : ''}</span>
                 </Link>
                 <Link
                   href={`/neighborhoods/${chat.id}?tab=hot-takes`}
                   onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-orange-400 transition-colors"
+                  className="flex items-center gap-1 text-[11px] font-semibold text-press hover:underline transition-colors"
                 >
-                  <Flame size={12} className="text-orange-500/60" />
-                  <span>{recentTakes} hot take{recentTakes !== 1 ? 's' : ''}</span>
+                  <Flame size={11} />
+                  <span>{recentTakes} take{recentTakes !== 1 ? 's' : ''}</span>
                 </Link>
                 <Link
                   href={`/neighborhoods/${chat.id}?tab=chat`}
                   onClick={(e) => e.stopPropagation()}
-                  className="ml-auto text-xs font-semibold text-orange-400 hover:text-orange-300 transition-colors"
+                  className="ml-auto text-[11px] font-bold uppercase tracking-wider text-masthead hover:underline transition-colors"
                 >
                   Open Chat →
                 </Link>
@@ -143,10 +147,10 @@ export default function NeighborhoodsPage() {
         })}
 
         {filtered.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-4xl mb-3">🏘️</p>
-            <p className="font-semibold text-white mb-1">No neighborhoods yet</p>
-            <p className="text-sm text-slate-400">Create one or get added by a friend</p>
+          <div className="flex flex-col items-center justify-center py-20 text-center px-5">
+            <p className="font-display text-4xl mb-3 text-ink-faint">🏘️</p>
+            <p className="font-display font-bold text-ink text-lg mb-1">No neighborhoods yet</p>
+            <p className="text-sm text-ink-muted italic">Create one or get added by a friend</p>
           </div>
         )}
       </div>

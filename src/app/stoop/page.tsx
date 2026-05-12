@@ -23,220 +23,240 @@ export default function StoopPage() {
   };
 
   const myTeamIds = ME.fanTeams.map((ft) => ft.team.id);
-  const myDebates = DEBATES.filter((d) => d.party1Id === 'me' || d.party2Id === 'me').slice(0, 2);
+  const myDebates = DEBATES.filter((d) => d.side1UserIds.includes('me') || d.side2UserIds.includes('me')).slice(0, 2);
   const myBets = BETS.filter((b) => b.participantIds.includes('me')).slice(0, 2);
   const myHotTakes = HOT_TAKES.filter((h) => h.authorId === 'me' || h.teamIds.some((t) => myTeamIds.includes(t))).slice(0, 2);
   const { stats } = ME;
 
   const myNeighborhoods = CHATS.filter((c) => c.memberIds.includes('me'));
-  const neighborhoodMembers = [...new Set(myNeighborhoods.flatMap((c) => c.memberIds))].filter((id) => id !== 'me');
+  const myGroups = myNeighborhoods; // "My Groups" = group chats
+  const myNeighbors = ME.followingIds.map((id) => getUserById(id)).filter(Boolean); // "My Neighbors" = followed people
 
   return (
-    <div className="flex flex-col bg-slate-950">
-      {/* Header */}
-      <div className="relative bg-linear-to-b from-slate-800 to-slate-950 px-5 pb-6 pt-10">
+    <div className="flex flex-col bg-paper min-h-full">
+      {/* Masthead header */}
+      <div className="relative bg-ink px-5 pb-6 pt-10">
         <div className="absolute right-5 top-10 flex gap-2">
-          <Link href="/discover" className="rounded-full bg-slate-800 p-2 text-slate-400 hover:text-white transition-colors" title="Discover">
+          <Link href="/discover" className="rounded-full bg-ink-muted/30 p-2 text-paper/70 hover:text-paper transition-colors" title="Discover">
             <Compass size={18} />
           </Link>
-          <Link href="/onboarding" className="rounded-full bg-slate-800 p-2 text-slate-400 hover:text-white transition-colors" title="Edit profile">
+          <Link href="/onboarding" className="rounded-full bg-ink-muted/30 p-2 text-paper/70 hover:text-paper transition-colors" title="Edit profile">
             <Settings size={18} />
           </Link>
         </div>
 
         <div className="flex items-end gap-4">
           <div className="relative">
-            <Link href={`/users/me`}>
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-700 text-4xl ring-2 ring-orange-500 hover:ring-orange-400 transition-all">
+            <Link href="/users/me">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-ink-muted/30 text-4xl ring-2 ring-press hover:ring-press/70 transition-all">
                 {ME.avatar}
               </div>
             </Link>
-            <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
+            <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-press text-xs font-bold text-paper">
               #1
             </div>
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">{ME.displayName}</h1>
-            <p className="text-sm text-slate-400">@{ME.username}</p>
+            <h1 className="font-display text-2xl font-bold text-paper">{ME.displayName}</h1>
+            <p className="text-sm text-paper/60 font-mono">@{ME.username}</p>
           </div>
         </div>
 
-        {ME.bio && <p className="mt-4 text-sm leading-relaxed text-slate-300">{ME.bio}</p>}
+        {ME.bio && <p className="mt-4 text-sm leading-relaxed text-paper/80 italic">{ME.bio}</p>}
 
-        <div className="mt-4 flex gap-6">
+        <div className="mt-4 flex gap-5 border-t border-paper/20 pt-4">
           <Link href="/discover?filter=followers" className="text-center hover:opacity-80 transition-opacity">
-            <p className="text-lg font-bold text-white">{ME.followerIds.length}</p>
-            <p className="text-xs text-slate-400">Neighbors</p>
+            <p className="text-lg font-bold text-paper">{ME.followerIds.length}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-paper/50">Neighbors</p>
           </Link>
           <Link href="/discover?filter=following" className="text-center hover:opacity-80 transition-opacity">
-            <p className="text-lg font-bold text-white">{ME.followingIds.length}</p>
-            <p className="text-xs text-slate-400">Following</p>
+            <p className="text-lg font-bold text-paper">{ME.followingIds.length}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-paper/50">Following</p>
           </Link>
           <Link href="/neighborhoods" className="text-center hover:opacity-80 transition-opacity">
-            <p className="text-lg font-bold text-white">{myNeighborhoods.length}</p>
-            <p className="text-xs text-slate-400">Neighborhoods</p>
+            <p className="text-lg font-bold text-paper">{myGroups.length}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-paper/50">Groups</p>
           </Link>
           <div className="text-center">
-            <p className="text-lg font-bold text-orange-400">{stats.hotTakesPosted}</p>
-            <p className="text-xs text-slate-400">Hot Takes</p>
+            <p className="text-lg font-bold text-press">{stats.hotTakesPosted}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-paper/50">Hot Takes</p>
           </div>
         </div>
       </div>
 
       {/* Notification banner */}
       {notifStatus === 'unknown' && (
-        <div className="mx-5 mt-4 flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3">
-          <Bell size={18} className="text-orange-400 shrink-0" />
+        <div className="mx-5 mt-4 flex items-center gap-3 border-l-4 border-press bg-paper-dark px-4 py-3">
+          <Bell size={16} className="text-press shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-white">Enable notifications</p>
-            <p className="text-xs text-slate-400">Get alerted for new messages, debates, and bets</p>
+            <p className="text-sm font-bold text-ink">Enable notifications</p>
+            <p className="text-xs text-ink-muted">Get alerted for new debates, bets & hot takes</p>
           </div>
           <button
             onClick={enableNotifications}
-            className="shrink-0 rounded-full bg-orange-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-orange-600 transition-colors"
+            className="shrink-0 bg-ink px-3 py-1.5 text-xs font-bold text-paper hover:bg-ink/80 transition-colors uppercase tracking-wide"
           >
             Enable
           </button>
         </div>
       )}
       {notifStatus === 'granted' && (
-        <div className="mx-5 mt-4 flex items-center gap-2 rounded-xl bg-green-950/30 border border-green-900/40 px-4 py-2.5">
-          <Bell size={14} className="text-green-400" />
-          <p className="text-xs text-green-400 font-medium">Notifications enabled — you&apos;re all set</p>
+        <div className="mx-5 mt-4 flex items-center gap-2 border-l-4 border-field bg-paper-dark px-4 py-2.5">
+          <Bell size={14} className="text-field" />
+          <p className="text-xs text-field font-bold">Notifications enabled</p>
         </div>
       )}
       {notifStatus === 'denied' && (
-        <div className="mx-5 mt-4 flex items-center gap-2 rounded-xl bg-slate-900 border border-slate-700 px-4 py-2.5">
-          <BellOff size={14} className="text-slate-500" />
-          <p className="text-xs text-slate-500">Notifications blocked — enable in browser settings</p>
+        <div className="mx-5 mt-4 flex items-center gap-2 border-l-4 border-rule bg-paper-dark px-4 py-2.5">
+          <BellOff size={14} className="text-ink-faint" />
+          <p className="text-xs text-ink-faint">Notifications blocked — enable in browser settings</p>
         </div>
       )}
 
-      {/* Neighborhood members */}
-      {neighborhoodMembers.length > 0 && (
-        <section className="px-5 py-4 border-b border-slate-800">
+      {/* My Neighbors (who you follow) */}
+      {myNeighbors.length > 0 && (
+        <section className="px-5 py-4 border-b border-rule">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Users size={15} className="text-slate-400" />
-              <h2 className="text-sm font-bold text-white">My Neighborhood</h2>
+              <Users size={14} className="text-ink-muted" />
+              <h2 className="text-xs font-bold uppercase tracking-widest text-ink-muted">My Neighbors</h2>
             </div>
-            <Link href="/discover" className="text-xs text-orange-400 hover:text-orange-300">Find more →</Link>
+            <Link href="/discover" className="text-xs font-semibold text-masthead hover:underline">Find more →</Link>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-1">
-            {neighborhoodMembers.slice(0, 6).map((uid) => {
-              const user = getUserById(uid);
-              if (!user) return null;
-              return (
-                <Link key={uid} href={`/users/${uid}`} className="flex flex-col items-center gap-1.5 shrink-0">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-xl hover:ring-2 hover:ring-orange-500 transition-all">
-                    {user.avatar}
-                  </div>
-                  <p className="text-[10px] text-slate-400 text-center w-12 truncate">{user.displayName.split(' ')[0]}</p>
-                </Link>
-              );
-            })}
+            {myNeighbors.slice(0, 6).map((user) => (
+              <Link key={user!.id} href={`/users/${user!.id}`} className="flex flex-col items-center gap-1.5 shrink-0">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-paper-dark border border-rule text-xl hover:border-ink transition-all">
+                  {user!.avatar}
+                </div>
+                <p className="text-[10px] text-ink-muted text-center w-12 truncate">{user!.displayName.split(' ')[0]}</p>
+              </Link>
+            ))}
             <Link href="/discover" className="flex flex-col items-center gap-1.5 shrink-0">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed border-slate-700 text-slate-500 hover:border-orange-500 hover:text-orange-500 transition-all">
-                <span className="text-xl">+</span>
+              <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-dashed border-rule text-ink-faint hover:border-ink hover:text-ink transition-all">
+                <span className="text-xl font-light">+</span>
               </div>
-              <p className="text-[10px] text-slate-500">Add</p>
+              <p className="text-[10px] text-ink-faint">Add</p>
             </Link>
           </div>
         </section>
       )}
 
+      {/* My Groups */}
+      {myGroups.length > 0 && (
+        <section className="px-5 py-4 border-b border-rule">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-ink-muted">My Groups</h2>
+            <Link href="/neighborhoods" className="text-xs font-semibold text-masthead hover:underline">All →</Link>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {myGroups.map((chat) => (
+              <Link
+                key={chat.id}
+                href={`/neighborhoods/${chat.id}`}
+                className="flex items-center gap-1.5 border border-rule bg-paper-dark px-3 py-1.5 text-xs font-semibold text-ink hover:bg-paper-deeper transition-colors"
+              >
+                <span>{chat.emoji}</span>
+                <span>{chat.name}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Fan Identity */}
-      <section className="px-5 py-4 border-b border-slate-800">
+      <section className="px-5 py-4 border-b border-rule">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-white">My Teams</h2>
-          <Link href="/discover?mode=teams" className="text-xs text-orange-400 hover:text-orange-300">Add teams →</Link>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-ink-muted">Fan Identity</h2>
+          <Link href="/discover?mode=teams" className="text-xs font-semibold text-masthead hover:underline">Add teams →</Link>
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
           {ME.fanTeams.map((ft) => (
             <Link
               key={ft.team.id}
               href={`/discover?mode=teams&q=${ft.team.name}`}
-              className="flex items-center gap-3 rounded-xl bg-slate-900 px-4 py-3 hover:bg-slate-800 transition-colors"
-              style={{ borderLeft: `3px solid ${ft.team.color}` }}
+              className="flex items-center gap-3 bg-paper-dark px-4 py-2.5 hover:bg-paper-deeper transition-colors border-l-4"
+              style={{ borderLeftColor: ft.team.color }}
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: ft.team.color }}>
+              <span className="flex h-6 w-6 items-center justify-center text-xs font-bold text-paper rounded-full" style={{ backgroundColor: ft.team.color }}>
                 {ft.rank}
               </span>
-              <span className="text-xl">{ft.team.emoji}</span>
+              <span className="text-lg">{ft.team.emoji}</span>
               <div className="flex-1">
-                <p className="font-semibold text-white text-sm">{ft.team.city} {ft.team.name}</p>
-                <p className="text-xs text-slate-400">{ft.team.league}</p>
+                <p className="font-bold text-ink text-sm">{ft.team.city} {ft.team.name}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-faint">{ft.team.league}</p>
               </div>
-              {ft.rank === 1 && <Star size={13} className="text-orange-400" fill="currentColor" />}
+              {ft.rank === 1 && <Star size={13} className="text-press" fill="currentColor" />}
             </Link>
           ))}
         </div>
       </section>
 
-      {/* Stats Panel */}
-      <section className="px-5 py-4 border-b border-slate-800">
-        <h2 className="text-sm font-bold text-white mb-3">Bragging Rights</h2>
-        <div className="grid grid-cols-2 gap-3">
-          <Link href="/neighborhoods" className="rounded-xl border border-blue-900/40 bg-slate-900 px-4 py-3 hover:bg-slate-800 transition-colors">
-            <div className="flex items-center gap-2 mb-2">
-              <Swords size={16} className="text-blue-400" />
-              <span className="text-xs text-slate-400">Debates</span>
+      {/* Bragging Rights / Stats */}
+      <section className="px-5 py-4 border-b border-rule">
+        <h2 className="text-xs font-bold uppercase tracking-widest text-ink-muted mb-3">Bragging Rights</h2>
+        <div className="grid grid-cols-2 gap-2">
+          <Link href="/neighborhoods" className="border border-rule bg-paper-dark px-4 py-3 hover:bg-paper-deeper transition-colors">
+            <div className="flex items-center gap-2 mb-1">
+              <Swords size={14} className="text-navy" />
+              <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Debates</span>
             </div>
-            <p className="text-lg font-bold text-white">{stats.debatesWon}W · {stats.debatesLost}L · {stats.debatesDrew}D</p>
+            <p className="text-base font-display font-bold text-ink">{stats.debatesWon}W · {stats.debatesLost}L · {stats.debatesDrew}D</p>
           </Link>
-          <Link href="/neighborhoods" className="rounded-xl border border-green-900/40 bg-slate-900 px-4 py-3 hover:bg-slate-800 transition-colors">
-            <div className="flex items-center gap-2 mb-2">
-              <Handshake size={16} className="text-green-400" />
-              <span className="text-xs text-slate-400">Bets</span>
+          <Link href="/neighborhoods" className="border border-rule bg-paper-dark px-4 py-3 hover:bg-paper-deeper transition-colors">
+            <div className="flex items-center gap-2 mb-1">
+              <Handshake size={14} className="text-field" />
+              <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Bets</span>
             </div>
-            <p className="text-lg font-bold text-white">{stats.betsWon}W · {stats.betsLost}L</p>
+            <p className="text-base font-display font-bold text-ink">{stats.betsWon}W · {stats.betsLost}L</p>
           </Link>
-          <div className="rounded-xl border border-orange-900/40 bg-slate-900 px-4 py-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Flame size={16} className="text-orange-400" />
-              <span className="text-xs text-slate-400">Hot Take Reactions</span>
+          <div className="border border-rule bg-paper-dark px-4 py-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Flame size={14} className="text-press" />
+              <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Reactions</span>
             </div>
-            <p className="text-lg font-bold text-white">{stats.hotTakeReactions}</p>
+            <p className="text-base font-display font-bold text-ink">{stats.hotTakeReactions}</p>
           </div>
-          <div className="rounded-xl border border-yellow-900/40 bg-slate-900 px-4 py-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Trophy size={16} className="text-yellow-400" />
-              <span className="text-xs text-slate-400">Bets Pending</span>
+          <div className="border border-rule bg-paper-dark px-4 py-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Trophy size={14} className="text-rule-dark" />
+              <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Pending</span>
             </div>
-            <p className="text-lg font-bold text-white">{stats.betsPending}</p>
+            <p className="text-base font-display font-bold text-ink">{stats.betsPending}</p>
           </div>
         </div>
       </section>
 
-      {/* Content feed */}
+      {/* Content feed — "Your Scene" */}
       <section className="px-5 py-4 pb-8">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-white">Your Scene</h2>
-          <Link href="/neighborhoods" className="text-xs text-orange-400 hover:text-orange-300">See all →</Link>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-xl font-bold text-ink">Your Scene</h2>
+          <Link href="/neighborhoods" className="text-xs font-semibold text-masthead hover:underline uppercase tracking-wide">See all →</Link>
         </div>
 
         <div className="flex flex-col gap-3">
           {myDebates.map((debate) => {
-            const p1 = getUserById(debate.party1Id);
-            const p2 = getUserById(debate.party2Id);
+            const side1First = getUserById(debate.side1UserIds[0]);
+            const side2First = getUserById(debate.side2UserIds[0]);
             return (
               <Link
                 key={debate.id}
                 href={`/neighborhoods/${debate.chatId}?tab=debates`}
-                className="block rounded-xl border border-blue-900/40 bg-blue-950/20 p-4 hover:bg-blue-950/30 transition-colors"
+                className="block border-l-4 border-navy bg-paper-dark px-4 py-3 hover:bg-paper-deeper transition-colors"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <Swords size={13} className="text-blue-400" />
-                  <span className="text-xs font-semibold text-blue-400 uppercase tracking-wide">Debate</span>
-                  <span className="text-xs text-slate-500">{debate.chatName}</span>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Swords size={12} className="text-navy" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-navy">Debate</span>
+                  <span className="ml-auto text-[10px] text-ink-faint">{debate.chatName}</span>
                 </div>
-                <p className="text-sm text-slate-200 leading-snug line-clamp-2">&ldquo;{debate.claim}&rdquo;</p>
-                <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-                  <Link href={`/users/${p1?.id}`} onClick={(e) => e.stopPropagation()} className="hover:text-orange-400 transition-colors">{p1?.displayName}</Link>
-                  <span>vs</span>
-                  <Link href={`/users/${p2?.id}`} onClick={(e) => e.stopPropagation()} className="hover:text-orange-400 transition-colors">{p2?.displayName}</Link>
-                  <span>·</span>
-                  <span>{debate.votes.length} votes · {timeAgo(debate.createdAt)}</span>
+                <p className="text-sm text-ink font-medium leading-snug line-clamp-2 italic">&ldquo;{debate.claim}&rdquo;</p>
+                <div className="mt-2 flex items-center gap-1.5 text-[11px] text-ink-muted flex-wrap">
+                  <span className="font-bold">{debate.side1Label ?? 'Side 1'}:</span>
+                  <span>{side1First?.displayName}</span>
+                  <span className="text-rule-dark">vs</span>
+                  <span className="font-bold">{debate.side2Label ?? 'Side 2'}:</span>
+                  <span>{side2First?.displayName}</span>
+                  <span className="text-ink-faint ml-auto">{debate.votes.length} votes</span>
                 </div>
               </Link>
             );
@@ -249,21 +269,20 @@ export default function StoopPage() {
               <Link
                 key={bet.id}
                 href={`/neighborhoods/${bet.chatId}?tab=bets`}
-                className="block rounded-xl border border-green-900/40 bg-green-950/20 p-4 hover:bg-green-950/30 transition-colors"
+                className="block border-l-4 border-field bg-paper-dark px-4 py-3 hover:bg-paper-deeper transition-colors"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <Handshake size={13} className="text-green-400" />
-                  <span className="text-xs font-semibold text-green-400 uppercase tracking-wide">Bet</span>
-                  <span className="text-xs text-slate-500">{bet.chatName}</span>
-                  <span className={`ml-auto rounded-full px-2 py-0.5 text-xs font-medium ${bet.status === 'resolved' ? 'bg-slate-800 text-slate-400' : bet.status === 'awaiting-resolution' ? 'bg-yellow-900/60 text-yellow-400' : 'bg-green-900/40 text-green-400'}`}>
-                    {bet.status === 'active' ? 'Active' : bet.status === 'resolved' ? 'Resolved' : 'Pending'}
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Handshake size={12} className="text-field" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-field">Bet</span>
+                  <span className={`ml-auto text-[10px] font-bold uppercase ${bet.status === 'resolved' ? 'text-ink-faint' : bet.status === 'awaiting-resolution' ? 'text-rule-dark' : 'text-field'}`}>
+                    {bet.status}
                   </span>
                 </div>
-                <p className="text-sm text-slate-200 leading-snug line-clamp-2">&ldquo;{bet.claim}&rdquo;</p>
-                <div className="mt-2 flex items-center gap-1 text-xs text-slate-500">
-                  <Link href={`/users/${p1?.id}`} onClick={(e) => e.stopPropagation()} className="hover:text-orange-400 transition-colors">{p1?.displayName}</Link>
-                  <span>🤝</span>
-                  <Link href={`/users/${p2?.id}`} onClick={(e) => e.stopPropagation()} className="hover:text-orange-400 transition-colors">{p2?.displayName}</Link>
+                <p className="text-sm text-ink font-medium leading-snug line-clamp-2 italic">&ldquo;{bet.claim}&rdquo;</p>
+                <div className="mt-2 flex items-center gap-1 text-[11px] text-ink-muted">
+                  <span>{p1?.displayName}</span>
+                  <span className="text-rule-dark">🤝</span>
+                  <span>{p2?.displayName}</span>
                 </div>
               </Link>
             );
@@ -275,18 +294,17 @@ export default function StoopPage() {
               <Link
                 key={ht.id}
                 href={`/neighborhoods/${ht.chatId}?tab=hot-takes`}
-                className="block rounded-xl border border-orange-900/40 bg-orange-950/20 p-4 hover:bg-orange-950/30 transition-colors"
+                className="block border-l-4 border-press bg-paper-dark px-4 py-3 hover:bg-paper-deeper transition-colors"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <Flame size={13} className="text-orange-400" />
-                  <span className="text-xs font-semibold text-orange-400 uppercase tracking-wide">Hot Take</span>
-                  <span className="text-xs text-slate-500">{ht.chatName}</span>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Flame size={12} className="text-press" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-press">Hot Take</span>
+                  <span className="ml-auto text-[10px] text-ink-faint">{ht.chatName}</span>
                 </div>
-                <p className="text-sm text-slate-200 leading-snug line-clamp-2">&ldquo;{ht.content}&rdquo;</p>
-                <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-                  <Link href={`/users/${ht.authorId}`} onClick={(e) => e.stopPropagation()} className="hover:text-orange-400 transition-colors">{author?.displayName}</Link>
-                  <span>·</span>
-                  <span>{totalReactions(ht.reactions)} reactions · {timeAgo(ht.createdAt)}</span>
+                <p className="text-sm text-ink font-medium leading-snug line-clamp-2 italic">&ldquo;{ht.content}&rdquo;</p>
+                <div className="mt-2 flex items-center gap-2 text-[11px] text-ink-muted">
+                  <span>{author?.displayName}</span>
+                  <span className="text-ink-faint">· {totalReactions(ht.reactions)} reactions · {timeAgo(ht.createdAt)}</span>
                 </div>
               </Link>
             );

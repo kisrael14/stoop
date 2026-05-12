@@ -26,10 +26,8 @@ export default function LoginPage() {
     }
     setLoading(true);
     setError('');
-    // Simulate auth — any credentials work in the prototype
     await new Promise((r) => setTimeout(r, 800));
 
-    // Request notification permission after login
     const granted = await requestNotificationPermission();
     if (granted) startSimulatedNotifications();
 
@@ -41,60 +39,63 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-950">
-      {/* Brand header */}
-      <div className="flex flex-col items-center pt-16 pb-10 px-6">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-5xl">🏟️</span>
+    <div className="flex min-h-screen flex-col bg-paper">
+      {/* Masthead */}
+      <div className="flex flex-col items-center pt-14 pb-8 px-6">
+        <div className="border-b-2 border-t-2 border-ink py-2 px-8 mb-4 w-full text-center">
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-ink-muted">Est. 2024 · Sports Edition</p>
         </div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">Stoop Sports</h1>
-        <p className="mt-2 text-slate-400 text-sm text-center">
-          Your neighborhood sports group chat
+        <h1 className="font-display text-5xl font-black text-ink tracking-tight text-center leading-tight">
+          Stoop<br />Sports
+        </h1>
+        <div className="border-b border-ink w-full mt-3 mb-2" />
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-muted text-center">
+          Your Neighborhood Sports Desk
         </p>
       </div>
 
       {/* Tab switcher */}
       <div className="px-6 mb-6">
-        <div className="flex gap-1 bg-slate-900 rounded-xl p-1">
+        <div className="flex gap-0 border border-ink overflow-hidden rounded-none">
           {(['signin', 'signup'] as Mode[]).map((m) => (
             <button
               key={m}
               onClick={() => { setMode(m); setError(''); }}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
-                mode === m ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-white'
+              className={`flex-1 py-2.5 text-sm font-bold uppercase tracking-wider transition-colors border-r last:border-r-0 border-ink ${
+                mode === m ? 'bg-ink text-paper' : 'bg-paper text-ink-muted hover:bg-paper-dark'
               }`}
             >
-              {m === 'signin' ? 'Sign In' : 'Create Account'}
+              {m === 'signin' ? 'Sign In' : 'Sign Up'}
             </button>
           ))}
         </div>
       </div>
 
       <div className="px-6 flex flex-col gap-4">
-        {/* Phone or username field */}
+        {/* Identifier field */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">
-            {mode === 'signin' ? 'Phone number or username' : 'Phone number'}
+          <label className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
+            {mode === 'signin' ? 'Phone or Username' : 'Phone Number'}
           </label>
           <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
-              {identifierType === 'phone' ? <Phone size={16} /> : <User size={16} />}
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint">
+              {identifierType === 'phone' ? <Phone size={15} /> : <User size={15} />}
             </div>
             <input
               type="text"
               value={identifier}
               onChange={(e) => { setIdentifier(e.target.value); setError(''); }}
               placeholder={mode === 'signin' ? '+1 (555) 000-0000 or @username' : '+1 (555) 000-0000'}
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 py-3.5 pl-10 pr-4 text-white placeholder-slate-500 outline-none focus:border-orange-500 transition-colors"
+              className="w-full rounded-none border border-rule bg-paper-dark py-3 pl-9 pr-4 text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors text-sm"
             />
             {identifierType && (
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-500">
-                {identifierType === 'phone' ? '📱 Phone' : '@ Username'}
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold uppercase tracking-wide text-ink-muted">
+                {identifierType === 'phone' ? '📱' : '@'}
               </span>
             )}
           </div>
           {mode === 'signin' && (
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-[11px] text-ink-faint italic">
               Friends can find you by your phone number or @username
             </p>
           )}
@@ -103,13 +104,13 @@ export default function LoginPage() {
         {/* Username field (signup only) */}
         {mode === 'signup' && (
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Username</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">Username</label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm">@</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted text-sm font-bold">@</span>
               <input
                 type="text"
                 placeholder="jhayes23"
-                className="w-full rounded-xl border border-slate-700 bg-slate-900 py-3.5 pl-8 pr-4 text-white placeholder-slate-500 outline-none focus:border-orange-500 transition-colors"
+                className="w-full rounded-none border border-rule bg-paper-dark py-3 pl-7 pr-4 text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors text-sm"
               />
             </div>
           </div>
@@ -117,37 +118,37 @@ export default function LoginPage() {
 
         {/* Password field */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+          <label className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">Password</label>
           <div className="relative">
-            <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
             <input
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(''); }}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               placeholder="••••••••"
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 py-3.5 pl-10 pr-12 text-white placeholder-slate-500 outline-none focus:border-orange-500 transition-colors"
+              className="w-full rounded-none border border-rule bg-paper-dark py-3 pl-9 pr-12 text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors text-sm"
             />
             <button
               onClick={() => setShowPassword((p) => !p)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink"
             >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
           </div>
         </div>
 
         {error && (
-          <p className="rounded-xl bg-red-950/40 border border-red-900/40 px-4 py-2.5 text-sm text-red-400">
+          <p className="border border-masthead/40 bg-masthead/10 px-4 py-2.5 text-sm text-masthead">
             {error}
           </p>
         )}
 
-        {/* Notification permission note */}
-        <div className="rounded-xl bg-slate-900 border border-slate-800 px-4 py-3 flex items-start gap-3">
-          <span className="text-lg mt-0.5">🔔</span>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            After signing in we&apos;ll ask to enable push notifications so you never miss a message, debate, or bet in your neighborhoods.
+        {/* Notification note */}
+        <div className="border-l-4 border-rule bg-paper-dark px-4 py-3 flex items-start gap-3">
+          <span className="text-base mt-0.5">🔔</span>
+          <p className="text-xs text-ink-muted leading-relaxed italic">
+            We&apos;ll request notification permission so you never miss a message, debate, or bet in your neighborhoods.
           </p>
         </div>
 
@@ -155,26 +156,26 @@ export default function LoginPage() {
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className="flex items-center justify-center gap-2 rounded-xl bg-orange-500 py-4 font-bold text-white hover:bg-orange-600 disabled:opacity-60 transition-colors mt-1"
+          className="flex items-center justify-center gap-2 bg-ink py-4 font-bold text-paper hover:bg-ink/80 disabled:opacity-60 transition-colors mt-1 uppercase tracking-widest text-sm"
         >
           {loading ? (
             <span className="flex gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="h-1.5 w-1.5 rounded-full bg-white animate-bounce" style={{ animationDelay: '300ms' }} />
+              {[0, 150, 300].map((d) => (
+                <span key={d} className="h-1.5 w-1.5 rounded-full bg-paper animate-bounce" style={{ animationDelay: `${d}ms` }} />
+              ))}
             </span>
           ) : (
             <>
-              {mode === 'signin' ? 'Sign In' : 'Create Account'}
+              {mode === 'signin' ? 'Enter the Stoop' : 'Claim Your Spot'}
               <ChevronRight size={18} />
             </>
           )}
         </button>
 
         {mode === 'signin' && (
-          <p className="text-center text-sm text-slate-500">
-            Don&apos;t have an account?{' '}
-            <button onClick={() => setMode('signup')} className="text-orange-400 font-semibold hover:text-orange-300">
+          <p className="text-center text-sm text-ink-muted pb-4">
+            New to the stoop?{' '}
+            <button onClick={() => setMode('signup')} className="text-masthead font-bold hover:underline">
               Sign up
             </button>
           </p>

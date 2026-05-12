@@ -31,8 +31,9 @@ export interface User {
   bio: string;
   fanTeams: FanTeam[];
   stats: UserStats;
-  followingIds: string[];
+  followingIds: string[];   // "My Neighbors" — people you follow
   followerIds: string[];
+  groupIds: string[];       // "My Groups" — neighborhoods/chats you're in
 }
 
 export interface Reaction {
@@ -49,6 +50,7 @@ export interface Message {
   content: string;
   timestamp: string;
   tag?: MessageTag;
+  taggedDebateId?: string;
   reactions: Reaction[];
   mediaUrl?: string;
   mediaType?: 'photo' | 'video' | 'link';
@@ -64,11 +66,20 @@ export interface Chat {
   teamIds: string[];
 }
 
-export type VoteChoice = 'party1' | 'party2' | 'draw';
+export type VoteChoice = 'side1' | 'side2' | 'draw';
 
 export interface DebateVote {
   userId: string;
   choice: VoteChoice;
+}
+
+export interface DebateArgument {
+  id: string;
+  userId: string;
+  side: 'side1' | 'side2';
+  content: string;
+  timestamp: string;
+  reactions: Reaction[];
 }
 
 export interface Debate {
@@ -76,8 +87,11 @@ export interface Debate {
   chatId: string;
   chatName: string;
   claim: string;
-  party1Id: string;
-  party2Id: string;
+  side1UserIds: string[];   // multiple users can be on each side
+  side2UserIds: string[];
+  side1Label?: string;      // optional custom label (e.g. "Team LeBron")
+  side2Label?: string;
+  arguments: DebateArgument[];
   votes: DebateVote[];
   status: 'active' | 'resolved';
   resolution?: VoteChoice;
