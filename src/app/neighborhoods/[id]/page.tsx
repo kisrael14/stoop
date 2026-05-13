@@ -6,19 +6,19 @@ import Link from 'next/link';
 import {
   ArrowLeft, Home, MessageCircle, Swords, Handshake, Flame, Snowflake,
   Send, Sparkles, X, Trophy, Users,
-  AlertCircle, CheckCircle, Clock, Megaphone, MessageSquare, ChevronDown, ChevronUp,
+  AlertCircle, CheckCircle, Clock, Megaphone, MessageSquare, ChevronDown, ChevronUp, PenLine,
 } from 'lucide-react';
 import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
 import {
-  getChatById, getUserById, ME, DEBATES, BETS, HOT_TAKES, TEAMS,
+  getChatById, getUserById, ME, DEBATES, BETS, HOT_TAKES, TEAMS, ANALYSES,
 } from '@/lib/mock-data';
 import { timeAgo, voteLeader, totalReactions } from '@/lib/utils';
-import type { Message, MessageTag, Debate, Bet, HotTake, HotTakeComment, VoteChoice } from '@/lib/types';
+import type { Message, MessageTag, Debate, Bet, HotTake, HotTakeComment, VoteChoice, Analysis } from '@/lib/types';
 import { sendNotification } from '@/lib/notifications';
 
-type Tab = 'overview' | 'chat' | 'debates' | 'bets' | 'hot-takes';
+type Tab = 'overview' | 'chat' | 'debates' | 'bets' | 'hot-takes' | 'analysts';
 const EMOJI_REACTIONS = ['🔥', '💯', '😂', '🧢', '👀', '😭', '🤬', '❤️'];
-const REACT_OPTIONS = ['🔥', '💯', '🧢', '😂', '👀', '🤡'];
+const HOT_TAKE_MAX = 280;
 
 export default function NeighborhoodPage() {
   const { id } = useParams<{ id: string }>();
@@ -51,14 +51,25 @@ export default function NeighborhoodPage() {
     BETS.filter((b) => b.chatId === id)
   );
   const [expandedBet, setExpandedBet] = useState<string | null>(null);
+
+  const [hotTakes, setHotTakes] = useState<HotTake[]>(
+    HOT_TAKES.filter((h) => h.chatId === id)
+  );
   const [showCommentsFor, setShowCommentsFor] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
   const [mentionQuery, setMentionQuery] = useState('');
   const commentInputRef = useRef<HTMLInputElement>(null);
 
-  const [hotTakes, setHotTakes] = useState<HotTake[]>(
-    HOT_TAKES.filter((h) => h.chatId === id)
+  const [analyses, setAnalyses] = useState<Analysis[]>(
+    ANALYSES.filter((a) => a.chatId === id)
   );
+  const [showAnalystCommentsFor, setShowAnalystCommentsFor] = useState<string | null>(null);
+  const [analystCommentText, setAnalystCommentText] = useState('');
+  const [analystMentionQuery, setAnalystMentionQuery] = useState('');
+  const analystCommentInputRef = useRef<HTMLInputElement>(null);
+  const [showAnalysisForm, setShowAnalysisForm] = useState(false);
+  const [analysisTitle, setAnalysisTitle] = useState('');
+  const [analysisBody, setAnalysisBody] = useState('');
 
   useEffect(() => {
     if (activeTab === 'chat') {
@@ -89,13 +100,14 @@ export default function NeighborhoodPage() {
     'hot-take': { label: 'Hot Take', emoji: '🔥', bg: 'bg-press', border: 'border-press/40', surface: 'bg-press/10 border-press/30' },
     debate: { label: 'Debate', emoji: '⚔️', bg: 'bg-navy', border: 'border-navy/40', surface: 'bg-navy/10 border-navy/30' },
     bet: { label: 'Bet', emoji: '🤝', bg: 'bg-field', border: 'border-field/40', surface: 'bg-field/10 border-field/30' },
+    analysis: { label: 'Analysis', emoji: '📊', bg: 'bg-ink', border: 'border-ink/40', surface: 'bg-ink/5 border-ink/20' },
   };
 
   // ─── Chat actions ────────────────────────────────────────
   const sendMessage = () => {
     if (!inputText.trim()) return;
+    if (pendingTag === 'hot-take' && inputText.length > HOT_TAKE_MAX) return;
 
-    // Bets open setup modal before posting
     if (pendingTag === 'bet') {
       setBetSetupClaim(inputText.trim());
       setBetSetupMessageId(null);
@@ -152,12 +164,10 @@ export default function NeighborhoodPage() {
     const claim = betSetupClaim!;
 
     if (betSetupMessageId) {
-      // Tagging an existing message
       setMessages((prev) =>
         prev.map((m) => (m.id === betSetupMessageId ? { ...m, tag: 'bet' as const } : m))
       );
     } else {
-      // New message
       setMessages((prev) => [
         ...prev,
         {
@@ -405,6 +415,71 @@ export default function NeighborhoodPage() {
     ? members.filter((m) => m?.username.toLowerCase().startsWith(mentionQuery.toLowerCase())).slice(0, 4)
     : [];
 
+  // ─── Analyst actions ─────────────────────────────────────
+  const submitAnalysis = () => {
+    if (!analysisTitle.trim() || !analysisBody.trim()) return;
+    const newAnalysis: Analysis = {
+      id: `an-new-${Date.now()}`,
+      chatId: chat.id,
+      chatName: chat.name,
+      title: analysisTitle.trim(),
+      content: analysisBody.trim(),
+      authorId: 'me',
+      reactions: [],
+      teamIds: chat.teamIds,
+      createdAt: new Date().toISOString(),
+    };
+    setAnalyses((prev) => [newAnalysis, ...prev]);
+    setAnalysisTitle('');
+    setAnalysisBody('');
+    setShowAnalysisForm(false);
+  };
+
+  const addAnalystComment = (anId: string) => {
+    if (!analystCommentText.trim()) return;
+    const newComment: HotTakeComment = {
+      id: `ac-${Date.now()}`,
+      userId: 'me',
+      content: analystCommentText.trim(),
+      timestamp: new Date().toISOString(),
+    };
+    setAnalyses((prev) =>
+      prev.map((a) =>
+        a.id === anId ? { ...a, comments: [...(a.comments ?? []), newComment] } : a
+      )
+    );
+    setAnalystCommentText('');
+    setAnalystMentionQuery('');
+  };
+
+  const handleAnalystCommentInput = (val: string) => {
+    setAnalystCommentText(val);
+    const lastWord = val.split(/\s/).pop() ?? '';
+    if (lastWord.startsWith('@') && lastWord.length > 1) {
+      setAnalystMentionQuery(lastWord.slice(1));
+    } else {
+      setAnalystMentionQuery('');
+    }
+  };
+
+  const insertAnalystMention = (username: string) => {
+    const words = analystCommentText.split(/(\s)/);
+    words[words.length - 1] = `@${username}`;
+    setAnalystCommentText(words.join('') + ' ');
+    setAnalystMentionQuery('');
+    analystCommentInputRef.current?.focus();
+  };
+
+  const analystMentionMatches = analystMentionQuery
+    ? members.filter((m) => m?.username.toLowerCase().startsWith(analystMentionQuery.toLowerCase())).slice(0, 4)
+    : [];
+
+  const publishAnalysisToStreets = (anId: string) => {
+    setAnalyses((prev) =>
+      prev.map((a) => (a.id === anId ? { ...a, isPublic: true } : a))
+    );
+  };
+
   // ─── Hot take actions ────────────────────────────────────
   const addHTReaction = (htId: string, emoji: string) => {
     setHotTakes((prev) =>
@@ -430,11 +505,15 @@ export default function NeighborhoodPage() {
     { id: 'debates', label: 'Debates', icon: Swords },
     { id: 'bets', label: 'Bets', icon: Handshake },
     { id: 'hot-takes', label: 'Takes', icon: Flame },
+    { id: 'analysts', label: 'Analysts', icon: PenLine },
   ];
+
+  const charsLeft = HOT_TAKE_MAX - inputText.length;
+  const overLimit = pendingTag === 'hot-take' && inputText.length > HOT_TAKE_MAX;
 
   return (
     <div className="flex flex-col h-full bg-paper">
-      {/* Header — newspaper section header */}
+      {/* Header */}
       <div className="shrink-0 bg-ink px-4 py-3 flex items-center gap-3">
         <button onClick={() => router.back()} className="text-paper/60 hover:text-paper p-1">
           <ArrowLeft size={20} />
@@ -451,22 +530,19 @@ export default function NeighborhoodPage() {
         </button>
       </div>
 
-      {/* Tab bar */}
-      <div className="shrink-0 flex border-b-2 border-ink bg-paper overflow-x-auto">
+      {/* Tab bar — pill style */}
+      <div className="shrink-0 flex gap-1.5 px-3 py-2 bg-paper border-b-2 border-ink overflow-x-auto">
         {tabs.map(({ id: tabId, label, icon: Icon }) => (
           <button
             key={tabId}
             onClick={() => setActiveTab(tabId)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap border-b-2 -mb-0.5 transition-colors ${
+            className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap rounded-full transition-colors ${
               activeTab === tabId
-                ? tabId === 'hot-takes' ? 'border-press text-press'
-                  : tabId === 'debates' ? 'border-navy text-navy'
-                  : tabId === 'bets' ? 'border-field text-field'
-                  : 'border-ink text-ink'
-                : 'border-transparent text-ink-faint hover:text-ink-muted'
+                ? 'bg-ink text-paper'
+                : 'text-ink-muted hover:text-ink hover:bg-paper-dark'
             }`}
           >
-            <Icon size={12} />
+            <Icon size={11} />
             {label}
           </button>
         ))}
@@ -475,7 +551,6 @@ export default function NeighborhoodPage() {
       {/* ── OVERVIEW TAB ─────────────────────────────────────── */}
       {activeTab === 'overview' && (
         <div className="flex-1 overflow-y-auto pb-4">
-          {/* Neighborhood hero */}
           <div className="bg-ink px-5 pt-5 pb-6">
             <div className="flex items-center gap-4 mb-4">
               <div className="flex h-16 w-16 items-center justify-center bg-ink-muted/30 text-3xl">
@@ -491,6 +566,7 @@ export default function NeighborhoodPage() {
                 { label: 'Debates', value: debates.length, color: 'text-paper' },
                 { label: 'Bets', value: bets.length, color: 'text-paper' },
                 { label: 'Hot Takes', value: hotTakes.length, color: 'text-press' },
+                { label: 'Analyses', value: analyses.length, color: 'text-paper' },
               ].map(({ label, value, color }) => (
                 <div key={label} className="text-center">
                   <p className={`text-xl font-bold ${color}`}>{value}</p>
@@ -563,12 +639,13 @@ export default function NeighborhoodPage() {
           {/* Quick-nav */}
           <div className="px-5 py-4 flex flex-col gap-0">
             <h3 className="font-display font-bold text-ink text-lg mb-3">Jump To</h3>
-            {(['chat', 'debates', 'bets', 'hot-takes'] as const).map((t, i) => {
+            {(['chat', 'debates', 'bets', 'hot-takes', 'analysts'] as const).map((t, i) => {
               const cfgMap = {
                 chat: { label: 'Chat', icon: MessageCircle, color: 'text-ink', count: messages.length, unit: 'messages' },
                 debates: { label: 'Debates', icon: Swords, color: 'text-navy', count: debates.filter((d) => d.status === 'active').length, unit: 'active' },
                 bets: { label: 'Bets', icon: Handshake, color: 'text-field', count: bets.filter((b) => b.status !== 'resolved').length, unit: 'active' },
                 'hot-takes': { label: 'Hot Takes', icon: Flame, color: 'text-press', count: hotTakes.length, unit: 'total' },
+                analysts: { label: 'Analysts', icon: PenLine, color: 'text-ink-muted', count: analyses.length, unit: 'pieces' },
               };
               const cfg = cfgMap[t];
               const Icon = cfg.icon;
@@ -628,6 +705,7 @@ export default function NeighborhoodPage() {
                           : msg.tag === 'hot-take' ? 'bg-press/10 text-ink msg-hot-take'
                           : msg.tag === 'debate' ? 'bg-navy/10 text-ink msg-debate'
                           : msg.tag === 'bet' ? 'bg-field/10 text-ink msg-bet'
+                          : msg.tag === 'analysis' ? 'bg-ink/5 text-ink msg-analysis'
                           : 'bg-paper-dark text-ink'
                       }`}
                       onDoubleClick={() => setShowReactionsFor(showReactionsFor === msg.id ? null : msg.id)}
@@ -644,9 +722,9 @@ export default function NeighborhoodPage() {
                     </div>
 
                     {tagPickerFor === msg.id && !isAI && (
-                      <div className="mt-1 flex items-center gap-1 bg-paper border border-rule px-3 py-2 shadow-xl rounded-2xl">
+                      <div className="mt-1 flex items-center gap-1 bg-paper border border-rule px-3 py-2 shadow-xl rounded-2xl flex-wrap">
                         <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted mr-1">Tag:</span>
-                        {(['hot-take', 'debate', 'bet'] as MessageTag[]).map((t) => (
+                        {(['hot-take', 'debate', 'bet', 'analysis'] as MessageTag[]).map((t) => (
                           <button
                             key={t}
                             onClick={() => tagExistingMessage(msg.id, t)}
@@ -744,15 +822,15 @@ export default function NeighborhoodPage() {
 
           {/* Input area */}
           <div className="shrink-0 border-t-2 border-rule bg-paper px-3 py-3">
-            <div className="flex items-center gap-2 mb-2.5">
-              {(['hot-take', 'debate', 'bet'] as MessageTag[]).map((tag) => {
+            <div className="flex items-center gap-1.5 mb-2.5 overflow-x-auto pb-0.5">
+              {(['hot-take', 'debate', 'bet', 'analysis'] as MessageTag[]).map((tag) => {
                 const cfg = tagConfig[tag];
                 const isActive = pendingTag === tag;
                 return (
                   <button
                     key={tag}
                     onClick={() => setPendingTag(isActive ? null : tag)}
-                    className={`flex items-center gap-1 border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-full ${
+                    className={`flex items-center gap-1 border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-full shrink-0 ${
                       isActive ? `${cfg.bg} text-paper border-transparent` : 'border-rule text-ink-muted hover:border-rule-dark hover:text-ink'
                     }`}
                   >
@@ -760,7 +838,7 @@ export default function NeighborhoodPage() {
                   </button>
                 );
               })}
-              <div className="ml-auto">
+              <div className="ml-auto shrink-0">
                 <button
                   onClick={() => { setShowAI(true); setShowReactionsFor(null); }}
                   className="flex items-center gap-1 border border-rule px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-ink-muted hover:border-ink hover:text-ink transition-colors rounded-full"
@@ -776,16 +854,23 @@ export default function NeighborhoodPage() {
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                 placeholder={pendingTag ? `Drop your ${tagConfig[pendingTag].label.toLowerCase()}...` : 'Message...'}
-                className="flex-1 border border-rule bg-paper-dark px-4 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors rounded-full"
+                className={`flex-1 border px-4 py-2.5 text-sm text-ink placeholder-ink-faint outline-none transition-colors rounded-full ${
+                  overLimit ? 'border-masthead bg-masthead/5' : 'border-rule bg-paper-dark focus:border-ink'
+                }`}
               />
               <button
                 onClick={sendMessage}
-                disabled={!inputText.trim()}
+                disabled={!inputText.trim() || overLimit}
                 className="flex h-9 w-9 items-center justify-center bg-ink text-paper hover:bg-ink/80 disabled:opacity-40 transition-colors rounded-full btn-3d shrink-0"
               >
                 <Send size={15} />
               </button>
             </div>
+            {pendingTag === 'hot-take' && (
+              <div className={`mt-1.5 text-right text-[10px] font-mono ${charsLeft < 0 ? 'text-masthead font-bold' : charsLeft < 30 ? 'text-rule-dark' : 'text-ink-faint'}`}>
+                {charsLeft}/{HOT_TAKE_MAX}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -918,7 +1003,6 @@ export default function NeighborhoodPage() {
                     <div className={`ml-auto flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${statusColor}`}><StatusIcon size={10} />{bet.status}</div>
                   </div>
                   <p className="text-sm text-ink font-medium mb-3 leading-snug italic">&ldquo;{bet.claim}&rdquo;</p>
-                  {/* Sides or participants */}
                   {bet.side1Ids && bet.side2Ids ? (
                     <div className="grid grid-cols-2 gap-2 mb-2">
                       <div>
@@ -999,7 +1083,6 @@ export default function NeighborhoodPage() {
                     </div>
                   </div>
                 )}
-                {/* Proposer can cancel their own proposal */}
                 {expanded && bet.status === 'awaiting-resolution' && bet.proposal?.proposedBy === 'me' && (
                   <div className="border-t border-rule bg-paper-dark px-4 py-4">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-3">You proposed this resolution</p>
@@ -1068,7 +1151,7 @@ export default function NeighborhoodPage() {
             const showingComments = showCommentsFor === ht.id;
             return (
               <div key={ht.id} className="border border-rule overflow-hidden">
-                <div className="border-l-4 border-fire px-4 pt-4 pb-3 bg-paper">
+                <div className="border-l-4 border-l-[#f97316] px-4 pt-4 pb-3 bg-paper">
                   <div className="flex items-center gap-2 mb-3">
                     <Link href={`/users/${ht.authorId}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-base hover:border-ink transition-all">
                       {isMe ? ME.avatar : author?.avatar}
@@ -1079,7 +1162,7 @@ export default function NeighborhoodPage() {
                       </Link>
                       <p className="text-[10px] text-ink-faint font-mono">{timeAgo(ht.createdAt)}</p>
                     </div>
-                    {(isMe || true) && !ht.isPublic && (
+                    {!ht.isPublic && (
                       <button
                         onClick={() => publishToStreets(ht.id)}
                         className="flex items-center gap-1 border border-rule/60 px-2.5 py-1 text-[10px] font-bold text-ink-muted hover:border-press hover:text-press transition-colors rounded-full shrink-0"
@@ -1099,7 +1182,7 @@ export default function NeighborhoodPage() {
                   <button
                     onClick={() => voteHotTake(ht.id, '🔥')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-all btn-3d ${
-                      myFire ? 'bg-fire text-white' : 'bg-paper border border-rule text-ink-muted hover:border-fire hover:text-fire'
+                      myFire ? 'bg-[#f97316] text-white' : 'bg-paper border border-rule text-ink-muted hover:border-[#f97316] hover:text-[#f97316]'
                     }`}
                   >
                     <Flame size={14} />
@@ -1108,7 +1191,7 @@ export default function NeighborhoodPage() {
                   <button
                     onClick={() => voteHotTake(ht.id, '❄️')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-all btn-3d ${
-                      myIce ? 'bg-ice text-white' : 'bg-paper border border-rule text-ink-muted hover:border-ice hover:text-ice'
+                      myIce ? 'bg-[#38bdf8] text-white' : 'bg-paper border border-rule text-ink-muted hover:border-[#38bdf8] hover:text-[#38bdf8]'
                     }`}
                   >
                     <Snowflake size={14} />
@@ -1194,6 +1277,181 @@ export default function NeighborhoodPage() {
               <p className="text-sm text-ink-muted italic mt-1">Drop one in the chat</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── ANALYSTS TAB ─────────────────────────────────────── */}
+      {activeTab === 'analysts' && (
+        <div className="flex-1 overflow-y-auto flex flex-col bg-paper">
+          {/* Compose button */}
+          <div className="px-4 py-3 border-b border-rule bg-paper-dark flex items-center justify-between">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">Fan Analysis</p>
+            <button
+              onClick={() => setShowAnalysisForm(!showAnalysisForm)}
+              className="flex items-center gap-1.5 bg-ink text-paper px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-full hover:bg-ink/80 transition-colors"
+            >
+              <PenLine size={11} /> Write Piece
+            </button>
+          </div>
+
+          {/* Compose form */}
+          {showAnalysisForm && (
+            <div className="px-4 py-4 border-b-2 border-ink bg-paper-dark flex flex-col gap-3">
+              <input
+                value={analysisTitle}
+                onChange={(e) => setAnalysisTitle(e.target.value)}
+                placeholder="Title your analysis…"
+                className="w-full border border-rule bg-paper px-4 py-2.5 text-sm font-bold text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors rounded-lg"
+              />
+              <textarea
+                value={analysisBody}
+                onChange={(e) => setAnalysisBody(e.target.value)}
+                placeholder="Write your analysis here. Break down what you saw, back it up with what you know…"
+                rows={5}
+                className="w-full border border-rule bg-paper px-4 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors resize-none rounded-lg leading-relaxed"
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => { setShowAnalysisForm(false); setAnalysisTitle(''); setAnalysisBody(''); }}
+                  className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-ink-muted border border-rule rounded-full hover:bg-paper-dark transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitAnalysis}
+                  disabled={!analysisTitle.trim() || !analysisBody.trim()}
+                  className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider bg-ink text-paper rounded-full hover:bg-ink/80 disabled:opacity-40 transition-colors"
+                >
+                  Publish
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Analysis cards */}
+          <div className="flex flex-col gap-4 px-4 py-4 pb-6">
+            {analyses.map((an) => {
+              const author = getUserById(an.authorId);
+              const isMe = an.authorId === 'me';
+              const anComments = an.comments ?? [];
+              const showingComments = showAnalystCommentsFor === an.id;
+
+              return (
+                <div key={an.id} className="border border-rule overflow-hidden">
+                  <div className="border-l-4 border-l-ink px-4 pt-4 pb-3 bg-paper">
+                    {/* Author row */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <Link href={`/users/${an.authorId}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-base hover:border-ink transition-all shrink-0">
+                        {isMe ? ME.avatar : author?.avatar}
+                      </Link>
+                      <div className="flex-1 min-w-0">
+                        <Link href={`/users/${an.authorId}`} className="text-sm font-bold text-ink hover:text-masthead transition-colors block">
+                          {isMe ? 'You' : author?.displayName}
+                        </Link>
+                        <p className="text-[10px] text-ink-faint font-mono">{timeAgo(an.createdAt)}</p>
+                      </div>
+                      {!an.isPublic && (
+                        <button
+                          onClick={() => publishAnalysisToStreets(an.id)}
+                          className="flex items-center gap-1 border border-rule/60 px-2.5 py-1 text-[10px] font-bold text-ink-muted hover:border-press hover:text-press transition-colors rounded-full shrink-0"
+                        >
+                          <Megaphone size={10} /> Streets
+                        </button>
+                      )}
+                      {an.isPublic && (
+                        <span className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-press rounded-full border border-press/40 bg-press/5 shrink-0">
+                          <Megaphone size={10} /> Live
+                        </span>
+                      )}
+                    </div>
+                    {/* Title */}
+                    <h3 className="font-display text-base font-bold text-ink leading-snug mb-2">{an.title}</h3>
+                    {/* Content */}
+                    <p className="text-sm text-ink-muted leading-relaxed line-clamp-4">{an.content}</p>
+                  </div>
+                  {/* Footer */}
+                  <div className="border-t border-rule/50 px-4 py-2.5 flex items-center gap-2 bg-paper-dark">
+                    <PenLine size={11} className="text-ink-faint" />
+                    <span className="text-[10px] text-ink-faint uppercase tracking-widest font-bold">Analysis</span>
+                    <button
+                      onClick={() => { setShowAnalystCommentsFor(showingComments ? null : an.id); setAnalystCommentText(''); setAnalystMentionQuery(''); }}
+                      className="ml-auto flex items-center gap-1 text-[10px] font-bold text-ink-muted hover:text-ink transition-colors"
+                    >
+                      <MessageSquare size={12} />
+                      {anComments.length > 0 ? anComments.length : 'Discuss'}
+                      {showingComments ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                    </button>
+                  </div>
+                  {/* Comments */}
+                  {showingComments && (
+                    <div className="border-t border-rule/30 bg-paper-dark px-4 py-3 flex flex-col gap-3">
+                      {anComments.map((c) => {
+                        const commenter = getUserById(c.userId);
+                        return (
+                          <div key={c.id} className="flex gap-2">
+                            <Link href={`/users/${c.userId}`} className="flex h-7 w-7 items-center justify-center rounded-full bg-paper border border-rule text-sm shrink-0 hover:border-ink">
+                              {c.userId === 'me' ? ME.avatar : commenter?.avatar}
+                            </Link>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-baseline gap-1.5 mb-0.5">
+                                <Link href={`/users/${c.userId}`} className="text-[11px] font-bold text-ink hover:text-masthead">
+                                  {c.userId === 'me' ? 'You' : commenter?.displayName}
+                                </Link>
+                                <span className="text-[9px] text-ink-faint font-mono">{timeAgo(c.timestamp)}</span>
+                              </div>
+                              <p className="text-xs text-ink leading-relaxed">{c.content}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="relative">
+                        {analystMentionQuery && analystMentionMatches.length > 0 && (
+                          <div className="absolute bottom-full left-0 mb-1 bg-paper border border-rule shadow-xl rounded-xl overflow-hidden z-10 w-48">
+                            {analystMentionMatches.map((u) => (
+                              <button key={u!.id} onClick={() => insertAnalystMention(u!.username)} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-paper-dark transition-colors text-left">
+                                <span className="text-base">{u!.avatar}</span>
+                                <div>
+                                  <p className="text-xs font-bold text-ink">{u!.displayName}</p>
+                                  <p className="text-[10px] text-ink-faint">@{u!.username}</p>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-paper border border-rule text-sm shrink-0">
+                            {ME.avatar}
+                          </div>
+                          <input
+                            ref={analystCommentInputRef}
+                            value={showAnalystCommentsFor === an.id ? analystCommentText : ''}
+                            onChange={(e) => handleAnalystCommentInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && addAnalystComment(an.id)}
+                            placeholder="Discuss… (@ to mention)"
+                            className="flex-1 bg-paper border border-rule px-3 py-1.5 text-xs text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors rounded-full"
+                          />
+                          <button
+                            onClick={() => addAnalystComment(an.id)}
+                            disabled={!analystCommentText.trim()}
+                            className="flex h-7 w-7 items-center justify-center bg-ink text-paper rounded-full hover:bg-ink/80 disabled:opacity-40 transition-colors shrink-0"
+                          >
+                            <Send size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {analyses.length === 0 && !showAnalysisForm && (
+              <div className="text-center py-16">
+                <p className="font-display text-4xl mb-2 text-ink-faint">📊</p>
+                <p className="font-display font-bold text-ink text-lg">No analyses yet</p>
+                <p className="text-sm text-ink-muted italic mt-1">Be the first to write a breakdown</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

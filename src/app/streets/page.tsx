@@ -4,15 +4,15 @@ import { useState, useRef } from 'react';
 import Link from 'next/link';
 import {
   Flame, Snowflake, Swords, Handshake, Plus, X, Send, Trophy,
-  MessageCircle, Megaphone, ChevronDown, ChevronUp,
+  MessageCircle, Megaphone, ChevronDown, ChevronUp, PenLine,
 } from 'lucide-react';
-import { HOT_TAKES, DEBATES, BETS, getUserById, USERS, ME } from '@/lib/mock-data';
+import { HOT_TAKES, DEBATES, BETS, ANALYSES, getUserById, USERS, ME } from '@/lib/mock-data';
 import { timeAgo, totalReactions } from '@/lib/utils';
-import type { HotTake, HotTakeComment, Debate, Bet, VoteChoice } from '@/lib/types';
+import type { HotTake, HotTakeComment, Debate, Bet, Analysis } from '@/lib/types';
 import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
 
-type Filter = 'all' | 'takes' | 'debates' | 'bets';
-type PostType = 'take' | 'debate' | 'bet';
+type Filter = 'all' | 'takes' | 'debates' | 'bets' | 'analysts';
+type PostType = 'take' | 'debate' | 'bet' | 'analysis';
 
 function renderMentions(text: string) {
   const parts = text.split(/(@\w+)/g);
@@ -31,6 +31,9 @@ export default function StreetsPage() {
   );
   const [localDebates] = useState<Debate[]>(() => DEBATES.filter((d) => d.isPublic));
   const [localBets] = useState<Bet[]>(() => BETS.filter((b) => b.isPublic));
+  const [localAnalyses, setLocalAnalyses] = useState<Analysis[]>(() =>
+    ANALYSES.filter((a) => a.isPublic).map((a) => ({ ...a, comments: a.comments ?? [] }))
+  );
 
   // New post modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -126,6 +129,22 @@ export default function StreetsPage() {
       };
       setLocalHotTakes((prev) => [newHT, ...prev]);
     }
+    if (postType === 'analysis') {
+      const newAnalysis: Analysis = {
+        id: `an-s-${Date.now()}`,
+        chatId: 'streets',
+        chatName: 'The Streets',
+        title: postText.trim().split('\n')[0] || postText.trim(),
+        content: postText.trim(),
+        authorId: 'me',
+        reactions: [],
+        teamIds: [],
+        createdAt: new Date().toISOString(),
+        isPublic: true,
+        comments: [],
+      };
+      setLocalAnalyses((prev) => [newAnalysis, ...prev]);
+    }
     setPostText('');
     setShowAddModal(false);
   };
@@ -142,12 +161,14 @@ export default function StreetsPage() {
     ...localHotTakes.map((ht) => ({ type: 'take' as const, time: ht.createdAt, ht })),
     ...localDebates.map((d) => ({ type: 'debate' as const, time: d.createdAt, d })),
     ...localBets.map((b) => ({ type: 'bet' as const, time: b.createdAt, b })),
+    ...localAnalyses.map((a) => ({ type: 'analysis' as const, time: a.createdAt, a })),
   ]
     .filter((item) =>
       filter === 'all' ||
       (filter === 'takes' && item.type === 'take') ||
       (filter === 'debates' && item.type === 'debate') ||
-      (filter === 'bets' && item.type === 'bet')
+      (filter === 'bets' && item.type === 'bet') ||
+      (filter === 'analysts' && item.type === 'analysis')
     )
     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 
@@ -177,6 +198,7 @@ export default function StreetsPage() {
             { id: 'takes', label: '🔥 Hot Takes' },
             { id: 'debates', label: '⚔️ Debates' },
             { id: 'bets', label: '🤝 Bets' },
+            { id: 'analysts', label: '📊 Analysts' },
           ] as { id: Filter; label: string }[]).map(({ id, label }) => (
             <button
               key={id}
@@ -220,7 +242,7 @@ export default function StreetsPage() {
             return (
               <div key={ht.id} className="border border-rule overflow-hidden">
                 {/* Card body */}
-                <div className="border-l-4 border-fire px-4 pt-4 pb-3 bg-paper">
+                <div className="border-l-4 border-l-[#f97316] px-4 pt-4 pb-3 bg-paper">
                   <div className="flex items-center gap-2 mb-2">
                     <Link href={`/users/${ht.authorId}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-base hover:border-ink transition-all shrink-0">
                       {isMe ? ME.avatar : author?.avatar}
@@ -236,7 +258,7 @@ export default function StreetsPage() {
                         )}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1 text-fire shrink-0">
+                    <div className="flex items-center gap-1 text-[#f97316] shrink-0">
                       <Flame size={12} />
                       <span className="text-[10px] font-bold">Hot Take</span>
                     </div>
@@ -249,7 +271,7 @@ export default function StreetsPage() {
                   <button
                     onClick={() => voteHotTake(ht.id, '🔥')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-all btn-3d ${
-                      myFire ? 'bg-fire text-white' : 'bg-paper border border-rule text-ink-muted hover:border-fire hover:text-fire'
+                      myFire ? 'bg-[#f97316] text-white' : 'bg-paper border border-rule text-ink-muted hover:border-[#f97316] hover:text-[#f97316]'
                     }`}
                   >
                     <Flame size={14} />
@@ -258,7 +280,7 @@ export default function StreetsPage() {
                   <button
                     onClick={() => voteHotTake(ht.id, '❄️')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-all btn-3d ${
-                      myIce ? 'bg-ice text-white' : 'bg-paper border border-rule text-ink-muted hover:border-ice hover:text-ice'
+                      myIce ? 'bg-[#38bdf8] text-white' : 'bg-paper border border-rule text-ink-muted hover:border-[#38bdf8] hover:text-[#38bdf8]'
                     }`}
                   >
                     <Snowflake size={14} />
@@ -402,6 +424,46 @@ export default function StreetsPage() {
             );
           }
 
+          if (entry.type === 'analysis') {
+            const a = entry.a;
+            const author = getUserById(a.authorId);
+            const isMe = a.authorId === 'me';
+            return (
+              <Link
+                key={a.id}
+                href={`/neighborhoods/${a.chatId}?tab=analysts`}
+                className="block border border-rule overflow-hidden hover:bg-paper-dark transition-colors"
+              >
+                <div className="border-l-4 border-l-ink px-4 pt-4 pb-3 bg-paper">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-base shrink-0">
+                      {isMe ? ME.avatar : author?.avatar}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-ink leading-tight">{isMe ? 'You' : author?.displayName}</p>
+                      <p className="text-[10px] text-ink-faint font-mono">
+                        {timeAgo(a.createdAt)}
+                        {a.chatId !== 'streets' && (
+                          <> · {a.chatName}</>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 text-ink-muted shrink-0">
+                      <PenLine size={12} />
+                      <span className="text-[10px] font-bold">Analysis</span>
+                    </div>
+                  </div>
+                  <h3 className="font-display text-base font-bold text-ink leading-snug mb-1">{a.title}</h3>
+                  <p className="text-sm text-ink-muted leading-relaxed line-clamp-3">{a.content}</p>
+                </div>
+                <div className="border-t border-rule/50 px-4 py-2 bg-paper-dark flex items-center">
+                  <span className="text-[10px] text-ink-faint font-mono">{a.chatName}</span>
+                  <span className="ml-auto text-[10px] font-bold text-masthead">Read →</span>
+                </div>
+              </Link>
+            );
+          }
+
           // Bet card
           const b = entry.b;
           const side1Users = (b.side1Ids ?? []).map((id) => getUserById(id)).filter(Boolean);
@@ -490,11 +552,12 @@ export default function StreetsPage() {
 
             <div className="px-5 py-5 flex flex-col gap-4">
               {/* Type selector */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {([
                   { id: 'take', emoji: '🔥', label: 'Hot Take' },
                   { id: 'debate', emoji: '⚔️', label: 'Debate' },
                   { id: 'bet', emoji: '🤝', label: 'Bet' },
+                  { id: 'analysis', emoji: '📊', label: 'Analysis' },
                 ] as { id: PostType; emoji: string; label: string }[]).map(({ id, emoji, label }) => (
                   <button
                     key={id}
@@ -514,6 +577,7 @@ export default function StreetsPage() {
                 placeholder={
                   postType === 'take' ? 'Drop your hot take…'
                   : postType === 'debate' ? 'State the claim to debate…'
+                  : postType === 'analysis' ? 'Title on first line, then your analysis…'
                   : 'What\'s the bet?'
                 }
                 rows={3}

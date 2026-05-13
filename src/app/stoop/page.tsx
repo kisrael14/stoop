@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Settings, Flame, Swords, Handshake, Trophy, Star, Bell, BellOff, Compass } from 'lucide-react';
-import { ME, DEBATES, BETS, HOT_TAKES, getUserById, CHATS } from '@/lib/mock-data';
+import { Settings, Flame, Swords, Handshake, Trophy, Star, Bell, BellOff, Compass, PenLine, Newspaper } from 'lucide-react';
+import { ME, DEBATES, BETS, HOT_TAKES, ANALYSES, getUserById, CHATS } from '@/lib/mock-data';
 import { timeAgo, totalReactions } from '@/lib/utils';
 import { FANDOM_LABELS } from '@/lib/types';
 import type { FandomLevel } from '@/lib/types';
@@ -35,6 +35,18 @@ export default function StoopPage() {
   const myDebates = DEBATES.filter((d) => d.side1UserIds.includes('me') || d.side2UserIds.includes('me')).slice(0, 3);
   const myBets = BETS.filter((b) => b.participantIds.includes('me')).slice(0, 2);
   const myHotTakes = HOT_TAKES.filter((h) => h.authorId === 'me' || h.teamIds.some((t) => myTeamIds.includes(t))).slice(0, 2);
+
+  // "From The Streets" — public content filtered to user's followed teams
+  const streetsHotTakes = HOT_TAKES.filter((h) => h.isPublic && h.teamIds.some((t) => myTeamIds.includes(t)));
+  const streetsDebates = DEBATES.filter((d) => d.isPublic && d.teamIds.some((t) => myTeamIds.includes(t)));
+  const streetsBets = BETS.filter((b) => b.isPublic && b.teamIds.some((t) => myTeamIds.includes(t)));
+  const streetsAnalyses = ANALYSES.filter((a) => a.isPublic && a.teamIds.some((t) => myTeamIds.includes(t)));
+  const streetsFeed = [
+    ...streetsHotTakes.map((ht) => ({ type: 'take' as const, time: ht.createdAt, item: ht })),
+    ...streetsDebates.map((d) => ({ type: 'debate' as const, time: d.createdAt, item: d })),
+    ...streetsBets.map((b) => ({ type: 'bet' as const, time: b.createdAt, item: b })),
+    ...streetsAnalyses.map((a) => ({ type: 'analysis' as const, time: a.createdAt, item: a })),
+  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 6);
   const { stats } = ME;
 
   const myNeighborhoods = CHATS.filter((c) => c.memberIds.includes('me'));
@@ -240,10 +252,10 @@ export default function StoopPage() {
         </div>
       </div>
 
-      {/* ── YOUR SCENE ─────────────────────────────────────── */}
+      {/* ── MY NEIGHBORHOOD ────────────────────────────────── */}
       <div className="mx-4 mt-4 border-2 border-ink">
         <div className="flex items-center justify-between px-3 py-2 bg-ink">
-          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper">Your Scene</p>
+          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper">My Neighborhood</p>
           <Link href="/neighborhoods" className="text-[10px] font-bold text-press hover:text-press/80">See all →</Link>
         </div>
 
@@ -319,6 +331,77 @@ export default function StoopPage() {
           })}
         </div>
       </div>
+
+      {/* ── FROM THE STREETS ───────────────────────────────── */}
+      {streetsFeed.length > 0 && (
+        <div className="mx-4 mt-4 border-2 border-ink">
+          <div className="flex items-center justify-between px-3 py-2 bg-ink">
+            <div className="flex items-center gap-1.5">
+              <Newspaper size={11} className="text-paper/60" />
+              <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper">From The Streets</p>
+            </div>
+            <Link href="/streets" className="text-[10px] font-bold text-press hover:text-press/80">The Streets →</Link>
+          </div>
+          <p className="px-3 py-1.5 text-[9px] text-ink-faint italic border-b border-rule/40">Public posts from your teams</p>
+          <div className="divide-y divide-rule/60">
+            {streetsFeed.map(({ type, item }) => {
+              if (type === 'take') {
+                const ht = item as typeof streetsHotTakes[0];
+                const author = getUserById(ht.authorId);
+                return (
+                  <Link key={ht.id} href={`/neighborhoods/${ht.chatId}?tab=hot-takes`} className="flex gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors">
+                    <div className="h-7 w-7 flex items-center justify-center bg-press/10 border border-press/30 text-sm rounded-sm shrink-0 mt-0.5">🔥</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-press mb-0.5">Hot Take · {ht.chatName}</p>
+                      <p className="text-xs text-ink leading-snug line-clamp-2 italic">&ldquo;{ht.content}&rdquo;</p>
+                      <p className="text-[9px] text-ink-faint mt-0.5">{author?.displayName} · {timeAgo(ht.createdAt)}</p>
+                    </div>
+                  </Link>
+                );
+              }
+              if (type === 'debate') {
+                const d = item as typeof streetsDebates[0];
+                return (
+                  <Link key={d.id} href={`/debates/${d.id}`} className="flex gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors">
+                    <div className="h-7 w-7 flex items-center justify-center bg-navy/10 border border-navy/30 text-sm rounded-sm shrink-0 mt-0.5">⚔️</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-navy mb-0.5">Debate · {d.chatName}</p>
+                      <p className="text-xs text-ink leading-snug line-clamp-2 italic">&ldquo;{d.claim}&rdquo;</p>
+                      <p className="text-[9px] text-ink-faint mt-0.5">{d.votes.length} votes · {timeAgo(d.createdAt)}</p>
+                    </div>
+                  </Link>
+                );
+              }
+              if (type === 'bet') {
+                const b = item as typeof streetsBets[0];
+                return (
+                  <Link key={b.id} href={`/neighborhoods/${b.chatId}?tab=bets`} className="flex gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors">
+                    <div className="h-7 w-7 flex items-center justify-center bg-field/10 border border-field/30 text-sm rounded-sm shrink-0 mt-0.5">🤝</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-field mb-0.5">Bet · {b.chatName}</p>
+                      <p className="text-xs text-ink leading-snug line-clamp-2 italic">&ldquo;{b.claim}&rdquo;</p>
+                      {b.stakes && <p className="text-[9px] text-ink-faint mt-0.5">Stakes: {b.stakes}</p>}
+                    </div>
+                  </Link>
+                );
+              }
+              // analysis
+              const a = item as typeof streetsAnalyses[0];
+              const author = getUserById(a.authorId);
+              return (
+                <Link key={a.id} href={`/neighborhoods/${a.chatId}?tab=analysts`} className="flex gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors">
+                  <div className="h-7 w-7 flex items-center justify-center bg-ink/5 border border-ink/20 text-sm rounded-sm shrink-0 mt-0.5">📊</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-ink-muted mb-0.5">Analysis · {a.chatName}</p>
+                    <p className="text-xs font-bold text-ink leading-snug line-clamp-1">{a.title}</p>
+                    <p className="text-[9px] text-ink-faint mt-0.5">{author?.displayName} · {timeAgo(a.createdAt)}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
