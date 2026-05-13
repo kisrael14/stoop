@@ -26,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`h-full ${playfair.variable}`}>
       <body className="h-full bg-paper text-ink">
         <div className="relative mx-auto flex h-full max-w-md flex-col overflow-hidden shadow-2xl">
-          <main className="flex-1 overflow-y-auto pb-16">{children}</main>
+          <main className="flex-1 overflow-y-auto pb-16 pt-14">{children}</main>
           <BottomNav />
         </div>
         <TopBar />
