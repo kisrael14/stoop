@@ -1,19 +1,7 @@
 import type { User, Team, Chat, Debate, Bet, HotTake, DebateArgument } from './types';
+import { ALL_TEAMS } from './teams-data';
 
-export const TEAMS: Team[] = [
-  { id: 'giants', name: 'Giants', city: 'New York', league: 'NFL', emoji: '🏈', color: '#0b2265' },
-  { id: 'knicks', name: 'Knicks', city: 'New York', league: 'NBA', emoji: '🏀', color: '#006bb6' },
-  { id: 'yankees', name: 'Yankees', city: 'New York', league: 'MLB', emoji: '⚾', color: '#003087' },
-  { id: 'rangers', name: 'Rangers', city: 'New York', league: 'NHL', emoji: '🏒', color: '#0038a8' },
-  { id: 'chiefs', name: 'Chiefs', city: 'Kansas City', league: 'NFL', emoji: '🏈', color: '#e31837' },
-  { id: 'lakers', name: 'Lakers', city: 'Los Angeles', league: 'NBA', emoji: '🏀', color: '#552583' },
-  { id: 'eagles', name: 'Eagles', city: 'Philadelphia', league: 'NFL', emoji: '🏈', color: '#004c54' },
-  { id: 'sixers', name: '76ers', city: 'Philadelphia', league: 'NBA', emoji: '🏀', color: '#006bb6' },
-  { id: 'warriors', name: 'Warriors', city: 'Golden State', league: 'NBA', emoji: '🏀', color: '#1d428a' },
-  { id: 'niners', name: '49ers', city: 'San Francisco', league: 'NFL', emoji: '🏈', color: '#aa0000' },
-  { id: 'cowboys', name: 'Cowboys', city: 'Dallas', league: 'NFL', emoji: '🏈', color: '#003594' },
-  { id: 'mavs', name: 'Mavericks', city: 'Dallas', league: 'NBA', emoji: '🏀', color: '#00538c' },
-];
+export const TEAMS: Team[] = ALL_TEAMS;
 
 export const USERS: User[] = [
   {

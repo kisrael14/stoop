@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Playfair_Display } from 'next/font/google';
 import './globals.css';
 import BottomNav from '@/components/BottomNav';
-import TopChatButton from '@/components/TopChatButton';
+import TopBar from '@/components/TopBar';
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -29,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="flex-1 overflow-y-auto pb-16">{children}</main>
           <BottomNav />
         </div>
-        <TopChatButton />
+        <TopBar />
       </body>
     </html>
   );
