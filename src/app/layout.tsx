@@ -3,6 +3,7 @@ import { Playfair_Display } from 'next/font/google';
 import './globals.css';
 import BottomNav from '@/components/BottomNav';
 import TopBar from '@/components/TopBar';
+import { AuthProvider } from '@/lib/auth-context';
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -25,11 +26,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`h-full ${playfair.variable}`}>
       <body className="h-full bg-paper text-ink">
-        <div className="relative mx-auto flex h-full max-w-md flex-col overflow-hidden shadow-2xl">
-          <main className="flex-1 overflow-y-auto pb-16 pt-14">{children}</main>
-          <BottomNav />
-        </div>
-        <TopBar />
+        <AuthProvider>
+          <div className="relative mx-auto flex h-full max-w-md flex-col overflow-hidden shadow-2xl">
+            <main className="flex-1 overflow-y-auto pb-16 pt-14">{children}</main>
+            <BottomNav />
+          </div>
+          <TopBar />
+        </AuthProvider>
       </body>
     </html>
   );
