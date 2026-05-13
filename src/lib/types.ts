@@ -51,7 +51,7 @@ export interface Reaction {
   userIds: string[];
 }
 
-export type MessageTag = 'hot-take' | 'debate' | 'bet';
+export type MessageTag = 'hot-take' | 'debate' | 'bet' | 'analysis';
 
 export interface Message {
   id: string;
@@ -153,6 +153,20 @@ export interface HotTake {
   id: string;
   chatId: string;
   chatName: string;
+  content: string;
+  authorId: string;
+  reactions: Reaction[];
+  teamIds: string[];
+  createdAt: string;
+  isPublic?: boolean;
+  comments?: HotTakeComment[];
+}
+
+export interface Analysis {
+  id: string;
+  chatId: string;
+  chatName: string;
+  title: string;
   content: string;
   authorId: string;
   reactions: Reaction[];

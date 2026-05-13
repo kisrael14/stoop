@@ -1,4 +1,4 @@
-import type { User, Team, Chat, Debate, Bet, HotTake, HotTakeComment, DebateArgument } from './types';
+import type { User, Team, Chat, Debate, Bet, HotTake, HotTakeComment, Analysis, DebateArgument } from './types';
 import { ALL_TEAMS } from './teams-data';
 
 export const TEAMS: Team[] = ALL_TEAMS;
@@ -597,6 +597,50 @@ export const HOT_TAKES: HotTake[] = [
       { id: 'c5a', userId: 'marcus', content: 'Brady > system, this is cope @jhayes23', timestamp: '2026-05-09T20:10:00Z' },
       { id: 'c5b', userId: 'tre', content: '6 rings with 3 different coordinators says differently', timestamp: '2026-05-09T20:15:00Z' },
     ] as HotTakeComment[],
+  },
+];
+
+export const ANALYSES: Analysis[] = [
+  {
+    id: 'an1',
+    chatId: 'council',
+    chatName: 'The Council 🏆',
+    title: 'Why the Chiefs\' O-Line is Their Secret Weapon',
+    content: 'Three games into the season, the data is clear: Mahomes\' pocket time has increased by 0.4 seconds compared to last year. That\'s not luck — it\'s the coaching staff\'s deliberate investment in linemen depth. When they drafted Williams in the 2nd round everyone questioned it, but his run-blocking grade is already in the top 10 across the league. The Chiefs aren\'t just built around Mahomes. They\'re building around protecting him for years five and six. That\'s dynasty thinking.',
+    authorId: 'marcus',
+    reactions: [{ emoji: '💯', userIds: ['sofia', 'tre', 'me'] }],
+    teamIds: ['chiefs'],
+    createdAt: '2026-05-13T08:00:00Z',
+    isPublic: true,
+    comments: [] as HotTakeComment[],
+  },
+  {
+    id: 'an2',
+    chatId: 'nfc-east',
+    chatName: 'NFC East Wars 🏈',
+    title: 'Eagles Zone Coverage is Quietly the Best in the NFC',
+    content: 'Everyone talks about the Eagles\' pass rush, but the coverage scheme behind it is equally elite. After watching film from the last four games, their safeties are playing a modified Tampa-2 that disguises as Cover-3 pre-snap. QBs are consistently making the wrong read at the line. Opposing completion percentage in zone coverage against Philly: 51%. League average is 67%. That\'s not scheme — that\'s mastery.',
+    authorId: 'deshawn',
+    reactions: [{ emoji: '🔥', userIds: ['me'] }, { emoji: '💯', userIds: ['sofia'] }],
+    teamIds: ['eagles'],
+    createdAt: '2026-05-11T15:00:00Z',
+    isPublic: true,
+    comments: [
+      { id: 'ac1', userId: 'me', content: '@d_payne_eagles this needs to be on ESPN', timestamp: '2026-05-11T15:30:00Z' },
+    ] as HotTakeComment[],
+  },
+  {
+    id: 'an3',
+    chatId: 'nyc-ball',
+    chatName: 'NYC Ball 🗽',
+    title: 'The Knicks Triangle Offense Revival Nobody is Talking About',
+    content: 'Brunson\'s isolation numbers are down 18% from last season. His pick-and-roll sets are up 22%. What\'s causing this shift? The front office quietly signed a new offensive coordinator who ran triangle principles in college. Watch the off-ball movement: players are cutting to spots before the ball moves. It\'s early but the floor spacing in games 6 through 9 was night-and-day compared to the opening stretch.',
+    authorId: 'me',
+    reactions: [{ emoji: '🔥', userIds: ['marcus', 'sofia'] }],
+    teamIds: ['knicks'],
+    createdAt: '2026-05-10T20:00:00Z',
+    isPublic: true,
+    comments: [] as HotTakeComment[],
   },
 ];
 

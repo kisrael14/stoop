@@ -108,6 +108,22 @@ body {
   animation: bet-glow 1.8s ease-in-out infinite;
 }
 
+@keyframes analysis-pulse {
+  0%, 100% {
+    border-color: #a08a60;
+    box-shadow: 0 0 0 1px rgba(160, 138, 96, 0.3), 0 0 10px rgba(160, 138, 96, 0.2);
+  }
+  50% {
+    border-color: #c4a97e;
+    box-shadow: 0 0 0 3px rgba(196, 169, 126, 0.25), 0 0 18px rgba(196, 169, 126, 0.35);
+  }
+}
+
+.msg-analysis {
+  border: 2px solid #a08a60 !important;
+  animation: analysis-pulse 1.8s ease-in-out infinite;
+}
+
 /* ── 3D buttons ────────────────────────────────────────── */
 
 .btn-3d {
