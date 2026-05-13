@@ -3,11 +3,12 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Flame, Snowflake, Swords, Handshake, Trophy, Star, Users } from 'lucide-react';
-import { DEBATES, BETS, HOT_TAKES, getUserById } from '@/lib/mock-data';
+import { ArrowLeft, Flame, Snowflake, Swords, Handshake, Trophy, Star, Users, Plus, X, Send } from 'lucide-react';
+import { DEBATES, BETS, HOT_TAKES, getUserById, USERS } from '@/lib/mock-data';
 import { getTeamByIdFull } from '@/lib/teams-data';
 import { timeAgo, totalReactions } from '@/lib/utils';
-import type { VoteChoice } from '@/lib/types';
+import type { VoteChoice, HotTake } from '@/lib/types';
+import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
 
 type Tab = 'overview' | 'debates' | 'hot-takes' | 'bets';
 type Period = 'weekly' | 'monthly' | 'yearly';
@@ -66,6 +67,10 @@ export default function TeamPage() {
   const team = getTeamByIdFull(id);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [period, setPeriod] = useState<Period>('weekly');
+  const [showDiscussModal, setShowDiscussModal] = useState(false);
+  const [discussType, setDiscussType] = useState<'take' | 'debate' | 'bet'>('take');
+  const [discussText, setDiscussText] = useState('');
+  const [betSetupClaim, setBetSetupClaim] = useState<string | null>(null);
   const [localHotTakes, setLocalHotTakes] = useState(() =>
     HOT_TAKES
       .filter((ht) => ht.teamIds.includes(id))
@@ -91,6 +96,31 @@ export default function TeamPage() {
         return { ...ht, reactions };
       })
     );
+  };
+
+  const submitDiscuss = () => {
+    if (!discussText.trim()) return;
+    if (discussType === 'bet') {
+      setBetSetupClaim(discussText.trim());
+      return;
+    }
+    if (discussType === 'take') {
+      const newHT: HotTake = {
+        id: `ht-t-${Date.now()}`,
+        chatId: 'streets',
+        chatName: 'The Streets',
+        content: discussText.trim(),
+        authorId: 'me',
+        reactions: [],
+        teamIds: [id],
+        createdAt: new Date().toISOString(),
+        isPublic: true,
+        comments: [],
+      };
+      setLocalHotTakes((prev) => [newHT, ...prev]);
+    }
+    setDiscussText('');
+    setShowDiscussModal(false);
   };
 
   if (!team) {
@@ -411,21 +441,21 @@ export default function TeamPage() {
                 <div className="border-t border-rule/50 px-4 py-3 flex items-center gap-3 bg-paper-dark">
                   <button
                     onClick={() => voteHotTakeTeam(ht.id, '🔥')}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-sm transition-all btn-3d ${
-                      myFire ? 'bg-press text-paper' : 'bg-paper border border-rule text-ink-muted hover:border-press hover:text-press'
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-all btn-3d ${
+                      myFire ? 'bg-fire text-white' : 'bg-paper border border-rule text-ink-muted hover:border-fire hover:text-fire'
                     }`}
                   >
-                    <Flame size={15} />
-                    <span>{fireCount > 0 ? fireCount : 'Hot'}</span>
+                    <Flame size={14} />
+                    {fireCount > 0 && <span className="text-xs">{fireCount}</span>}
                   </button>
                   <button
                     onClick={() => voteHotTakeTeam(ht.id, '❄️')}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-sm transition-all btn-3d ${
-                      myIce ? 'bg-navy text-paper' : 'bg-paper border border-rule text-ink-muted hover:border-navy hover:text-navy'
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-all btn-3d ${
+                      myIce ? 'bg-ice text-white' : 'bg-paper border border-rule text-ink-muted hover:border-ice hover:text-ice'
                     }`}
                   >
-                    <Snowflake size={15} />
-                    <span>{iceCount > 0 ? iceCount : 'Cold'}</span>
+                    <Snowflake size={14} />
+                    {iceCount > 0 && <span className="text-xs">{iceCount}</span>}
                   </button>
                   {hotPct !== null && (
                     <span className="ml-auto text-[10px] font-bold font-mono text-ink-faint">{hotPct}% hot</span>
@@ -485,6 +515,81 @@ export default function TeamPage() {
             );
           })}
         </div>
+      )}
+      {/* ── + to Discussion FAB ────────────────────────────── */}
+      <button
+        onClick={() => setShowDiscussModal(true)}
+        className="fixed bottom-20 right-4 flex items-center gap-1.5 bg-ink text-paper px-4 py-2.5 rounded-full shadow-xl font-bold text-[11px] uppercase tracking-widest hover:bg-ink/80 transition-colors z-20"
+        style={{ maxWidth: 'calc(100vw - 2rem)' }}
+      >
+        <Plus size={13} /> to Discussion
+      </button>
+
+      {/* ── Discuss Modal ───────────────────────────────── */}
+      {showDiscussModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={() => setShowDiscussModal(false)} />
+          <div className="relative w-full max-w-md bg-paper border-t-2 border-ink">
+            <div className="flex items-center justify-between px-5 py-4 bg-ink">
+              <div>
+                <p className="font-display font-bold text-paper">{team.emoji} {team.name}</p>
+                <p className="text-[10px] text-paper/50 uppercase tracking-widest">Post to The Streets</p>
+              </div>
+              <button onClick={() => setShowDiscussModal(false)} className="text-paper/60 hover:text-paper"><X size={18} /></button>
+            </div>
+            <div className="px-5 py-5 flex flex-col gap-4">
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { id: 'take', emoji: '🔥', label: 'Hot Take' },
+                  { id: 'debate', emoji: '⚔️', label: 'Debate' },
+                  { id: 'bet', emoji: '🤝', label: 'Bet' },
+                ] as { id: 'take' | 'debate' | 'bet'; emoji: string; label: string }[]).map(({ id, emoji, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => setDiscussType(id)}
+                    className={`flex flex-col items-center gap-1 py-3 border-2 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
+                      discussType === id ? 'border-ink bg-ink text-paper' : 'border-rule text-ink-muted hover:border-ink-muted'
+                    }`}
+                  >
+                    <span className="text-xl">{emoji}</span>{label}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={discussText}
+                onChange={(e) => setDiscussText(e.target.value)}
+                placeholder={
+                  discussType === 'take' ? `Hot take about the ${team.name}…`
+                  : discussType === 'debate' ? `State the debate claim…`
+                  : `What's the bet?`
+                }
+                rows={3}
+                className="w-full border border-rule bg-paper-dark px-4 py-3 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors resize-none rounded-lg"
+              />
+            </div>
+            <div className="border-t-2 border-rule bg-paper px-5 py-4 flex gap-3">
+              <button onClick={() => setShowDiscussModal(false)} className="border border-rule px-5 py-3 text-xs font-bold uppercase tracking-wider text-ink-muted hover:bg-paper-dark transition-colors rounded-full">
+                Cancel
+              </button>
+              <button
+                onClick={submitDiscuss}
+                disabled={!discussText.trim()}
+                className="flex-1 flex items-center justify-center gap-2 bg-press text-paper py-3 text-xs font-bold uppercase tracking-widest disabled:opacity-40 rounded-full btn-3d hover:bg-press/80 transition-colors"
+              >
+                <Send size={13} /> Post to Streets
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {betSetupClaim !== null && (
+        <BetSetupModal
+          claim={betSetupClaim}
+          members={USERS}
+          onConfirm={() => { setBetSetupClaim(null); setDiscussText(''); setShowDiscussModal(false); }}
+          onCancel={() => setBetSetupClaim(null)}
+        />
       )}
     </div>
   );

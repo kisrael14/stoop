@@ -178,8 +178,9 @@ export default function StoopPage() {
           {ME.fanTeams.map((ft) => {
             const style = FANDOM_STYLES[ft.fandomLevel];
             return (
-              <div
+              <Link
                 key={ft.team.id}
+                href={`/teams/${ft.team.id}`}
                 className="flex items-center gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors"
               >
                 <span className="flex h-6 w-6 items-center justify-center text-[10px] font-black text-paper rounded-full shrink-0" style={{ backgroundColor: ft.team.color }}>
@@ -196,7 +197,7 @@ export default function StoopPage() {
                 <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
                   {style.label}
                 </span>
-              </div>
+              </Link>
             );
           })}
         </div>

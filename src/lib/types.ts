@@ -108,6 +108,7 @@ export interface Debate {
   teamIds: string[];
   createdAt: string;
   resolvedAt?: string;
+  isPublic?: boolean;
 }
 
 export type BetStatus = 'pending' | 'active' | 'awaiting-resolution' | 'resolved' | 'disputed';
@@ -126,6 +127,11 @@ export interface Bet {
   chatName: string;
   claim: string;
   participantIds: string[];
+  side1Ids?: string[];
+  side2Ids?: string[];
+  side1Label?: string;
+  side2Label?: string;
+  stakes?: string;
   status: BetStatus;
   proposal?: BetResolutionProposal;
   winnerId?: string;
@@ -133,6 +139,14 @@ export interface Bet {
   teamIds: string[];
   createdAt: string;
   resolvedAt?: string;
+  isPublic?: boolean;
+}
+
+export interface HotTakeComment {
+  id: string;
+  userId: string;
+  content: string;
+  timestamp: string;
 }
 
 export interface HotTake {
@@ -144,6 +158,8 @@ export interface HotTake {
   reactions: Reaction[];
   teamIds: string[];
   createdAt: string;
+  isPublic?: boolean;
+  comments?: HotTakeComment[];
 }
 
 export interface MediaItem {

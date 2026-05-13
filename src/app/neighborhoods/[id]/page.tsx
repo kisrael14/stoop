@@ -4,15 +4,16 @@ import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Home, MessageCircle, Swords, Handshake, Flame,
-  Send, Sparkles, X, Trophy, Users, ArrowUp,
-  AlertCircle, CheckCircle, Clock,
+  ArrowLeft, Home, MessageCircle, Swords, Handshake, Flame, Snowflake,
+  Send, Sparkles, X, Trophy, Users,
+  AlertCircle, CheckCircle, Clock, Megaphone, MessageSquare, ChevronDown, ChevronUp,
 } from 'lucide-react';
+import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
 import {
   getChatById, getUserById, ME, DEBATES, BETS, HOT_TAKES, TEAMS,
 } from '@/lib/mock-data';
 import { timeAgo, voteLeader, totalReactions } from '@/lib/utils';
-import type { Message, MessageTag, Debate, Bet, HotTake, VoteChoice } from '@/lib/types';
+import type { Message, MessageTag, Debate, Bet, HotTake, HotTakeComment, VoteChoice } from '@/lib/types';
 import { sendNotification } from '@/lib/notifications';
 
 type Tab = 'overview' | 'chat' | 'debates' | 'bets' | 'hot-takes';
@@ -38,6 +39,8 @@ export default function NeighborhoodPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [betSetupClaim, setBetSetupClaim] = useState<string | null>(null);
+  const [betSetupMessageId, setBetSetupMessageId] = useState<string | null>(null);
 
   const [debates, setDebates] = useState<Debate[]>(
     DEBATES.filter((d) => d.chatId === id)
@@ -48,6 +51,10 @@ export default function NeighborhoodPage() {
     BETS.filter((b) => b.chatId === id)
   );
   const [expandedBet, setExpandedBet] = useState<string | null>(null);
+  const [showCommentsFor, setShowCommentsFor] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState('');
+  const [mentionQuery, setMentionQuery] = useState('');
+  const commentInputRef = useRef<HTMLInputElement>(null);
 
   const [hotTakes, setHotTakes] = useState<HotTake[]>(
     HOT_TAKES.filter((h) => h.chatId === id)
@@ -87,6 +94,14 @@ export default function NeighborhoodPage() {
   // ─── Chat actions ────────────────────────────────────────
   const sendMessage = () => {
     if (!inputText.trim()) return;
+
+    // Bets open setup modal before posting
+    if (pendingTag === 'bet') {
+      setBetSetupClaim(inputText.trim());
+      setBetSetupMessageId(null);
+      return;
+    }
+
     const msg: Message = {
       id: `new-${Date.now()}`,
       chatId: chat.id,
@@ -115,20 +130,6 @@ export default function NeighborhoodPage() {
       setDebates((prev) => [newDebate, ...prev]);
       sendNotification(`⚔️ New Debate — ${chat.name}`, inputText.trim());
     }
-    if (pendingTag === 'bet') {
-      const newBet: Bet = {
-        id: `b-new-${Date.now()}`,
-        chatId: chat.id,
-        chatName: chat.name,
-        claim: inputText.trim(),
-        participantIds: ['me', members.find((m) => m!.id !== 'me')?.id ?? 'marcus'],
-        status: 'active',
-        teamIds: chat.teamIds,
-        createdAt: new Date().toISOString(),
-      };
-      setBets((prev) => [newBet, ...prev]);
-      sendNotification(`🤝 New Bet — ${chat.name}`, inputText.trim());
-    }
     if (pendingTag === 'hot-take') {
       const newHT: HotTake = {
         id: `ht-new-${Date.now()}`,
@@ -147,13 +148,69 @@ export default function NeighborhoodPage() {
     setPendingTag(null);
   };
 
+  const confirmBetSetup = (data: BetSetupResult) => {
+    const claim = betSetupClaim!;
+
+    if (betSetupMessageId) {
+      // Tagging an existing message
+      setMessages((prev) =>
+        prev.map((m) => (m.id === betSetupMessageId ? { ...m, tag: 'bet' as const } : m))
+      );
+    } else {
+      // New message
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `new-${Date.now()}`,
+          chatId: chat.id,
+          userId: 'me',
+          content: claim,
+          timestamp: new Date().toISOString(),
+          tag: 'bet' as const,
+          reactions: [],
+        },
+      ]);
+      setInputText('');
+      setPendingTag(null);
+    }
+
+    const newBet: Bet = {
+      id: `b-new-${Date.now()}`,
+      chatId: chat.id,
+      chatName: chat.name,
+      claim,
+      participantIds: [...data.side1Ids, ...data.side2Ids],
+      side1Ids: data.side1Ids,
+      side2Ids: data.side2Ids,
+      side1Label: data.side1Label,
+      side2Label: data.side2Label,
+      stakes: data.stakes,
+      status: 'active',
+      teamIds: chat.teamIds,
+      createdAt: new Date().toISOString(),
+    };
+    setBets((prev) => [newBet, ...prev]);
+    sendNotification(`🤝 New Bet — ${chat.name}`, claim);
+
+    setBetSetupClaim(null);
+    setBetSetupMessageId(null);
+  };
+
   const tagExistingMessage = (messageId: string, tag: MessageTag) => {
+    const msg = messages.find((m) => m.id === messageId);
+    if (!msg) return;
+    setTagPickerFor(null);
+
+    if (tag === 'bet') {
+      setBetSetupClaim(msg.content);
+      setBetSetupMessageId(messageId);
+      return;
+    }
+
     setMessages((prev) =>
       prev.map((m) => (m.id === messageId ? { ...m, tag } : m))
     );
-    setTagPickerFor(null);
-    const msg = messages.find((m) => m.id === messageId);
-    if (!msg) return;
+
     if (tag === 'debate') {
       const newDebate: Debate = {
         id: `d-tag-${Date.now()}`,
@@ -183,6 +240,27 @@ export default function NeighborhoodPage() {
       };
       setHotTakes((prev) => [newHT, ...prev]);
     }
+  };
+
+  const voteHotTake = (htId: string, vote: '🔥' | '❄️') => {
+    const opposite = vote === '🔥' ? '❄️' : '🔥';
+    setHotTakes((prev) =>
+      prev.map((ht) => {
+        if (ht.id !== htId) return ht;
+        let reactions = ht.reactions
+          .map((r) => r.emoji === opposite ? { ...r, userIds: r.userIds.filter((u) => u !== 'me') } : r)
+          .filter((r) => r.userIds.length > 0);
+        const existing = reactions.find((r) => r.emoji === vote);
+        if (existing) {
+          reactions = existing.userIds.includes('me')
+            ? reactions.map((r) => r.emoji === vote ? { ...r, userIds: r.userIds.filter((u) => u !== 'me') } : r).filter((r) => r.userIds.length > 0)
+            : reactions.map((r) => r.emoji === vote ? { ...r, userIds: [...r.userIds, 'me'] } : r);
+        } else {
+          reactions = [...reactions, { emoji: vote, userIds: ['me'] }];
+        }
+        return { ...ht, reactions };
+      })
+    );
   };
 
   const addReaction = (messageId: string, emoji: string) => {
@@ -271,6 +349,61 @@ export default function NeighborhoodPage() {
       })
     );
   };
+
+  const cancelProposal = (betId: string) => {
+    setBets((prev) =>
+      prev.map((b) =>
+        b.id === betId && b.proposal?.proposedBy === 'me'
+          ? { ...b, status: 'active' as const, proposal: undefined }
+          : b
+      )
+    );
+  };
+
+  const publishToStreets = (htId: string) => {
+    setHotTakes((prev) =>
+      prev.map((ht) => (ht.id === htId ? { ...ht, isPublic: true } : ht))
+    );
+  };
+
+  const addComment = (htId: string) => {
+    if (!commentText.trim()) return;
+    const newComment: HotTakeComment = {
+      id: `c-${Date.now()}`,
+      userId: 'me',
+      content: commentText.trim(),
+      timestamp: new Date().toISOString(),
+    };
+    setHotTakes((prev) =>
+      prev.map((ht) =>
+        ht.id === htId ? { ...ht, comments: [...(ht.comments ?? []), newComment] } : ht
+      )
+    );
+    setCommentText('');
+    setMentionQuery('');
+  };
+
+  const handleCommentInput = (val: string) => {
+    setCommentText(val);
+    const lastWord = val.split(/\s/).pop() ?? '';
+    if (lastWord.startsWith('@') && lastWord.length > 1) {
+      setMentionQuery(lastWord.slice(1));
+    } else {
+      setMentionQuery('');
+    }
+  };
+
+  const insertMention = (username: string) => {
+    const words = commentText.split(/(\s)/);
+    words[words.length - 1] = `@${username}`;
+    setCommentText(words.join('') + ' ');
+    setMentionQuery('');
+    commentInputRef.current?.focus();
+  };
+
+  const mentionMatches = mentionQuery
+    ? members.filter((m) => m?.username.toLowerCase().startsWith(mentionQuery.toLowerCase())).slice(0, 4)
+    : [];
 
   // ─── Hot take actions ────────────────────────────────────
   const addHTReaction = (htId: string, emoji: string) => {
@@ -409,9 +542,10 @@ export default function NeighborhoodPage() {
               <h3 className="font-display font-bold text-ink text-lg mb-3">Neighborhood Teams</h3>
               <div className="flex flex-col gap-0">
                 {topTeams.map(({ team, count }, i) => (
-                  <div
+                  <Link
                     key={team.id}
-                    className={`flex items-center gap-3 px-4 py-2.5 border-b border-rule/50 last:border-0 ${i === 0 ? 'border-t border-rule/50' : ''}`}
+                    href={`/teams/${team.id}`}
+                    className={`flex items-center gap-3 px-4 py-2.5 border-b border-rule/50 last:border-0 hover:bg-paper-dark transition-colors ${i === 0 ? 'border-t border-rule/50' : ''}`}
                     style={{ borderLeftWidth: '3px', borderLeftColor: team.color, borderLeftStyle: 'solid' }}
                   >
                     <span className="text-xl">{team.emoji}</span>
@@ -420,7 +554,7 @@ export default function NeighborhoodPage() {
                       <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{team.league}</p>
                     </div>
                     <span className="text-[11px] text-ink-muted">{count} fan{count !== 1 ? 's' : ''}</span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -784,20 +918,59 @@ export default function NeighborhoodPage() {
                     <div className={`ml-auto flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${statusColor}`}><StatusIcon size={10} />{bet.status}</div>
                   </div>
                   <p className="text-sm text-ink font-medium mb-3 leading-snug italic">&ldquo;{bet.claim}&rdquo;</p>
-                  <div className="flex items-center gap-2">
-                    {participants.map((p, i) => (
-                      <span key={p!.id} className="flex items-center gap-1">
-                        {i > 0 && <span className="text-ink-faint text-xs">🤝</span>}
-                        <Link href={`/users/${p!.id}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 border border-rule px-2 py-0.5 text-xs text-ink-muted hover:border-ink bg-paper-dark">
-                          <span>{p!.avatar}</span><span>{p!.displayName.split(' ')[0]}</span>
-                        </Link>
-                      </span>
-                    ))}
-                    <span className="ml-auto text-[10px] text-ink-faint font-mono">{timeAgo(bet.createdAt)}</span>
-                  </div>
+                  {/* Sides or participants */}
+                  {bet.side1Ids && bet.side2Ids ? (
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-navy mb-1">{bet.side1Label ?? 'Side 1'}</p>
+                        <div className="flex flex-wrap gap-1">
+                          {bet.side1Ids.map((uid) => { const u = getUserById(uid); return u ? (
+                            <Link key={uid} href={`/users/${uid}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 border border-rule px-2 py-0.5 text-xs text-ink-muted hover:border-ink bg-paper-dark">
+                              <span>{u.avatar}</span><span>{u.displayName.split(' ')[0]}</span>
+                            </Link>
+                          ) : null; })}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-field mb-1">{bet.side2Label ?? 'Side 2'}</p>
+                        <div className="flex flex-wrap gap-1 justify-end">
+                          {bet.side2Ids.map((uid) => { const u = getUserById(uid); return u ? (
+                            <Link key={uid} href={`/users/${uid}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 border border-rule px-2 py-0.5 text-xs text-ink-muted hover:border-ink bg-paper-dark">
+                              <span>{u.avatar}</span><span>{u.displayName.split(' ')[0]}</span>
+                            </Link>
+                          ) : null; })}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 mb-2">
+                      {participants.map((p, i) => (
+                        <span key={p!.id} className="flex items-center gap-1">
+                          {i > 0 && <span className="text-ink-faint text-xs">🤝</span>}
+                          <Link href={`/users/${p!.id}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 border border-rule px-2 py-0.5 text-xs text-ink-muted hover:border-ink bg-paper-dark">
+                            <span>{p!.avatar}</span><span>{p!.displayName.split(' ')[0]}</span>
+                          </Link>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {bet.stakes && (
+                    <p className="text-[10px] text-ink-muted italic border-t border-rule/40 pt-2 mt-1">
+                      Stakes: <span className="font-bold text-ink">{bet.stakes}</span>
+                    </p>
+                  )}
+                  <p className="text-[10px] text-ink-faint font-mono mt-2">{timeAgo(bet.createdAt)}</p>
                   {bet.status === 'awaiting-resolution' && bet.proposal && (
-                    <div className="mt-3 border-l-4 border-rule-dark bg-paper-dark px-3 py-2">
-                      <p className="text-xs text-ink-muted"><span className="font-bold">{getUserById(bet.proposal.proposedBy)?.displayName}</span> proposed: <span className="font-bold">{bet.proposal.isPush ? 'Push' : `${getUserById(bet.proposal.winnerId ?? '')?.displayName} Won`}</span></p>
+                    <div className="mt-3 border border-rule-dark/40 bg-paper-dark px-3 py-2 rounded-lg">
+                      <p className="text-xs text-ink-muted">
+                        <span className="font-bold">{getUserById(bet.proposal.proposedBy)?.displayName}</span> proposed:{' '}
+                        <span className="font-bold text-ink">{bet.proposal.isPush ? 'Push' : (() => {
+                          const wId = bet.proposal!.winnerId ?? '';
+                          if (bet.side1Ids?.includes(wId)) return `${bet.side1Label ?? 'Side 1'} Won`;
+                          if (bet.side2Ids?.includes(wId)) return `${bet.side2Label ?? 'Side 2'} Won`;
+                          return `${getUserById(wId)?.displayName} Won`;
+                        })()}</span>
+                      </p>
                       <p className="text-[10px] text-ink-faint mt-0.5">{bet.proposal.agreements.length}/{bet.participantIds.length} agreed</p>
                     </div>
                   )}
@@ -806,21 +979,41 @@ export default function NeighborhoodPage() {
                   <div className="border-t border-rule bg-paper-dark px-4 py-4">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-3">Propose resolution — all parties must agree</p>
                     <div className="flex flex-col gap-2">
-                      {participants.map((p) => (
-                        <button key={p!.id} onClick={() => proposeResolution(bet.id, p!.id)} className="w-full flex items-center gap-2 bg-field px-4 py-3 text-sm font-bold text-paper hover:bg-field/80 transition-colors">
-                          <span>{p!.avatar}</span><span>{p!.displayName} Won</span>
-                        </button>
-                      ))}
-                      <button onClick={() => proposeResolution(bet.id, null)} className="w-full border border-rule bg-paper px-4 py-3 text-sm font-semibold text-ink-muted hover:bg-paper-dark transition-colors uppercase tracking-wider">Push — No Winner</button>
+                      {bet.side1Ids && bet.side2Ids ? (
+                        <>
+                          <button onClick={() => proposeResolution(bet.id, bet.side1Ids![0])} className="w-full flex items-center justify-center gap-2 bg-navy px-4 py-3 text-sm font-bold text-paper hover:bg-navy/80 transition-colors rounded-lg">
+                            {bet.side1Label ?? 'Side 1'} Won
+                          </button>
+                          <button onClick={() => proposeResolution(bet.id, bet.side2Ids![0])} className="w-full flex items-center justify-center gap-2 bg-field px-4 py-3 text-sm font-bold text-paper hover:bg-field/80 transition-colors rounded-lg">
+                            {bet.side2Label ?? 'Side 2'} Won
+                          </button>
+                        </>
+                      ) : (
+                        participants.map((p) => (
+                          <button key={p!.id} onClick={() => proposeResolution(bet.id, p!.id)} className="w-full flex items-center gap-2 bg-field px-4 py-3 text-sm font-bold text-paper hover:bg-field/80 transition-colors rounded-lg">
+                            <span>{p!.avatar}</span><span>{p!.displayName} Won</span>
+                          </button>
+                        ))
+                      )}
+                      <button onClick={() => proposeResolution(bet.id, null)} className="w-full border border-rule bg-paper px-4 py-3 text-sm font-semibold text-ink-muted hover:bg-paper-dark transition-colors uppercase tracking-wider rounded-lg">Push — No Winner</button>
                     </div>
+                  </div>
+                )}
+                {/* Proposer can cancel their own proposal */}
+                {expanded && bet.status === 'awaiting-resolution' && bet.proposal?.proposedBy === 'me' && (
+                  <div className="border-t border-rule bg-paper-dark px-4 py-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-3">You proposed this resolution</p>
+                    <button onClick={() => cancelProposal(bet.id)} className="w-full border border-masthead/40 bg-masthead/10 px-4 py-2.5 text-sm font-bold text-masthead hover:bg-masthead/20 transition-colors rounded-lg">
+                      ✕ Cancel Proposal
+                    </button>
                   </div>
                 )}
                 {expanded && myProposalPending && (
                   <div className="border-t border-rule bg-paper-dark px-4 py-4">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-3">Do you agree with this resolution?</p>
                     <div className="flex gap-2">
-                      <button onClick={() => agreeResolution(bet.id)} className="flex-1 bg-field py-2.5 text-sm font-bold text-paper hover:bg-field/80 transition-colors">✓ Agree</button>
-                      <button className="flex-1 border border-masthead/40 bg-masthead/10 py-2.5 text-sm font-bold text-masthead">✗ Dispute</button>
+                      <button onClick={() => agreeResolution(bet.id)} className="flex-1 bg-field py-2.5 text-sm font-bold text-paper hover:bg-field/80 transition-colors rounded-lg">✓ Agree</button>
+                      <button className="flex-1 border border-masthead/40 bg-masthead/10 py-2.5 text-sm font-bold text-masthead rounded-lg">✗ Dispute</button>
                     </div>
                   </div>
                 )}
@@ -863,43 +1056,134 @@ export default function NeighborhoodPage() {
           {hotTakes.map((ht) => {
             const author = getUserById(ht.authorId);
             const isMe = ht.authorId === 'me';
+            const fireR = ht.reactions.find((r) => r.emoji === '🔥');
+            const iceR  = ht.reactions.find((r) => r.emoji === '❄️');
+            const fireCount = fireR?.userIds.length ?? 0;
+            const iceCount  = iceR?.userIds.length  ?? 0;
+            const myFire = fireR?.userIds.includes('me') ?? false;
+            const myIce  = iceR?.userIds.includes('me')  ?? false;
+            const total  = fireCount + iceCount;
+            const hotPct = total > 0 ? Math.round((fireCount / total) * 100) : null;
+            const htComments = ht.comments ?? [];
+            const showingComments = showCommentsFor === ht.id;
             return (
               <div key={ht.id} className="border border-rule overflow-hidden">
-                <div className="border-l-4 border-press px-4 pt-4 pb-3 bg-paper">
+                <div className="border-l-4 border-fire px-4 pt-4 pb-3 bg-paper">
                   <div className="flex items-center gap-2 mb-3">
                     <Link href={`/users/${ht.authorId}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-base hover:border-ink transition-all">
                       {isMe ? ME.avatar : author?.avatar}
                     </Link>
-                    <div>
-                      <Link href={`/users/${ht.authorId}`} className="text-sm font-bold text-ink hover:text-masthead transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <Link href={`/users/${ht.authorId}`} className="text-sm font-bold text-ink hover:text-masthead transition-colors block">
                         {isMe ? 'You' : author?.displayName}
                       </Link>
                       <p className="text-[10px] text-ink-faint font-mono">{timeAgo(ht.createdAt)}</p>
                     </div>
-                    <div className="ml-auto flex items-center gap-1 text-press">
-                      <Flame size={13} />
-                      {totalReactions(ht.reactions) > 0 && <span className="text-xs font-bold">{totalReactions(ht.reactions)}</span>}
-                    </div>
+                    {(isMe || true) && !ht.isPublic && (
+                      <button
+                        onClick={() => publishToStreets(ht.id)}
+                        className="flex items-center gap-1 border border-rule/60 px-2.5 py-1 text-[10px] font-bold text-ink-muted hover:border-press hover:text-press transition-colors rounded-full shrink-0"
+                      >
+                        <Megaphone size={10} /> Streets
+                      </button>
+                    )}
+                    {ht.isPublic && (
+                      <span className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-press rounded-full border border-press/40 bg-press/5 shrink-0">
+                        <Megaphone size={10} /> Live
+                      </span>
+                    )}
                   </div>
                   <p className="font-display text-base font-bold text-ink leading-snug italic">&ldquo;{ht.content}&rdquo;</p>
                 </div>
-                <div className="border-t border-rule/50 px-4 py-2.5 flex items-center gap-1.5 flex-wrap bg-paper-dark">
-                  {REACT_OPTIONS.map((emoji) => {
-                    const existing = ht.reactions.find((r) => r.emoji === emoji);
-                    const count = existing?.userIds.length ?? 0;
-                    const reacted = existing?.userIds.includes('me') ?? false;
-                    return (
-                      <button key={emoji} onClick={() => addHTReaction(ht.id, emoji)} className={`flex items-center gap-0.5 px-2.5 py-1 text-sm transition-all border ${reacted ? 'bg-press/20 border-press/50 scale-105' : 'bg-paper border-rule hover:border-rule-dark'}`}>
-                        {emoji}{count > 0 && <span className={`text-xs font-medium ml-0.5 ${reacted ? 'text-press' : 'text-ink-muted'}`}>{count}</span>}
-                      </button>
-                    );
-                  })}
-                  {!isMe && (
-                    <button className="ml-auto flex items-center gap-1 border border-rule px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-ink-muted hover:border-press hover:text-press transition-colors">
-                      <ArrowUp size={11} /> Boost
-                    </button>
+                <div className="border-t border-rule/50 px-4 py-2.5 flex items-center gap-2 bg-paper-dark">
+                  <button
+                    onClick={() => voteHotTake(ht.id, '🔥')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-all btn-3d ${
+                      myFire ? 'bg-fire text-white' : 'bg-paper border border-rule text-ink-muted hover:border-fire hover:text-fire'
+                    }`}
+                  >
+                    <Flame size={14} />
+                    {fireCount > 0 && <span className="text-xs">{fireCount}</span>}
+                  </button>
+                  <button
+                    onClick={() => voteHotTake(ht.id, '❄️')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-all btn-3d ${
+                      myIce ? 'bg-ice text-white' : 'bg-paper border border-rule text-ink-muted hover:border-ice hover:text-ice'
+                    }`}
+                  >
+                    <Snowflake size={14} />
+                    {iceCount > 0 && <span className="text-xs">{iceCount}</span>}
+                  </button>
+                  {hotPct !== null && (
+                    <span className="text-[10px] font-bold font-mono text-ink-faint">{hotPct}% hot</span>
                   )}
+                  <button
+                    onClick={() => { setShowCommentsFor(showingComments ? null : ht.id); setCommentText(''); setMentionQuery(''); }}
+                    className="ml-auto flex items-center gap-1 text-[10px] font-bold text-ink-muted hover:text-ink transition-colors"
+                  >
+                    <MessageSquare size={12} />
+                    {htComments.length > 0 ? htComments.length : 'Reply'}
+                    {showingComments ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                  </button>
                 </div>
+                {showingComments && (
+                  <div className="border-t border-rule/30 bg-paper-dark px-4 py-3 flex flex-col gap-3">
+                    {htComments.map((c) => {
+                      const commenter = getUserById(c.userId);
+                      return (
+                        <div key={c.id} className="flex gap-2">
+                          <Link href={`/users/${c.userId}`} className="flex h-7 w-7 items-center justify-center rounded-full bg-paper border border-rule text-sm shrink-0 hover:border-ink">
+                            {c.userId === 'me' ? ME.avatar : commenter?.avatar}
+                          </Link>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-1.5 mb-0.5">
+                              <Link href={`/users/${c.userId}`} className="text-[11px] font-bold text-ink hover:text-masthead">
+                                {c.userId === 'me' ? 'You' : commenter?.displayName}
+                              </Link>
+                              <span className="text-[9px] text-ink-faint font-mono">{timeAgo(c.timestamp)}</span>
+                            </div>
+                            <p className="text-xs text-ink leading-relaxed">{c.content}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="relative">
+                      {mentionQuery && mentionMatches.length > 0 && (
+                        <div className="absolute bottom-full left-0 mb-1 bg-paper border border-rule shadow-xl rounded-xl overflow-hidden z-10 w-48">
+                          {mentionMatches.map((u) => (
+                            <button key={u!.id} onClick={() => insertMention(u!.username)} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-paper-dark transition-colors text-left">
+                              <span className="text-base">{u!.avatar}</span>
+                              <div>
+                                <p className="text-xs font-bold text-ink">{u!.displayName}</p>
+                                <p className="text-[10px] text-ink-faint">@{u!.username}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-paper border border-rule text-sm shrink-0">
+                          {ME.avatar}
+                        </div>
+                        <input
+                          ref={commentInputRef}
+                          value={showCommentsFor === ht.id ? commentText : ''}
+                          onChange={(e) => handleCommentInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && addComment(ht.id)}
+                          placeholder="Reply… (@ to mention)"
+                          className="flex-1 bg-paper border border-rule px-3 py-1.5 text-xs text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors rounded-full"
+                        />
+                        <button
+                          onClick={() => addComment(ht.id)}
+                          disabled={!commentText.trim()}
+                          className="flex h-7 w-7 items-center justify-center bg-ink text-paper rounded-full hover:bg-ink/80 disabled:opacity-40 transition-colors shrink-0"
+                        >
+                          <Send size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -911,6 +1195,16 @@ export default function NeighborhoodPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── BET SETUP MODAL ──────────────────────────────────── */}
+      {betSetupClaim !== null && (
+        <BetSetupModal
+          claim={betSetupClaim}
+          members={members.filter(Boolean) as NonNullable<typeof members[0]>[]}
+          onConfirm={confirmBetSetup}
+          onCancel={() => { setBetSetupClaim(null); setBetSetupMessageId(null); }}
+        />
       )}
     </div>
   );

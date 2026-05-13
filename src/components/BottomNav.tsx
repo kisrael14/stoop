@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, Home } from 'lucide-react';
+import { User, Home, Newspaper } from 'lucide-react';
 
 const HIDDEN_ON = ['/login', '/onboarding'];
 
@@ -13,6 +13,7 @@ export default function BottomNav() {
 
   const navItems = [
     { href: '/stoop', label: 'My Stoop', icon: User },
+    { href: '/streets', label: 'The Streets', icon: Newspaper },
     { href: '/neighborhoods', label: 'Neighborhoods', icon: Home },
   ];
 

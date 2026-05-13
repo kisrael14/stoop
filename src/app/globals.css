@@ -13,6 +13,8 @@
   --navy: #0c1f40;
   --field: #1a4a22;
   --press: #c84b0c;
+  --fire: #f97316;
+  --ice: #38bdf8;
 }
 
 @theme inline {
@@ -28,6 +30,8 @@
   --color-navy: var(--navy);
   --color-field: var(--field);
   --color-press: var(--press);
+  --color-fire: var(--fire);
+  --color-ice: var(--ice);
   --font-display: var(--font-playfair), ui-serif, Georgia, 'Times New Roman', serif;
 }
 

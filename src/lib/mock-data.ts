@@ -1,4 +1,4 @@
-import type { User, Team, Chat, Debate, Bet, HotTake, DebateArgument } from './types';
+import type { User, Team, Chat, Debate, Bet, HotTake, HotTakeComment, DebateArgument } from './types';
 import { ALL_TEAMS } from './teams-data';
 
 export const TEAMS: Team[] = ALL_TEAMS;
@@ -358,6 +358,7 @@ export const DEBATES: Debate[] = [
     status: 'active',
     teamIds: [],
     createdAt: '2026-05-12T09:15:00Z',
+    isPublic: true,
   },
   {
     id: 'd2',
@@ -393,6 +394,7 @@ export const DEBATES: Debate[] = [
     status: 'active',
     teamIds: ['eagles', 'cowboys'],
     createdAt: '2026-05-10T14:15:00Z',
+    isPublic: true,
   },
   {
     id: 'd3',
@@ -450,6 +452,11 @@ export const BETS: Bet[] = [
     chatName: 'The Council 🏆',
     claim: 'Giants beat the Eagles in Week 14',
     participantIds: ['marcus', 'deshawn'],
+    side1Ids: ['marcus'],
+    side2Ids: ['deshawn'],
+    side1Label: 'Giants Win',
+    side2Label: 'Eagles Win',
+    stakes: 'Loser buys game-day snacks for the whole group',
     status: 'active',
     teamIds: ['giants', 'eagles'],
     createdAt: '2026-05-12T11:00:00Z',
@@ -460,9 +467,15 @@ export const BETS: Bet[] = [
     chatName: 'The Council 🏆',
     claim: 'Cowboys are winning the NFC this year',
     participantIds: ['tre', 'me'],
+    side1Ids: ['tre'],
+    side2Ids: ['me'],
+    side1Label: 'Cowboys In',
+    side2Label: 'No Way',
+    stakes: 'Winner picks the watch party playlist all season',
     status: 'active',
     teamIds: ['cowboys'],
     createdAt: '2026-05-12T10:00:00Z',
+    isPublic: true,
   },
   {
     id: 'b3',
@@ -470,6 +483,11 @@ export const BETS: Bet[] = [
     chatName: 'NYC Ball 🗽',
     claim: 'Knicks or Lakers make the Finals this year',
     participantIds: ['marcus', 'me'],
+    side1Ids: ['marcus'],
+    side2Ids: ['me'],
+    side1Label: 'Lakers/Knicks',
+    side2Label: 'Neither',
+    stakes: 'Loser wears the winner\'s jersey to the next game night',
     status: 'awaiting-resolution',
     proposal: {
       proposedBy: 'marcus',
@@ -480,6 +498,7 @@ export const BETS: Bet[] = [
     },
     teamIds: ['knicks', 'lakers'],
     createdAt: '2026-05-11T19:00:00Z',
+    isPublic: true,
   },
   {
     id: 'b4',
@@ -504,10 +523,15 @@ export const HOT_TAKES: HotTake[] = [
     authorId: 'marcus',
     reactions: [
       { emoji: '🔥', userIds: ['sofia', 'tre'] },
-      { emoji: '🧢', userIds: ['me', 'deshawn'] },
+      { emoji: '❄️', userIds: ['me', 'deshawn'] },
     ],
     teamIds: ['chiefs'],
     createdAt: '2026-05-12T09:00:00Z',
+    isPublic: true,
+    comments: [
+      { id: 'c1a', userId: 'deshawn', content: 'Nah @mwebb_chief you\'re trolling yourself with this one', timestamp: '2026-05-12T09:05:00Z' },
+      { id: 'c1b', userId: 'sofia', content: 'Two Super Bowls before 30. The numbers don\'t lie 🔥', timestamp: '2026-05-12T09:08:00Z' },
+    ] as HotTakeComment[],
   },
   {
     id: 'ht2',
@@ -517,10 +541,14 @@ export const HOT_TAKES: HotTake[] = [
     authorId: 'sofia',
     reactions: [
       { emoji: '🔥', userIds: ['marcus', 'deshawn', 'tre'] },
-      { emoji: '🤬', userIds: ['me'] },
+      { emoji: '❄️', userIds: ['me'] },
     ],
     teamIds: ['knicks'],
     createdAt: '2026-05-12T10:30:00Z',
+    isPublic: true,
+    comments: [
+      { id: 'c2a', userId: 'me', content: '@s_flores_nyc this is a CRIME and you know it', timestamp: '2026-05-12T10:35:00Z' },
+    ] as HotTakeComment[],
   },
   {
     id: 'ht3',
@@ -529,11 +557,13 @@ export const HOT_TAKES: HotTake[] = [
     content: 'The Yankees are going to the Series this year. Mark it.',
     authorId: 'sofia',
     reactions: [
-      { emoji: '🙏', userIds: ['me'] },
       { emoji: '🔥', userIds: ['me'] },
+      { emoji: '❄️', userIds: ['marcus'] },
     ],
     teamIds: ['yankees'],
     createdAt: '2026-05-11T18:00:00Z',
+    isPublic: false,
+    comments: [] as HotTakeComment[],
   },
   {
     id: 'ht4',
@@ -543,10 +573,12 @@ export const HOT_TAKES: HotTake[] = [
     authorId: 'deshawn',
     reactions: [
       { emoji: '🔥', userIds: ['deshawn'] },
-      { emoji: '🧢', userIds: ['me', 'tre'] },
+      { emoji: '❄️', userIds: ['me', 'tre'] },
     ],
     teamIds: ['eagles'],
     createdAt: '2026-05-10T14:00:00Z',
+    isPublic: true,
+    comments: [] as HotTakeComment[],
   },
   {
     id: 'ht5',
@@ -556,11 +588,15 @@ export const HOT_TAKES: HotTake[] = [
     authorId: 'me',
     reactions: [
       { emoji: '🔥', userIds: ['deshawn', 'tre'] },
-      { emoji: '🧢', userIds: ['marcus'] },
-      { emoji: '💯', userIds: ['sofia'] },
+      { emoji: '❄️', userIds: ['marcus'] },
     ],
     teamIds: [],
     createdAt: '2026-05-09T20:00:00Z',
+    isPublic: true,
+    comments: [
+      { id: 'c5a', userId: 'marcus', content: 'Brady > system, this is cope @jhayes23', timestamp: '2026-05-09T20:10:00Z' },
+      { id: 'c5b', userId: 'tre', content: '6 rings with 3 different coordinators says differently', timestamp: '2026-05-09T20:15:00Z' },
+    ] as HotTakeComment[],
   },
 ];
 
