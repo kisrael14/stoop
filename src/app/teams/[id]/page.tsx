@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Flame, Swords, Handshake, Trophy, Star, Users } from 'lucide-react';
+import { ArrowLeft, Flame, Snowflake, Swords, Handshake, Trophy, Star, Users } from 'lucide-react';
 import { DEBATES, BETS, HOT_TAKES, getUserById } from '@/lib/mock-data';
 import { getTeamByIdFull } from '@/lib/teams-data';
 import { timeAgo, totalReactions } from '@/lib/utils';
@@ -66,6 +66,32 @@ export default function TeamPage() {
   const team = getTeamByIdFull(id);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [period, setPeriod] = useState<Period>('weekly');
+  const [localHotTakes, setLocalHotTakes] = useState(() =>
+    HOT_TAKES
+      .filter((ht) => ht.teamIds.includes(id))
+      .sort((a, b) => totalReactions(b.reactions) - totalReactions(a.reactions))
+  );
+
+  const voteHotTakeTeam = (htId: string, vote: '🔥' | '❄️') => {
+    const opposite = vote === '🔥' ? '❄️' : '🔥';
+    setLocalHotTakes((prev) =>
+      prev.map((ht) => {
+        if (ht.id !== htId) return ht;
+        let reactions = ht.reactions
+          .map((r) => r.emoji === opposite ? { ...r, userIds: r.userIds.filter((u) => u !== 'me') } : r)
+          .filter((r) => r.userIds.length > 0);
+        const existing = reactions.find((r) => r.emoji === vote);
+        if (existing) {
+          reactions = existing.userIds.includes('me')
+            ? reactions.map((r) => r.emoji === vote ? { ...r, userIds: r.userIds.filter((u) => u !== 'me') } : r).filter((r) => r.userIds.length > 0)
+            : reactions.map((r) => r.emoji === vote ? { ...r, userIds: [...r.userIds, 'me'] } : r);
+        } else {
+          reactions = [...reactions, { emoji: vote, userIds: ['me'] }];
+        }
+        return { ...ht, reactions };
+      })
+    );
+  };
 
   if (!team) {
     return (
@@ -79,10 +105,6 @@ export default function TeamPage() {
     .filter((d) => d.teamIds.includes(id))
     .sort((a, b) => (b.votes.length + b.arguments.length) - (a.votes.length + a.arguments.length));
 
-  const teamHotTakes = HOT_TAKES
-    .filter((ht) => ht.teamIds.includes(id))
-    .sort((a, b) => totalReactions(b.reactions) - totalReactions(a.reactions));
-
   const teamBets = BETS
     .filter((b) => b.teamIds.includes(id))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -92,7 +114,7 @@ export default function TeamPage() {
   const tabs: { id: Tab; label: string; icon: React.ElementType; count: number }[] = [
     { id: 'overview',   label: 'Overview',  icon: Users,     count: 0 },
     { id: 'debates',    label: 'Debates',   icon: Swords,    count: teamDebates.length },
-    { id: 'hot-takes',  label: 'Takes',     icon: Flame,     count: teamHotTakes.length },
+    { id: 'hot-takes',  label: 'Takes',     icon: Flame,     count: localHotTakes.length },
     { id: 'bets',       label: 'Bets',      icon: Handshake, count: teamBets.length },
   ];
 
@@ -124,7 +146,7 @@ export default function TeamPage() {
         <div className="flex gap-6 mt-5 pt-4 border-t border-white/20">
           {[
             { label: 'Debates',   value: teamDebates.length },
-            { label: 'Hot Takes', value: teamHotTakes.length },
+            { label: 'Hot Takes', value: localHotTakes.length },
             { label: 'Bets',      value: teamBets.length },
           ].map(({ label, value }) => (
             <div key={label}>
@@ -222,7 +244,7 @@ export default function TeamPage() {
               <span className="text-[10px] font-bold uppercase tracking-widest text-ink">Recent Activity</span>
             </div>
 
-            {teamDebates.length === 0 && teamHotTakes.length === 0 && teamBets.length === 0 ? (
+            {teamDebates.length === 0 && localHotTakes.length === 0 && teamBets.length === 0 ? (
               <div className="py-10 text-center border border-rule/50">
                 <p className="text-2xl mb-2">{team.emoji}</p>
                 <p className="font-display font-bold text-ink">No activity yet</p>
@@ -231,7 +253,7 @@ export default function TeamPage() {
             ) : (
               <div className="flex flex-col gap-3">
                 {[
-                  ...teamHotTakes.slice(0, 2).map((ht) => ({ type: 'hot-take' as const, time: ht.createdAt, ht })),
+                  ...localHotTakes.slice(0, 2).map((ht) => ({ type: 'hot-take' as const, time: ht.createdAt, ht })),
                   ...teamDebates.slice(0, 2).map((d)  => ({ type: 'debate'   as const, time: d.createdAt,  d  })),
                   ...teamBets.slice(0, 1).map((b)     => ({ type: 'bet'      as const, time: b.createdAt,  b  })),
                 ]
@@ -242,7 +264,7 @@ export default function TeamPage() {
                       const ht = entry.ht;
                       const author = getUserById(ht.authorId);
                       return (
-                        <div key={ht.id} className="border-l-4 border-press border border-rule/50 px-4 py-3 bg-paper">
+                        <div key={ht.id} className="border border-rule/50 border-l-4 border-l-press px-4 py-3 bg-paper">
                           <div className="flex items-center gap-2 mb-1.5">
                             <span className="text-[9px] font-bold uppercase tracking-widest text-press">🔥 Hot Take</span>
                             <span className="text-[10px] text-ink-faint font-mono ml-auto">{timeAgo(ht.createdAt)}</span>
@@ -257,7 +279,7 @@ export default function TeamPage() {
                     if (entry.type === 'debate') {
                       const d = entry.d;
                       return (
-                        <Link key={d.id} href={`/debates/${d.id}`} className="border-l-4 border-navy border border-rule/50 px-4 py-3 bg-paper block hover:bg-paper-dark transition-colors">
+                        <Link key={d.id} href={`/debates/${d.id}`} className="border border-rule/50 border-l-4 border-l-navy px-4 py-3 bg-paper block hover:bg-paper-dark transition-colors">
                           <div className="flex items-center gap-2 mb-1.5">
                             <span className="text-[9px] font-bold uppercase tracking-widest text-navy">⚔️ Debate</span>
                             <span className="text-[10px] text-ink-faint font-mono ml-auto">{timeAgo(d.createdAt)}</span>
@@ -270,7 +292,7 @@ export default function TeamPage() {
                     const b = entry.b;
                     const participants = b.participantIds.map((pid) => getUserById(pid)).filter(Boolean);
                     return (
-                      <div key={b.id} className="border-l-4 border-field border border-rule/50 px-4 py-3 bg-paper">
+                      <div key={b.id} className="border border-rule/50 border-l-4 border-l-field px-4 py-3 bg-paper">
                         <div className="flex items-center gap-2 mb-1.5">
                           <span className="text-[9px] font-bold uppercase tracking-widest text-field">🤝 Bet</span>
                           <span className="text-[10px] text-ink-faint font-mono ml-auto">{timeAgo(b.createdAt)}</span>
@@ -351,15 +373,22 @@ export default function TeamPage() {
       {/* ── HOT TAKES TAB ─────────────────────────────────────────────────── */}
       {activeTab === 'hot-takes' && (
         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4 pb-8">
-          {teamHotTakes.length === 0 ? (
+          {localHotTakes.length === 0 ? (
             <div className="text-center py-16">
               <p className="font-display text-4xl mb-2 text-ink-faint">🔥</p>
               <p className="font-display font-bold text-ink text-lg">No hot takes yet</p>
               <p className="text-sm text-ink-muted italic mt-1">Drop one in a neighborhood</p>
             </div>
-          ) : teamHotTakes.map((ht) => {
+          ) : localHotTakes.map((ht) => {
             const author = getUserById(ht.authorId);
-            const reactions = totalReactions(ht.reactions);
+            const fireReaction = ht.reactions.find((r) => r.emoji === '🔥');
+            const iceReaction  = ht.reactions.find((r) => r.emoji === '❄️');
+            const fireCount = fireReaction?.userIds.length ?? 0;
+            const iceCount  = iceReaction?.userIds.length  ?? 0;
+            const myFire = fireReaction?.userIds.includes('me') ?? false;
+            const myIce  = iceReaction?.userIds.includes('me')  ?? false;
+            const total  = fireCount + iceCount;
+            const hotPct = total > 0 ? Math.round((fireCount / total) * 100) : null;
             return (
               <div key={ht.id} className="border border-rule overflow-hidden">
                 <div className="border-l-4 border-press px-4 pt-4 pb-3 bg-paper">
@@ -373,15 +402,34 @@ export default function TeamPage() {
                       </Link>
                       <p className="text-[10px] text-ink-faint font-mono">{timeAgo(ht.createdAt)}</p>
                     </div>
-                    <div className="ml-auto flex items-center gap-1 text-press">
-                      <Flame size={13} />
-                      {reactions > 0 && <span className="text-xs font-bold">{reactions}</span>}
+                    <div className="ml-auto flex items-center gap-1 text-ink-faint font-mono text-[10px]">
+                      <Link href={`/neighborhoods/${ht.chatId}`} className="font-bold text-ink-muted hover:text-ink">{ht.chatName}</Link>
                     </div>
                   </div>
                   <p className="font-display text-base font-bold text-ink italic leading-snug">&ldquo;{ht.content}&rdquo;</p>
                 </div>
-                <div className="border-t border-rule/50 px-4 py-2 bg-paper-dark flex items-center gap-1 text-[10px] text-ink-faint font-mono">
-                  From <Link href={`/neighborhoods/${ht.chatId}`} className="font-bold text-ink-muted hover:text-ink ml-1">{ht.chatName}</Link>
+                <div className="border-t border-rule/50 px-4 py-3 flex items-center gap-3 bg-paper-dark">
+                  <button
+                    onClick={() => voteHotTakeTeam(ht.id, '🔥')}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-sm transition-all btn-3d ${
+                      myFire ? 'bg-press text-paper' : 'bg-paper border border-rule text-ink-muted hover:border-press hover:text-press'
+                    }`}
+                  >
+                    <Flame size={15} />
+                    <span>{fireCount > 0 ? fireCount : 'Hot'}</span>
+                  </button>
+                  <button
+                    onClick={() => voteHotTakeTeam(ht.id, '❄️')}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-bold text-sm transition-all btn-3d ${
+                      myIce ? 'bg-navy text-paper' : 'bg-paper border border-rule text-ink-muted hover:border-navy hover:text-navy'
+                    }`}
+                  >
+                    <Snowflake size={15} />
+                    <span>{iceCount > 0 ? iceCount : 'Cold'}</span>
+                  </button>
+                  {hotPct !== null && (
+                    <span className="ml-auto text-[10px] font-bold font-mono text-ink-faint">{hotPct}% hot</span>
+                  )}
                 </div>
               </div>
             );
