@@ -442,7 +442,7 @@ export default function TeamPage() {
                   <button
                     onClick={() => voteHotTakeTeam(ht.id, '🔥')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-all btn-3d ${
-                      myFire ? 'bg-fire text-white' : 'bg-paper border border-rule text-ink-muted hover:border-fire hover:text-fire'
+                      myFire ? 'bg-[#f97316] text-white' : 'bg-paper border border-rule text-ink-muted hover:border-[#f97316] hover:text-[#f97316]'
                     }`}
                   >
                     <Flame size={14} />
@@ -451,7 +451,7 @@ export default function TeamPage() {
                   <button
                     onClick={() => voteHotTakeTeam(ht.id, '❄️')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-all btn-3d ${
-                      myIce ? 'bg-ice text-white' : 'bg-paper border border-rule text-ink-muted hover:border-ice hover:text-ice'
+                      myIce ? 'bg-[#38bdf8] text-white' : 'bg-paper border border-rule text-ink-muted hover:border-[#38bdf8] hover:text-[#38bdf8]'
                     }`}
                   >
                     <Snowflake size={14} />
