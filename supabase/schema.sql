@@ -171,6 +171,18 @@ create table if not exists public.analysis_comments (
   created_at  timestamptz default now()
 );
 
+-- ── Badge Scores ──────────────────────────────────────────────────────────────
+-- Stores computed badge level + score per user per badge type.
+-- Recomputed periodically (e.g. nightly) from activity in the prior 6 months.
+create table if not exists public.badge_scores (
+  user_id     uuid references public.profiles(id) on delete cascade,
+  badge_type  text not null check (badge_type in ('debater','analyst','chatter','gambler','troll','homer','tailgater')),
+  score       integer not null default 0,
+  level       integer not null default 1 check (level between 1 and 5),
+  computed_at timestamptz default now(),
+  primary key (user_id, badge_type)
+);
+
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Row Level Security
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -192,6 +204,7 @@ alter table public.bets                 enable row level security;
 alter table public.bet_participants     enable row level security;
 alter table public.analyses             enable row level security;
 alter table public.analysis_comments    enable row level security;
+alter table public.badge_scores         enable row level security;
 
 -- Profiles: readable by all auth users, writable by owner
 create policy "profiles_read"   on public.profiles for select to authenticated using (true);
@@ -272,6 +285,9 @@ create policy "analyses_update" on public.analyses for update to authenticated u
 
 create policy "analysis_comments_read"   on public.analysis_comments for select to authenticated using (true);
 create policy "analysis_comments_insert" on public.analysis_comments for insert to authenticated with check (auth.uid() = user_id);
+
+-- Badge scores: readable by all; only system/service role can write (computed server-side)
+create policy "badge_scores_read" on public.badge_scores for select to authenticated using (true);
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Helper Functions
