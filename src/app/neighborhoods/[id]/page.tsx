@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Home, MessageCircle, Swords, Handshake, Flame, Snowflake,
-  Send, Sparkles, X, Trophy, Users,
+  Send, Sparkles, X, Trophy, Users, Pencil, Check,
   AlertCircle, CheckCircle, Clock, Megaphone, MessageSquare, ChevronDown, ChevronUp, PenLine,
 } from 'lucide-react';
 import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
@@ -70,6 +70,12 @@ export default function NeighborhoodPage() {
   const [showAnalysisForm, setShowAnalysisForm] = useState(false);
   const [analysisTitle, setAnalysisTitle] = useState('');
   const [analysisBody, setAnalysisBody] = useState('');
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editEmoji, setEditEmoji] = useState('');
+  const [chatName, setChatName] = useState(chat?.name ?? '');
+  const [chatEmoji, setChatEmoji] = useState(chat?.emoji ?? '');
 
   useEffect(() => {
     if (activeTab === 'chat') {
@@ -514,21 +520,80 @@ export default function NeighborhoodPage() {
   return (
     <div className="flex flex-col h-full bg-paper">
       {/* Header */}
-      <div className="shrink-0 bg-ink px-4 py-3 flex items-center gap-3">
-        <button onClick={() => router.back()} className="text-paper/60 hover:text-paper p-1">
+      <div className="shrink-0 bg-ink px-4 py-3 flex items-center gap-2.5">
+        <button onClick={() => router.back()} className="text-paper/60 hover:text-paper p-1 shrink-0">
           <ArrowLeft size={20} />
         </button>
-        <div className="flex h-9 w-9 items-center justify-center bg-ink-muted/30 text-xl shrink-0">
-          {chat.emoji}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-display font-bold text-paper truncate leading-tight">{chat.name}</p>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-paper/50">{members.length} members</p>
-        </div>
-        <button onClick={() => setActiveTab('overview')} className="text-paper/60 hover:text-paper p-1">
-          <Users size={18} />
+        <button
+          onClick={() => setActiveTab('overview')}
+          className="flex items-center gap-2.5 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
+        >
+          <div className="flex h-9 w-9 items-center justify-center bg-ink-muted/30 text-xl shrink-0">
+            {chatEmoji}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-bold text-paper truncate leading-tight">{chatName}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-paper/50">{members.length} members</p>
+          </div>
+        </button>
+        <button
+          onClick={() => { setEditName(chatName); setEditEmoji(chatEmoji); setShowEditModal(true); }}
+          className="shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-paper/10 hover:bg-paper/20 text-paper/70 hover:text-paper transition-all"
+          aria-label="Edit neighborhood"
+        >
+          <Pencil size={14} />
         </button>
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
+          <div className="relative w-full max-w-md bg-paper rounded-t-2xl border-t-2 border-ink overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 bg-ink">
+              <p className="font-display font-bold text-paper text-sm">Edit Neighborhood</p>
+              <button onClick={() => setShowEditModal(false)} className="text-paper/60 hover:text-paper"><X size={16} /></button>
+            </div>
+            <div className="px-5 py-4 flex flex-col gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-1.5">Emoji</p>
+                <div className="flex gap-2 flex-wrap">
+                  {['🏈', '⚾', '🏀', '🏒', '⚽', '🎽', '🏆', '🗽', '🌆', '🔥', '⚡', '🌊'].map((e) => (
+                    <button
+                      key={e}
+                      onClick={() => setEditEmoji(e)}
+                      className={`w-9 h-9 text-lg flex items-center justify-center rounded-xl border-2 transition-all ${editEmoji === e ? 'border-ink bg-ink-muted/10' : 'border-rule hover:border-ink-muted'}`}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-1.5">Name</p>
+                <input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Neighborhood name…"
+                  className="w-full border border-rule bg-paper-dark px-4 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink rounded-lg"
+                />
+              </div>
+            </div>
+            <div className="border-t border-rule bg-paper px-5 py-3 flex gap-2">
+              <button onClick={() => setShowEditModal(false)} className="border border-rule px-4 py-2 text-xs font-bold uppercase tracking-wider text-ink-muted rounded-full hover:bg-paper-dark">
+                Cancel
+              </button>
+              <button
+                onClick={() => { if (editName.trim()) setChatName(editName.trim()); if (editEmoji) setChatEmoji(editEmoji); setShowEditModal(false); }}
+                disabled={!editName.trim()}
+                className="flex-1 bg-ink text-paper py-2 text-xs font-bold uppercase tracking-widest rounded-full hover:bg-ink/80 disabled:opacity-40 flex items-center justify-center gap-1.5"
+              >
+                <Check size={12} /> Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tab bar — pill style */}
       <div className="shrink-0 flex gap-1.5 px-3 py-2 bg-paper border-b-2 border-ink overflow-x-auto">

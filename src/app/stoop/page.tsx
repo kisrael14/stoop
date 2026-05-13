@@ -36,6 +36,28 @@ export default function StoopPage() {
   const myBets = BETS.filter((b) => b.participantIds.includes('me')).slice(0, 2);
   const myHotTakes = HOT_TAKES.filter((h) => h.authorId === 'me' || h.teamIds.some((t) => myTeamIds.includes(t))).slice(0, 2);
 
+  // Sort neighbors by message frequency in shared chats
+  const myChats = CHATS.filter((c) => c.memberIds.includes('me'));
+  const msgCounts: Record<string, number> = {};
+  myChats.forEach((chat) => {
+    chat.messages.forEach((msg) => {
+      if (msg.userId !== 'me' && msg.userId !== 'ai') {
+        msgCounts[msg.userId] = (msgCounts[msg.userId] ?? 0) + 1;
+      }
+    });
+  });
+  const myNeighbors = ME.followingIds
+    .map((id) => getUserById(id))
+    .filter(Boolean)
+    .sort((a, b) => (msgCounts[b!.id] ?? 0) - (msgCounts[a!.id] ?? 0));
+
+  // Sort neighborhoods by most recent message
+  const myNeighborhoods = myChats.sort((a, b) => {
+    const aTime = a.messages[a.messages.length - 1]?.timestamp ?? '0';
+    const bTime = b.messages[b.messages.length - 1]?.timestamp ?? '0';
+    return new Date(bTime).getTime() - new Date(aTime).getTime();
+  });
+
   // "From The Streets" — public content filtered to user's followed teams
   const streetsHotTakes = HOT_TAKES.filter((h) => h.isPublic && h.teamIds.some((t) => myTeamIds.includes(t)));
   const streetsDebates = DEBATES.filter((d) => d.isPublic && d.teamIds.some((t) => myTeamIds.includes(t)));
@@ -48,9 +70,6 @@ export default function StoopPage() {
     ...streetsAnalyses.map((a) => ({ type: 'analysis' as const, time: a.createdAt, item: a })),
   ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 6);
   const { stats } = ME;
-
-  const myNeighborhoods = CHATS.filter((c) => c.memberIds.includes('me'));
-  const myNeighbors = ME.followingIds.map((id) => getUserById(id)).filter(Boolean);
 
   return (
     <div className="flex flex-col bg-paper min-h-full pb-4">
@@ -130,6 +149,39 @@ export default function StoopPage() {
           <p className="text-[10px] text-ink-faint">Notifications blocked — enable in browser settings</p>
         </div>
       )}
+
+      {/* ── BRAGGING RIGHTS ────────────────────────────────── */}
+      <div className="mx-4 mt-4 border-2 border-ink">
+        <div className="px-3 py-2 bg-ink">
+          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper">Bragging Rights</p>
+        </div>
+        <div className="grid grid-cols-4 divide-x divide-rule/60">
+          <Link href="/neighborhoods" className="p-3 hover:bg-paper-dark transition-colors flex flex-col items-center">
+            <div className="flex items-center gap-1 mb-1"><Swords size={11} className="text-navy" /></div>
+            <p className="font-display text-base font-black text-ink">{stats.debatesWon}W</p>
+            <p className="font-display text-xs text-ink-faint">{stats.debatesLost}L</p>
+            <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint mt-0.5">Debates</p>
+          </Link>
+          <Link href="/neighborhoods" className="p-3 hover:bg-paper-dark transition-colors flex flex-col items-center">
+            <div className="flex items-center gap-1 mb-1"><Handshake size={11} className="text-field" /></div>
+            <p className="font-display text-base font-black text-ink">{stats.betsWon}W</p>
+            <p className="font-display text-xs text-ink-faint">{stats.betsLost}L</p>
+            <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint mt-0.5">Bets</p>
+          </Link>
+          <div className="p-3 flex flex-col items-center">
+            <div className="flex items-center gap-1 mb-1"><Flame size={11} className="text-press" /></div>
+            <p className="font-display text-base font-black text-press">{stats.hotTakesPosted}</p>
+            <p className="font-display text-xs text-ink-faint">&nbsp;</p>
+            <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint mt-0.5">Takes</p>
+          </div>
+          <div className="p-3 flex flex-col items-center">
+            <div className="flex items-center gap-1 mb-1"><Trophy size={11} className="text-rule-dark" /></div>
+            <p className="font-display text-base font-black text-ink">{stats.hotTakeReactions}</p>
+            <p className="font-display text-xs text-ink-faint">&nbsp;</p>
+            <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint mt-0.5">Reactions</p>
+          </div>
+        </div>
+      </div>
 
       {/* ── 2-COLUMN: NEIGHBORS + NEIGHBORHOODS ─────────────── */}
       <div className="mx-4 mt-4 grid grid-cols-2 gap-0 border-2 border-ink">
@@ -212,43 +264,6 @@ export default function StoopPage() {
               </Link>
             );
           })}
-        </div>
-      </div>
-
-      {/* ── BRAGGING RIGHTS ────────────────────────────────── */}
-      <div className="mx-4 mt-4 border-2 border-ink">
-        <div className="px-3 py-2 bg-ink">
-          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper">Bragging Rights</p>
-        </div>
-        <div className="grid grid-cols-2 divide-x-2 divide-rule/60">
-          <Link href="/neighborhoods" className="p-3 hover:bg-paper-dark transition-colors border-b border-rule/60">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Swords size={12} className="text-navy" />
-              <span className="text-[9px] font-bold uppercase tracking-wide text-ink-muted">Debates</span>
-            </div>
-            <p className="font-display text-lg font-black text-ink">{stats.debatesWon}W·{stats.debatesLost}L</p>
-          </Link>
-          <Link href="/neighborhoods" className="p-3 hover:bg-paper-dark transition-colors border-b border-rule/60">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Handshake size={12} className="text-field" />
-              <span className="text-[9px] font-bold uppercase tracking-wide text-ink-muted">Bets</span>
-            </div>
-            <p className="font-display text-lg font-black text-ink">{stats.betsWon}W·{stats.betsLost}L</p>
-          </Link>
-          <div className="p-3">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Flame size={12} className="text-press" />
-              <span className="text-[9px] font-bold uppercase tracking-wide text-ink-muted">Reactions</span>
-            </div>
-            <p className="font-display text-lg font-black text-ink">{stats.hotTakeReactions}</p>
-          </div>
-          <div className="p-3">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Trophy size={12} className="text-rule-dark" />
-              <span className="text-[9px] font-bold uppercase tracking-wide text-ink-muted">Pending Bets</span>
-            </div>
-            <p className="font-display text-lg font-black text-ink">{stats.betsPending}</p>
-          </div>
         </div>
       </div>
 
