@@ -14,8 +14,16 @@ import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
 type Filter = 'all' | 'takes' | 'debates' | 'bets' | 'analysts';
 type PostType = 'take' | 'debate' | 'bet' | 'analysis';
 
+const INITIAL_LIMIT = 5;
+
 export default function StreetsPage() {
   const [filter, setFilter] = useState<Filter>('all');
+  const [showAll, setShowAll] = useState(false);
+
+  const handleFilterChange = (f: Filter) => {
+    setFilter(f);
+    setShowAll(false);
+  };
 
   const [localHotTakes, setLocalHotTakes] = useState<HotTake[]>(() =>
     HOT_TAKES.filter((ht) => ht.isPublic).map((ht) => ({ ...ht, comments: ht.comments ?? [] }))
@@ -141,11 +149,14 @@ export default function StreetsPage() {
     { id: 'analysts', label: '📊 Analysts' },
   ];
 
-  return (
-    <div className="flex flex-col h-full bg-paper">
+  const visibleItems = showAll ? feedItems : feedItems.slice(0, INITIAL_LIMIT);
+  const hasMore = !showAll && feedItems.length > INITIAL_LIMIT;
 
-      {/* ── Header ─────────────────────────────────────────── */}
-      <div className="shrink-0 bg-ink px-4 py-3 flex items-center justify-between">
+  return (
+    <div className="flex flex-col min-h-full bg-paper">
+
+      {/* ── Header — sticky ────────────────────────────────── */}
+      <div className="sticky top-0 z-20 bg-ink px-4 py-3 flex items-center justify-between">
         <div>
           <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-paper/40">Live · Public Feed</p>
           <h1 className="font-display text-2xl font-black text-paper leading-none">The Streets</h1>
@@ -158,12 +169,12 @@ export default function StreetsPage() {
         </button>
       </div>
 
-      {/* ── Filter pills — sticky on paper-dark ────────────── */}
-      <div className="shrink-0 bg-paper-dark border-b border-rule px-3 py-2 flex gap-1.5 overflow-x-auto">
+      {/* ── Filter pills — sticky below header ─────────────── */}
+      <div className="sticky top-[56px] z-10 bg-paper-dark border-b border-rule px-3 py-2 flex gap-1.5 overflow-x-auto">
         {FILTERS.map(({ id, label }) => (
           <button
             key={id}
-            onClick={() => setFilter(id)}
+            onClick={() => handleFilterChange(id)}
             className={`shrink-0 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-full transition-colors whitespace-nowrap ${
               filter === id
                 ? 'bg-ink text-paper'
@@ -176,7 +187,7 @@ export default function StreetsPage() {
       </div>
 
       {/* ── Feed ─────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 pb-6">
+      <div className="px-4 py-3 flex flex-col gap-3">
         {feedItems.length === 0 && (
           <div className="text-center py-16">
             <p className="font-display text-4xl mb-2 text-ink-faint">📰</p>
@@ -185,7 +196,7 @@ export default function StreetsPage() {
           </div>
         )}
 
-        {feedItems.map((entry) => {
+        {visibleItems.map((entry) => {
           // ── Hot Take ──────────────────────────────────────
           if (entry.type === 'take') {
             const ht = entry.ht;
@@ -478,6 +489,15 @@ export default function StreetsPage() {
             </Link>
           );
         })}
+
+        {hasMore && (
+          <button
+            onClick={() => setShowAll(true)}
+            className="w-full py-3 border-2 border-ink text-ink font-bold text-xs uppercase tracking-widest hover:bg-paper-dark transition-colors"
+          >
+            See More ({feedItems.length - INITIAL_LIMIT} more)
+          </button>
+        )}
       </div>
 
       {/* ── Post Modal ─────────────────────────────────────── */}
