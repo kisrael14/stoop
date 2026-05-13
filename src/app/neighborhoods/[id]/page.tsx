@@ -963,7 +963,7 @@ export default function NeighborhoodPage() {
                       onClick={(e) => e.stopPropagation()}
                       className="ml-auto text-[10px] font-bold uppercase tracking-wider text-masthead hover:underline"
                     >
-                      Face-Off →
+                      Join Debate →
                     </Link>
                   </div>
                   <p className="text-sm text-ink font-medium leading-snug mb-3 italic">&ldquo;{debate.claim}&rdquo;</p>

@@ -315,7 +315,7 @@ export default function TeamPage() {
                             <span className="text-[10px] text-ink-faint font-mono ml-auto">{timeAgo(d.createdAt)}</span>
                           </div>
                           <p className="text-sm text-ink italic leading-snug">&ldquo;{d.claim}&rdquo;</p>
-                          <p className="text-[10px] text-masthead font-bold mt-1.5">Face-Off →</p>
+                          <p className="text-[10px] text-masthead font-bold mt-1.5">Join Debate →</p>
                         </Link>
                       );
                     }
@@ -363,7 +363,7 @@ export default function TeamPage() {
                       href={`/debates/${debate.id}`}
                       className="ml-auto text-[10px] font-bold uppercase tracking-wider text-masthead hover:underline"
                     >
-                      Face-Off →
+                      Join Debate →
                     </Link>
                   </div>
                   <p className="text-sm text-ink font-medium italic mb-3 leading-snug">&ldquo;{debate.claim}&rdquo;</p>

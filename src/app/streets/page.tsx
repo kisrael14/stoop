@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { HOT_TAKES, DEBATES, BETS, ANALYSES, getUserById, USERS, ME } from '@/lib/mock-data';
 import { timeAgo } from '@/lib/utils';
-import type { HotTake, HotTakeComment, Debate, Bet, Analysis } from '@/lib/types';
+import type { HotTake, HotTakeComment, Debate, Bet, Analysis, DebateVote } from '@/lib/types';
 import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
 
 type Filter = 'all' | 'takes' | 'debates' | 'bets' | 'analysts';
@@ -28,7 +28,7 @@ export default function StreetsPage() {
   const [localHotTakes, setLocalHotTakes] = useState<HotTake[]>(() =>
     HOT_TAKES.filter((ht) => ht.isPublic).map((ht) => ({ ...ht, comments: ht.comments ?? [] }))
   );
-  const [localDebates] = useState<Debate[]>(() => DEBATES.filter((d) => d.isPublic));
+  const [localDebates, setLocalDebates] = useState<Debate[]>(() => DEBATES.filter((d) => d.isPublic));
   const [localBets] = useState<Bet[]>(() => BETS.filter((b) => b.isPublic));
   const [localAnalyses, setLocalAnalyses] = useState<Analysis[]>(() =>
     ANALYSES.filter((a) => a.isPublic).map((a) => ({ ...a, comments: a.comments ?? [] }))
@@ -79,6 +79,21 @@ export default function StreetsPage() {
           reactions = [...reactions, { emoji: vote, userIds: ['me'] }];
         }
         return { ...ht, reactions };
+      })
+    );
+  };
+
+  const voteDebate = (dId: string, choice: 'side1' | 'side2') => {
+    setLocalDebates((prev) =>
+      prev.map((d) => {
+        if (d.id !== dId) return d;
+        const alreadyVoted = d.votes.find((v) => v.userId === 'me');
+        if (alreadyVoted?.choice === choice) {
+          return { ...d, votes: d.votes.filter((v) => v.userId !== 'me') };
+        }
+        const filtered = d.votes.filter((v) => v.userId !== 'me');
+        const newVote: DebateVote = { userId: 'me', choice };
+        return { ...d, votes: [...filtered, newVote] };
       })
     );
   };
@@ -331,10 +346,13 @@ export default function StreetsPage() {
             const side1Users = d.side1UserIds.map((uid) => getUserById(uid)).filter(Boolean);
             const side2Users = d.side2UserIds.map((uid) => getUserById(uid)).filter(Boolean);
             const total = d.votes.length;
-            const s1Pct = total > 0 ? Math.round((d.votes.filter((v) => v.choice === 'side1').length / total) * 100) : 0;
-            const s2Pct = total > 0 ? Math.round((d.votes.filter((v) => v.choice === 'side2').length / total) * 100) : 0;
+            const s1Count = d.votes.filter((v) => v.choice === 'side1').length;
+            const s2Count = d.votes.filter((v) => v.choice === 'side2').length;
+            const s1Pct = total > 0 ? Math.round((s1Count / total) * 100) : 0;
+            const s2Pct = total > 0 ? Math.round((s2Count / total) * 100) : 0;
+            const myVote = d.votes.find((v) => v.userId === 'me')?.choice;
             return (
-              <Link key={d.id} href={`/debates/${d.id}`} className="block border-2 border-ink overflow-hidden hover:bg-paper-dark/30 transition-colors">
+              <div key={d.id} className="border-2 border-ink overflow-hidden">
                 <div className="flex items-center gap-2 px-4 pt-3 pb-2 border-b border-rule/50">
                   <div className="flex items-center gap-1 bg-navy/10 border border-navy/30 px-2 py-0.5 rounded-full">
                     <Swords size={10} className="text-navy" />
@@ -344,7 +362,6 @@ export default function StreetsPage() {
                 </div>
                 <div className="px-4 py-3 border-l-4 border-l-navy">
                   <p className="font-display text-sm font-bold text-ink italic leading-snug mb-2.5">&ldquo;{d.claim}&rdquo;</p>
-                  {/* Two sides */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <p className="text-[9px] font-bold uppercase tracking-widest text-navy mb-1">{d.side1Label ?? 'Side 1'}</p>
@@ -378,11 +395,36 @@ export default function StreetsPage() {
                     </div>
                   )}
                 </div>
-                <div className="border-t border-rule/50 px-4 py-2 bg-paper-dark flex items-center">
-                  <span className="text-[9px] text-ink-faint font-mono">{d.chatName}</span>
-                  <span className="ml-auto text-[10px] font-bold text-masthead">Face-Off →</span>
+                {/* Vote + Join row */}
+                <div className="border-t border-rule/50 px-3 py-2.5 bg-paper-dark flex items-center gap-2">
+                  <button
+                    onClick={() => voteDebate(d.id, 'side1')}
+                    className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-colors border ${
+                      myVote === 'side1'
+                        ? 'bg-navy text-paper border-navy'
+                        : 'bg-paper border-rule text-ink-muted hover:border-navy hover:text-navy'
+                    }`}
+                  >
+                    {d.side1Label ?? 'Side 1'}{s1Count > 0 && ` · ${s1Count}`}
+                  </button>
+                  <button
+                    onClick={() => voteDebate(d.id, 'side2')}
+                    className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-colors border ${
+                      myVote === 'side2'
+                        ? 'bg-field text-paper border-field'
+                        : 'bg-paper border-rule text-ink-muted hover:border-field hover:text-field'
+                    }`}
+                  >
+                    {d.side2Label ?? 'Side 2'}{s2Count > 0 && ` · ${s2Count}`}
+                  </button>
+                  <Link
+                    href={`/debates/${d.id}`}
+                    className="shrink-0 text-[10px] font-bold text-masthead hover:underline whitespace-nowrap pl-1"
+                  >
+                    Join Debate →
+                  </Link>
                 </div>
-              </Link>
+              </div>
             );
           }
 
