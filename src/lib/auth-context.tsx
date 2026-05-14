@@ -13,6 +13,8 @@ interface AuthUser {
   email: string | null;
   profile: Profile | null;
   teams: UserTeam[];
+  followerCount: number;
+  followingCount: number;
 }
 
 interface AuthContextValue {
@@ -38,15 +40,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadProfile = async (authUser: User) => {
     const supabase = createClient();
-    const [{ data: profile }, { data: teams }] = await Promise.all([
+    const [{ data: profile }, { data: teams }, { count: followerCount }, { count: followingCount }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', authUser.id).single(),
       supabase.from('user_teams').select('*').eq('user_id', authUser.id),
+      supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', authUser.id),
+      supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', authUser.id),
     ]);
     setUser({
       id: authUser.id,
       email: authUser.email ?? null,
       profile: profile ?? null,
       teams: teams ?? [],
+      followerCount: followerCount ?? 0,
+      followingCount: followingCount ?? 0,
     });
   };
 

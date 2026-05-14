@@ -1,7 +1,10 @@
 import type { User, Team, Chat, Debate, Bet, HotTake, HotTakeComment, Analysis, DebateArgument } from './types';
 import { ALL_TEAMS } from './teams-data';
+import { ALL_LEAGUES, getLeagueById } from './leagues-data';
 
 export const TEAMS: Team[] = ALL_TEAMS;
+export const LEAGUES = ALL_LEAGUES;
+export { getLeagueById };
 
 export const USERS: User[] = [
   {

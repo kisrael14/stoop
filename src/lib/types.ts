@@ -7,6 +7,16 @@ export interface Team {
   color: string;
 }
 
+export interface League {
+  id: string;        // matches the `league` field on Team — e.g. 'EPL', 'NFL'
+  name: string;      // full name, e.g. 'Premier League'
+  shortName: string; // e.g. 'EPL'
+  sport: string;     // 'Soccer', 'Football', etc.
+  country: string;   // 'England', 'USA', etc.
+  emoji: string;
+  color: string;
+}
+
 export type FandomLevel = 'diehard' | 'supporter' | 'fair-weather' | 'casual';
 
 export const FANDOM_LABELS: Record<FandomLevel, string> = {

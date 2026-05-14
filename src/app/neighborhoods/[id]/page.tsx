@@ -12,12 +12,13 @@ import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
 import {
   getChatById, getUserById, ME, DEBATES, BETS, HOT_TAKES, TEAMS, ANALYSES,
 } from '@/lib/mock-data';
-import { timeAgo, voteLeader, totalReactions } from '@/lib/utils';
+import { timeAgo, voteLeader, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { Message, MessageTag, Debate, Bet, HotTake, HotTakeComment, VoteChoice, Analysis } from '@/lib/types';
 import { sendNotification } from '@/lib/notifications';
 import TeamLogo from '@/components/TeamLogo';
+import { detectTeamIds } from '@/lib/players-data';
 
-type Tab = 'overview' | 'chat' | 'debates' | 'bets' | 'hot-takes' | 'analysts';
+type Tab = 'overview' | 'chat' | 'debates' | 'bets' | 'hot-takes' | 'analysis';
 const EMOJI_REACTIONS = ['🔥', '💯', '😂', '🧢', '👀', '😭', '🤬', '❤️'];
 const HOT_TAKE_MAX = 280;
 
@@ -133,6 +134,8 @@ export default function NeighborhoodPage() {
     setMessages((prev) => [...prev, msg]);
 
     if (pendingTag === 'debate') {
+      const detectedTeams = detectTeamIds(inputText.trim());
+      const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
       const newDebate: Debate = {
         id: `d-new-${Date.now()}`,
         chatId: chat.id,
@@ -143,13 +146,15 @@ export default function NeighborhoodPage() {
         arguments: [],
         votes: [],
         status: 'active',
-        teamIds: chat.teamIds,
+        teamIds: mergedTeamIds,
         createdAt: new Date().toISOString(),
       };
       setDebates((prev) => [newDebate, ...prev]);
       sendNotification(`⚔️ New Debate — ${chat.name}`, inputText.trim());
     }
     if (pendingTag === 'hot-take') {
+      const detectedTeams = detectTeamIds(inputText.trim());
+      const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
       const newHT: HotTake = {
         id: `ht-new-${Date.now()}`,
         chatId: chat.id,
@@ -157,7 +162,7 @@ export default function NeighborhoodPage() {
         content: inputText.trim(),
         authorId: 'me',
         reactions: [],
-        teamIds: chat.teamIds,
+        teamIds: mergedTeamIds,
         createdAt: new Date().toISOString(),
       };
       setHotTakes((prev) => [newHT, ...prev]);
@@ -191,6 +196,8 @@ export default function NeighborhoodPage() {
       setPendingTag(null);
     }
 
+    const detectedTeams = detectTeamIds(claim);
+    const mergedBetTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
     const newBet: Bet = {
       id: `b-new-${Date.now()}`,
       chatId: chat.id,
@@ -203,7 +210,7 @@ export default function NeighborhoodPage() {
       side2Label: data.side2Label,
       stakes: data.stakes,
       status: 'active',
-      teamIds: chat.teamIds,
+      teamIds: mergedBetTeamIds,
       createdAt: new Date().toISOString(),
     };
     setBets((prev) => [newBet, ...prev]);
@@ -229,6 +236,8 @@ export default function NeighborhoodPage() {
     );
 
     if (tag === 'debate') {
+      const detectedTeams = detectTeamIds(msg.content);
+      const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
       const newDebate: Debate = {
         id: `d-tag-${Date.now()}`,
         chatId: chat.id,
@@ -239,12 +248,14 @@ export default function NeighborhoodPage() {
         arguments: [],
         votes: [],
         status: 'active',
-        teamIds: chat.teamIds,
+        teamIds: mergedTeamIds,
         createdAt: new Date().toISOString(),
       };
       setDebates((prev) => [newDebate, ...prev]);
     }
     if (tag === 'hot-take') {
+      const detectedTeams = detectTeamIds(msg.content);
+      const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
       const newHT: HotTake = {
         id: `ht-tag-${Date.now()}`,
         chatId: chat.id,
@@ -252,7 +263,7 @@ export default function NeighborhoodPage() {
         content: msg.content,
         authorId: msg.userId,
         reactions: [],
-        teamIds: chat.teamIds,
+        teamIds: mergedTeamIds,
         createdAt: new Date().toISOString(),
       };
       setHotTakes((prev) => [newHT, ...prev]);
@@ -511,10 +522,10 @@ export default function NeighborhoodPage() {
     { id: 'debates', label: 'Debates', icon: Swords },
     { id: 'bets', label: 'Bets', icon: Handshake },
     { id: 'hot-takes', label: 'Takes', icon: Flame },
-    { id: 'analysts', label: 'Analysts', icon: PenLine },
+    { id: 'analysis', label: 'Analysis', icon: PenLine },
   ];
 
-  const TAB_ORDER: Tab[] = ['overview', 'chat', 'debates', 'bets', 'hot-takes', 'analysts'];
+  const TAB_ORDER: Tab[] = ['overview', 'chat', 'debates', 'bets', 'hot-takes', 'analysis'];
   const swipeStartX = useRef(0);
   const swipeStartY = useRef(0);
 
@@ -716,7 +727,7 @@ export default function NeighborhoodPage() {
                   >
                     <TeamLogo team={team} size={28} />
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-ink">{team.city} {team.name}</p>
+                      <p className="text-sm font-bold text-ink">{teamDisplayName(team)}</p>
                       <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{team.league}</p>
                     </div>
                     <span className="text-[11px] text-ink-muted">{count} fan{count !== 1 ? 's' : ''}</span>
@@ -729,13 +740,13 @@ export default function NeighborhoodPage() {
           {/* Quick-nav */}
           <div className="px-5 py-4 flex flex-col gap-0">
             <h3 className="font-display font-bold text-ink text-lg mb-3">Jump To</h3>
-            {(['chat', 'debates', 'bets', 'hot-takes', 'analysts'] as const).map((t, i) => {
+            {(['chat', 'debates', 'bets', 'hot-takes', 'analysis'] as const).map((t, i) => {
               const cfgMap = {
                 chat: { label: 'Chat', icon: MessageCircle, color: 'text-ink', count: messages.length, unit: 'messages' },
                 debates: { label: 'Debates', icon: Swords, color: 'text-navy', count: debates.filter((d) => d.status === 'active').length, unit: 'active' },
                 bets: { label: 'Bets', icon: Handshake, color: 'text-field', count: bets.filter((b) => b.status !== 'resolved').length, unit: 'active' },
                 'hot-takes': { label: 'Hot Takes', icon: Flame, color: 'text-press', count: hotTakes.length, unit: 'total' },
-                analysts: { label: 'Analysts', icon: PenLine, color: 'text-ink-muted', count: analyses.length, unit: 'pieces' },
+                analysis: { label: 'Analysis', icon: PenLine, color: 'text-ink-muted', count: analyses.length, unit: 'pieces' },
               };
               const cfg = cfgMap[t];
               const Icon = cfg.icon;
@@ -1371,7 +1382,7 @@ export default function NeighborhoodPage() {
       )}
 
       {/* ── ANALYSTS TAB ─────────────────────────────────────── */}
-      {activeTab === 'analysts' && (
+      {activeTab === 'analysis' && (
         <div className="flex-1 overflow-y-auto flex flex-col bg-paper">
           {/* Compose button */}
           <div className="px-4 py-3 border-b border-rule bg-paper-dark flex items-center justify-between">

@@ -4,10 +4,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Search, UserPlus, UserCheck, Phone, AtSign, X } from 'lucide-react';
 import { USERS, TEAMS, ME } from '@/lib/mock-data';
+import { ALL_LEAGUES } from '@/lib/leagues-data';
+import { teamDisplayName } from '@/lib/utils';
 import type { Team } from '@/lib/types';
 import TeamLogo from '@/components/TeamLogo';
 
-type SearchMode = 'people' | 'teams';
+type SearchMode = 'people' | 'teams' | 'leagues';
 
 export default function DiscoverPage() {
   const [mode, setMode] = useState<SearchMode>('people');
@@ -48,6 +50,16 @@ export default function DiscoverPage() {
     );
   };
 
+  const filteredLeagues = query.length >= 1
+    ? ALL_LEAGUES.filter(
+        (l) =>
+          l.name.toLowerCase().includes(query.toLowerCase()) ||
+          l.shortName.toLowerCase().includes(query.toLowerCase()) ||
+          l.country.toLowerCase().includes(query.toLowerCase()) ||
+          l.sport.toLowerCase().includes(query.toLowerCase())
+      )
+    : ALL_LEAGUES;
+
   const leagueGroups = filteredTeams.reduce<Record<string, Team[]>>((acc, team) => {
     if (!acc[team.league]) acc[team.league] = [];
     acc[team.league].push(team);
@@ -63,7 +75,7 @@ export default function DiscoverPage() {
 
         {/* Mode toggle */}
         <div className="flex gap-0 border border-ink overflow-hidden mb-4">
-          {(['people', 'teams'] as SearchMode[]).map((m) => (
+          {(['people', 'teams', 'leagues'] as SearchMode[]).map((m) => (
             <button
               key={m}
               onClick={() => { setMode(m); setQuery(''); }}
@@ -71,7 +83,7 @@ export default function DiscoverPage() {
                 mode === m ? 'bg-ink text-paper' : 'bg-paper text-ink-muted hover:bg-paper-dark'
               }`}
             >
-              {m === 'people' ? '👥 Neighbors' : '🏆 Teams & Leagues'}
+              {m === 'people' ? '👥 Neighbors' : m === 'teams' ? '🏆 Teams' : '🌍 Leagues'}
             </button>
           ))}
         </div>
@@ -90,7 +102,9 @@ export default function DiscoverPage() {
             placeholder={
               mode === 'people'
                 ? 'Name, @username, or phone...'
-                : 'Search teams, leagues, cities...'
+                : mode === 'teams'
+                ? 'Search teams, leagues, cities...'
+                : 'Search leagues, countries, sports...'
             }
             className="w-full border border-rule bg-paper-dark py-2.5 pl-9 pr-10 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors"
           />
@@ -213,7 +227,7 @@ export default function DiscoverPage() {
                     >
                       <TeamLogo team={team} size={32} />
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-ink text-sm">{team.city} {team.name}</p>
+                        <p className="font-bold text-ink text-sm">{teamDisplayName(team)}</p>
                         <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{team.league}</p>
                       </div>
                       <button
@@ -233,6 +247,46 @@ export default function DiscoverPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Leagues results */}
+      {mode === 'leagues' && (
+        <div className="px-5 py-4 pb-8">
+          {filteredLeagues.length === 0 && query.length > 0 && (
+            <div className="text-center py-12 px-5">
+              <p className="font-display text-3xl mb-2 text-ink-faint">🔍</p>
+              <p className="font-display font-bold text-ink">No leagues found</p>
+              <p className="text-xs text-ink-muted mt-1 italic">Try a different name or country</p>
+            </div>
+          )}
+          <div className="flex flex-col gap-0">
+            {filteredLeagues.map((league, i) => (
+              <Link
+                key={league.id}
+                href={`/leagues/${league.id}`}
+                className={`flex items-center gap-3 px-4 py-3 bg-paper hover:bg-paper-dark transition-colors border-b border-rule/50 ${i === 0 ? 'border-t border-rule/50' : ''}`}
+                style={{ borderLeftWidth: '3px', borderLeftColor: league.color, borderLeftStyle: 'solid' }}
+              >
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-xl shrink-0"
+                  style={{ backgroundColor: league.color + '25', border: `2px solid ${league.color}50` }}
+                >
+                  {league.emoji}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-ink text-sm">{league.name}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{league.country} · {league.sport}</p>
+                </div>
+                <span
+                  className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 text-paper shrink-0"
+                  style={{ backgroundColor: league.color }}
+                >
+                  {league.shortName}
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
     </div>

@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, X, ChevronRight, Check, GripVertical, Camera } from 'lucide-react';
 import { TEAMS, USERS } from '@/lib/mock-data';
+import { teamDisplayName } from '@/lib/utils';
 import type { Team, FanTeam, FandomLevel } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
@@ -241,7 +242,7 @@ export default function OnboardingPage() {
                         <TeamLogo team={team} size={32} />
                       </div>
                       <div className="flex-1">
-                        <p className="font-bold text-ink text-sm">{team.city} {team.name}</p>
+                        <p className="font-bold text-ink text-sm">{teamDisplayName(team)}</p>
                         <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{team.league}</p>
                       </div>
                       <span className="text-[10px] font-bold uppercase tracking-wider text-press">+ Add</span>
@@ -274,7 +275,7 @@ export default function OnboardingPage() {
                         <TeamLogo team={ft.team} size={28} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-ink text-sm truncate">{ft.team.city} {ft.team.name}</p>
+                        <p className="font-bold text-ink text-sm truncate">{teamDisplayName(ft.team)}</p>
                         <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{ft.team.league}</p>
                       </div>
                       <button onClick={() => removeTeam(ft.team.id)} className="text-ink-faint hover:text-masthead transition-colors shrink-0">
@@ -413,6 +414,13 @@ export default function OnboardingPage() {
                   await (supabase.from('user_teams') as any).upsert(
                     fanTeams.map((ft) => ({ user_id: userId, team_id: ft.team.id, fandom_level: ft.fandomLevel }))
                   );
+                }
+                // Save followed users to follows table (only real Supabase profiles — mock IDs will be silently ignored via FK failure)
+                if (following.length > 0) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  await Promise.allSettled(following.map((fid) =>
+                    (supabase.from('follows') as any).upsert({ follower_id: userId, following_id: fid })
+                  ));
                 }
                 await refreshProfile();
                 setSaving(false);

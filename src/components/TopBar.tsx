@@ -5,7 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { MessageCircle, Search, X, ChevronRight } from 'lucide-react';
 import { CHATS, USERS } from '@/lib/mock-data';
 import { ALL_TEAMS } from '@/lib/teams-data';
-import { timeAgo } from '@/lib/utils';
+import { ALL_LEAGUES } from '@/lib/leagues-data';
+import { timeAgo, teamDisplayName } from '@/lib/utils';
 import TeamLogo from '@/components/TeamLogo';
 
 const HIDDEN_ON = ['/login', '/onboarding'];
@@ -16,6 +17,11 @@ const LEAGUE_COLORS: Record<string, string> = {
   MLB: 'bg-field text-paper',
   NHL: 'bg-ink text-paper',
   MLS: 'bg-press text-paper',
+  EPL: 'bg-[#3d195b] text-paper',
+  LaLiga: 'bg-[#e63329] text-paper',
+  SerieA: 'bg-[#024494] text-paper',
+  Ligue1: 'bg-[#0f4fa8] text-paper',
+  Bundesliga: 'bg-[#d20515] text-paper',
 };
 
 export default function TopBar() {
@@ -51,7 +57,16 @@ export default function TopBar() {
       ).slice(0, 4)
     : [];
 
-  const hasResults = matchedTeams.length > 0 || matchedUsers.length > 0;
+  const matchedLeagues = q.length >= 1
+    ? ALL_LEAGUES.filter((l) =>
+        l.name.toLowerCase().includes(q) ||
+        l.shortName.toLowerCase().includes(q) ||
+        l.country.toLowerCase().includes(q) ||
+        l.sport.toLowerCase().includes(q)
+      ).slice(0, 4)
+    : [];
+
+  const hasResults = matchedTeams.length > 0 || matchedUsers.length > 0 || matchedLeagues.length > 0;
 
   const closeAll = () => {
     setChatOpen(false);
@@ -130,10 +145,40 @@ export default function TopBar() {
                     <TeamLogo team={team} size={28} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-ink text-sm">{team.city} {team.name}</p>
+                    <p className="font-bold text-ink text-sm">{teamDisplayName(team)}</p>
                   </div>
                   <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0 ${LEAGUE_COLORS[team.league] ?? 'bg-ink-faint text-paper'}`}>
                     {team.league}
+                  </span>
+                  <ChevronRight size={13} className="text-ink-faint shrink-0" />
+                </button>
+              ))}
+            </>
+          )}
+
+          {matchedLeagues.length > 0 && (
+            <>
+              <div className="section-header px-4">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-ink-faint">Leagues</span>
+              </div>
+              {matchedLeagues.map((league) => (
+                <button
+                  key={league.id}
+                  onClick={() => { closeAll(); router.push(`/leagues/${league.id}`); }}
+                  className="flex w-full items-center gap-3 px-4 py-3 hover:bg-paper-dark transition-colors text-left border-b border-rule/40 last:border-0"
+                >
+                  <div
+                    className="flex h-9 w-9 items-center justify-center rounded-full shrink-0 text-xl"
+                    style={{ backgroundColor: league.color + '25', border: `2px solid ${league.color}50` }}
+                  >
+                    {league.emoji}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-ink text-sm">{league.name}</p>
+                    <p className="text-[10px] text-ink-faint">{league.country} · {league.sport}</p>
+                  </div>
+                  <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0 ${LEAGUE_COLORS[league.id] ?? 'bg-ink-faint text-paper'}`}>
+                    {league.shortName}
                   </span>
                   <ChevronRight size={13} className="text-ink-faint shrink-0" />
                 </button>

@@ -4,13 +4,24 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Settings, Flame, Swords, Handshake, Trophy, Star, Bell, BellOff, Compass, PenLine, Newspaper } from 'lucide-react';
 import { ME, DEBATES, BETS, HOT_TAKES, ANALYSES, getUserById, CHATS } from '@/lib/mock-data';
-import { timeAgo, totalReactions } from '@/lib/utils';
+import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
 import { FANDOM_LABELS } from '@/lib/types';
-import type { FandomLevel } from '@/lib/types';
+import type { FandomLevel, FanTeam } from '@/lib/types';
 import { requestNotificationPermission, startSimulatedNotifications } from '@/lib/notifications';
 import { computeBadges } from '@/lib/badges';
 import BadgeChip from '@/components/BadgeChip';
 import TeamLogo from '@/components/TeamLogo';
+import { useAuth } from '@/lib/auth-context';
+import { ALL_TEAMS } from '@/lib/teams-data';
+
+function mapFandomLevel(level: string | null): FandomLevel {
+  if (!level) return 'casual';
+  if (level === 'die-hard' || level === 'diehard') return 'diehard';
+  if (level === 'super-fan' || level === 'supporter') return 'supporter';
+  if (level === 'fan') return 'supporter';
+  if (level === 'fair-weather') return 'fair-weather';
+  return 'casual';
+}
 
 const FANDOM_STYLES: Record<FandomLevel, { label: string; bg: string; text: string; border: string }> = {
   diehard:       { label: 'Diehard',      bg: 'bg-[#b8860b]', text: 'text-white',    border: 'border-[#b8860b]' },
@@ -20,6 +31,7 @@ const FANDOM_STYLES: Record<FandomLevel, { label: string; bg: string; text: stri
 };
 
 export default function StoopPage() {
+  const { user: authUser } = useAuth();
   const [notifStatus, setNotifStatus] = useState<'unknown' | 'granted' | 'denied'>('unknown');
 
   useEffect(() => {
@@ -34,7 +46,39 @@ export default function StoopPage() {
     if (granted) startSimulatedNotifications();
   };
 
-  const myTeamIds = ME.fanTeams.map((ft) => ft.team.id);
+  // ── Profile data: real auth user when available, mock ME as fallback ──
+  const isRealUser = !!authUser?.profile;
+  const displayName  = authUser?.profile?.display_name ?? ME.displayName;
+  const username     = authUser?.profile?.username     ?? ME.username;
+  const avatar       = authUser?.profile?.avatar       ?? ME.avatar;
+  const bio          = authUser?.profile?.bio          ?? ME.bio;
+
+  // Teams: map from auth user's Supabase user_teams, fall back to mock
+  const fanTeams: FanTeam[] = (() => {
+    if (authUser?.teams && authUser.teams.length > 0) {
+      return authUser.teams
+        .map((ut, i): FanTeam | null => {
+          const team = ALL_TEAMS.find((t) => t.id === ut.team_id);
+          if (!team) return null;
+          return { team, rank: i + 1, fandomLevel: mapFandomLevel(ut.fandom_level) };
+        })
+        .filter((x): x is FanTeam => x !== null);
+    }
+    return ME.fanTeams;
+  })();
+
+  // Counts from Supabase for real users, mock counts as fallback
+  const followerCount  = isRealUser ? (authUser.followerCount  ?? 0) : ME.followerIds.length;
+  const followingCount = isRealUser ? (authUser.followingCount ?? 0) : ME.followingIds.length;
+
+  // Stats: real users start at 0 until a stats DB is wired up
+  const stats = isRealUser ? {
+    debatesWon: 0, debatesLost: 0, debatesDrew: 0,
+    betsWon: 0, betsLost: 0, betsPending: 0,
+    hotTakesPosted: 0, hotTakeReactions: 0,
+  } : ME.stats;
+
+  const myTeamIds = fanTeams.map((ft) => ft.team.id);
   const myDebates = DEBATES.filter((d) => d.side1UserIds.includes('me') || d.side2UserIds.includes('me')).slice(0, 3);
   const myBets = BETS.filter((b) => b.participantIds.includes('me')).slice(0, 2);
   const myHotTakes = HOT_TAKES.filter((h) => h.authorId === 'me' || h.teamIds.some((t) => myTeamIds.includes(t))).slice(0, 2);
@@ -72,9 +116,8 @@ export default function StoopPage() {
     ...streetsBets.map((b) => ({ type: 'bet' as const, time: b.createdAt, item: b })),
     ...streetsAnalyses.map((a) => ({ type: 'analysis' as const, time: a.createdAt, item: a })),
   ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 6);
-  const { stats } = ME;
-  const badges = computeBadges('me');
 
+  const badges = computeBadges('me');
   const debatePct = (stats.debatesWon + stats.debatesLost) > 0
     ? Math.round((stats.debatesWon / (stats.debatesWon + stats.debatesLost)) * 100)
     : 0;
@@ -105,13 +148,13 @@ export default function StoopPage() {
         <div className="flex items-center gap-4 mb-4">
           <Link href="/users/me" className="relative shrink-0">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-paper/15 text-4xl ring-2 ring-press hover:ring-press/60 transition-all">
-              {ME.avatar}
+              {avatar}
             </div>
           </Link>
           <div className="flex-1">
-            <h1 className="font-display text-2xl font-black text-paper leading-tight">{ME.displayName}</h1>
-            <p className="text-[11px] font-mono text-paper/50">@{ME.username}</p>
-            {ME.bio && <p className="text-xs text-paper/70 italic mt-0.5 line-clamp-2">{ME.bio}</p>}
+            <h1 className="font-display text-2xl font-black text-paper leading-tight">{displayName}</h1>
+            <p className="text-[11px] font-mono text-paper/50">@{username}</p>
+            {bio && <p className="text-xs text-paper/70 italic mt-0.5 line-clamp-2">{bio}</p>}
           </div>
         </div>
 
@@ -120,11 +163,11 @@ export default function StoopPage() {
           {/* Row 1 — social stats */}
           <div className="grid grid-cols-4 divide-x divide-paper/20">
             <Link href="/discover?filter=followers" className="flex flex-col items-center py-2 hover:bg-paper/10 transition-colors">
-              <p className="font-display text-lg font-bold leading-none text-paper">{ME.followerIds.length}</p>
+              <p className="font-display text-lg font-bold leading-none text-paper">{followerCount}</p>
               <p className="text-[7px] font-bold uppercase tracking-wider text-paper/70 mt-0.5">Neighbors</p>
             </Link>
             <Link href="/discover?filter=following" className="flex flex-col items-center py-2 hover:bg-paper/10 transition-colors">
-              <p className="font-display text-lg font-bold leading-none text-paper">{ME.followingIds.length}</p>
+              <p className="font-display text-lg font-bold leading-none text-paper">{followingCount}</p>
               <p className="text-[7px] font-bold uppercase tracking-wider text-paper/70 mt-0.5">Following</p>
             </Link>
             <Link href="/neighborhoods" className="flex flex-col items-center py-2 hover:bg-paper/10 transition-colors">
@@ -255,7 +298,7 @@ export default function StoopPage() {
           <Link href="/discover?mode=teams" className="text-[10px] font-bold text-press hover:text-press/80">+ Add teams</Link>
         </div>
         <div className="divide-y divide-rule/60">
-          {ME.fanTeams.map((ft) => {
+          {fanTeams.map((ft) => {
             const style = FANDOM_STYLES[ft.fandomLevel];
             return (
               <Link
@@ -269,7 +312,7 @@ export default function StoopPage() {
                 <TeamLogo team={ft.team} size={24} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-bold text-ink">{ft.team.city} {ft.team.name}</p>
+                    <p className="text-xs font-bold text-ink">{teamDisplayName(ft.team)}</p>
                     {ft.rank === 1 && <Star size={10} className="text-[#b8860b]" fill="currentColor" />}
                   </div>
                   <p className="text-[9px] font-bold uppercase tracking-wide text-ink-faint">{ft.team.league}</p>

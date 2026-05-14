@@ -5,11 +5,13 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, UserPlus, UserCheck, Flame, Swords, Handshake, Trophy, Star, Newspaper, Settings } from 'lucide-react';
 import { getUserById, DEBATES, BETS, HOT_TAKES, ANALYSES, CHATS, ME } from '@/lib/mock-data';
-import { timeAgo, totalReactions } from '@/lib/utils';
+import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { FandomLevel } from '@/lib/types';
 import { computeBadges } from '@/lib/badges';
 import TeamLogo from '@/components/TeamLogo';
 import BadgeChip from '@/components/BadgeChip';
+import { useAuth } from '@/lib/auth-context';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 
 const FANDOM_STYLES: Record<FandomLevel, { label: string; bg: string; text: string }> = {
   diehard:        { label: 'Diehard',      bg: 'bg-[#b8860b]', text: 'text-white' },
@@ -21,6 +23,7 @@ const FANDOM_STYLES: Record<FandomLevel, { label: string; bg: string; text: stri
 export default function UserProfilePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { user: authUser, refreshProfile } = useAuth();
   const user = getUserById(id);
   const [following, setFollowing] = useState(ME.followingIds.includes(id));
 
@@ -106,7 +109,20 @@ export default function UserProfilePage() {
           </div>
           {!isMe && (
             <button
-              onClick={() => setFollowing((f) => !f)}
+              onClick={async () => {
+                const next = !following;
+                setFollowing(next);
+                if (authUser && isSupabaseConfigured()) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const supabase = createClient() as any;
+                  if (next) {
+                    await supabase.from('follows').upsert({ follower_id: authUser.id, following_id: id });
+                  } else {
+                    await supabase.from('follows').delete().eq('follower_id', authUser.id).eq('following_id', id);
+                  }
+                  await refreshProfile();
+                }
+              }}
               className={`shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors rounded-sm ${
                 following
                   ? 'bg-paper/15 text-paper/70 hover:bg-paper/25'
@@ -268,7 +284,7 @@ export default function UserProfilePage() {
                 <TeamLogo team={ft.team} size={24} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-bold text-ink">{ft.team.city} {ft.team.name}</p>
+                    <p className="text-xs font-bold text-ink">{teamDisplayName(ft.team)}</p>
                     {ft.rank === 1 && <Star size={10} className="text-[#b8860b]" fill="currentColor" />}
                   </div>
                   <p className="text-[9px] font-bold uppercase tracking-wide text-ink-faint">{ft.team.league}</p>
