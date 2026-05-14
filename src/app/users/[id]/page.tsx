@@ -112,54 +112,44 @@ export default function UserProfilePage() {
           )}
         </div>
 
-        {/* Stats strip */}
-        <div className="grid grid-cols-4 border border-paper/20">
+        {/* Unified stats + bragging rights grid */}
+        <div className="mt-4 grid grid-cols-4 border border-paper/20 divide-x divide-paper/20">
+          {/* Row 1 — social stats */}
           {[
-            { label: 'Neighbors', value: user.followerIds.length },
-            { label: 'Following', value: user.followingIds.length },
-            { label: 'Groups',    value: userNeighborhoods.length },
-            { label: 'Hot Takes', value: stats.hotTakesPosted, accent: true },
-          ].map(({ label, value, accent }, i) => (
-            <div
-              key={label}
-              className={`flex flex-col items-center py-2.5 ${i > 0 ? 'border-l border-paper/20' : ''}`}
-            >
-              <p className={`font-display text-xl font-bold ${accent ? 'text-press' : 'text-paper'}`}>{value}</p>
-              <p className="text-[8px] font-bold uppercase tracking-wider text-paper/50">{label}</p>
+            { label: 'Neighbors', value: user.followerIds.length, accent: false },
+            { label: 'Following', value: user.followingIds.length, accent: false },
+            { label: 'Groups',    value: userNeighborhoods.length, accent: false },
+            { label: 'Hot Takes', value: stats.hotTakesPosted,    accent: true  },
+          ].map(({ label, value, accent }) => (
+            <div key={label} className="flex flex-col items-center py-2">
+              <p className={`font-display text-lg font-bold leading-none ${accent ? 'text-press' : 'text-paper'}`}>{value}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-paper/50 mt-0.5">{label}</p>
             </div>
           ))}
-        </div>
 
-        {/* Bragging Rights — inside masthead */}
-        <div className="mt-4 border border-paper/20">
-          <div className="px-3 py-1.5 border-b border-paper/20">
-            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper/60">Bragging Rights</p>
+          {/* Divider row */}
+          <div className="col-span-4 border-t border-paper/20" />
+
+          {/* Row 2 — activity stats */}
+          <div className="flex flex-col items-center py-2 gap-0.5">
+            <Swords size={10} className="text-paper/40" />
+            <p className="font-display text-sm font-black text-paper leading-none">{stats.debatesWon}W <span className="text-paper/40 font-bold">{stats.debatesLost}L</span></p>
+            <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Debates</p>
           </div>
-          <div className="grid grid-cols-4 divide-x divide-paper/20">
-            <div className="p-3 flex flex-col items-center">
-              <div className="flex items-center gap-1 mb-1"><Swords size={11} className="text-paper/50" /></div>
-              <p className="font-display text-base font-black text-paper">{stats.debatesWon}W</p>
-              <p className="font-display text-xs text-paper/40">{stats.debatesLost}L</p>
-              <p className="text-[8px] font-bold uppercase tracking-wide text-paper/40 mt-0.5">Debates</p>
-            </div>
-            <div className="p-3 flex flex-col items-center">
-              <div className="flex items-center gap-1 mb-1"><Handshake size={11} className="text-paper/50" /></div>
-              <p className="font-display text-base font-black text-paper">{stats.betsWon}W</p>
-              <p className="font-display text-xs text-paper/40">{stats.betsLost}L</p>
-              <p className="text-[8px] font-bold uppercase tracking-wide text-paper/40 mt-0.5">Bets</p>
-            </div>
-            <div className="p-3 flex flex-col items-center">
-              <div className="flex items-center gap-1 mb-1"><Flame size={11} className="text-press" /></div>
-              <p className="font-display text-base font-black text-press">{stats.hotTakesPosted}</p>
-              <p className="font-display text-xs text-paper/40">&nbsp;</p>
-              <p className="text-[8px] font-bold uppercase tracking-wide text-paper/40 mt-0.5">Takes</p>
-            </div>
-            <div className="p-3 flex flex-col items-center">
-              <div className="flex items-center gap-1 mb-1"><Trophy size={11} className="text-paper/50" /></div>
-              <p className="font-display text-base font-black text-paper">{stats.hotTakeReactions}</p>
-              <p className="font-display text-xs text-paper/40">&nbsp;</p>
-              <p className="text-[8px] font-bold uppercase tracking-wide text-paper/40 mt-0.5">Reactions</p>
-            </div>
+          <div className="flex flex-col items-center py-2 gap-0.5">
+            <Handshake size={10} className="text-paper/40" />
+            <p className="font-display text-sm font-black text-paper leading-none">{stats.betsWon}W <span className="text-paper/40 font-bold">{stats.betsLost}L</span></p>
+            <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Bets</p>
+          </div>
+          <div className="flex flex-col items-center py-2 gap-0.5">
+            <Flame size={10} className="text-press" />
+            <p className="font-display text-sm font-black text-press leading-none">{stats.hotTakesPosted}</p>
+            <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Takes</p>
+          </div>
+          <div className="flex flex-col items-center py-2 gap-0.5">
+            <Trophy size={10} className="text-paper/40" />
+            <p className="font-display text-sm font-black text-paper leading-none">{stats.hotTakeReactions}</p>
+            <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Reactions</p>
           </div>
         </div>
       </div>
