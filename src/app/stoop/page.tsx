@@ -116,50 +116,45 @@ export default function StoopPage() {
         </div>
 
         {/* Unified stats + bragging rights grid */}
-        <div className="mt-4 grid grid-cols-4 border border-paper/20 divide-x divide-paper/20">
+        <div className="mt-4 border border-paper/20">
           {/* Row 1 — social stats */}
-          <Link href="/discover?filter=followers" className="flex flex-col items-center py-2 hover:bg-paper/10 transition-colors">
-            <p className="font-display text-lg font-bold leading-none text-paper">{ME.followerIds.length}</p>
-            <p className="text-[7px] font-bold uppercase tracking-wider text-paper/50 mt-0.5">Neighbors</p>
-          </Link>
-          <Link href="/discover?filter=following" className="flex flex-col items-center py-2 hover:bg-paper/10 transition-colors">
-            <p className="font-display text-lg font-bold leading-none text-paper">{ME.followingIds.length}</p>
-            <p className="text-[7px] font-bold uppercase tracking-wider text-paper/50 mt-0.5">Following</p>
-          </Link>
-          <Link href="/neighborhoods" className="flex flex-col items-center py-2 hover:bg-paper/10 transition-colors">
-            <p className="font-display text-lg font-bold leading-none text-paper">{myNeighborhoods.length}</p>
-            <p className="text-[7px] font-bold uppercase tracking-wider text-paper/50 mt-0.5">Groups</p>
-          </Link>
-          <div className="flex flex-col items-center py-2">
-            <p className="font-display text-lg font-bold leading-none text-press">{stats.hotTakesPosted}</p>
-            <p className="text-[7px] font-bold uppercase tracking-wider text-paper/50 mt-0.5">Hot Takes</p>
+          <div className="grid grid-cols-4 divide-x divide-paper/20">
+            <Link href="/discover?filter=followers" className="flex flex-col items-center py-2 hover:bg-paper/10 transition-colors">
+              <p className="font-display text-lg font-bold leading-none text-paper">{ME.followerIds.length}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-paper/50 mt-0.5">Neighbors</p>
+            </Link>
+            <Link href="/discover?filter=following" className="flex flex-col items-center py-2 hover:bg-paper/10 transition-colors">
+              <p className="font-display text-lg font-bold leading-none text-paper">{ME.followingIds.length}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-paper/50 mt-0.5">Following</p>
+            </Link>
+            <Link href="/neighborhoods" className="flex flex-col items-center py-2 hover:bg-paper/10 transition-colors">
+              <p className="font-display text-lg font-bold leading-none text-paper">{myNeighborhoods.length}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-paper/50 mt-0.5">Groups</p>
+            </Link>
+            <div className="flex flex-col items-center py-2">
+              <p className="font-display text-lg font-bold leading-none text-press">{stats.hotTakesPosted}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-paper/50 mt-0.5">Hot Takes</p>
+            </div>
           </div>
-
-          {/* Divider row */}
-          <div className="col-span-4 border-t border-paper/20" />
-
           {/* Row 2 — activity stats */}
-          <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-paper/10 transition-colors">
-            <Swords size={10} className="text-paper/40" />
-            <p className="font-display text-base font-black text-paper leading-none">{debatePct}%</p>
-            <p className="text-[7px] font-bold text-paper/40 leading-none">{stats.debatesWon}W · {stats.debatesLost}L</p>
-            <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Debates</p>
-          </Link>
-          <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-paper/10 transition-colors">
-            <Handshake size={10} className="text-paper/40" />
-            <p className="font-display text-base font-black text-paper leading-none">{betPct}%</p>
-            <p className="text-[7px] font-bold text-paper/40 leading-none">{stats.betsWon}W · {stats.betsLost}L</p>
-            <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Bets</p>
-          </Link>
-          <div className="flex flex-col items-center py-2 gap-0.5">
-            <Flame size={10} className="text-press" />
-            <p className="font-display text-sm font-black text-press leading-none">{stats.hotTakesPosted}</p>
-            <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Takes</p>
-          </div>
-          <div className="flex flex-col items-center py-2 gap-0.5">
-            <Trophy size={10} className="text-paper/40" />
-            <p className="font-display text-sm font-black text-paper leading-none">{stats.hotTakeReactions}</p>
-            <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Reactions</p>
+          <div className="grid grid-cols-3 divide-x divide-paper/20 border-t border-paper/20">
+            <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-paper/10 transition-colors">
+              <Swords size={10} className="text-paper/40" />
+              <p className="font-display text-base font-black text-paper leading-none">{debatePct}%</p>
+              <p className="text-[7px] font-bold text-paper/40 leading-none">{stats.debatesWon}W · {stats.debatesLost}L</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Debates</p>
+            </Link>
+            <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-paper/10 transition-colors">
+              <Handshake size={10} className="text-paper/40" />
+              <p className="font-display text-base font-black text-paper leading-none">{betPct}%</p>
+              <p className="text-[7px] font-bold text-paper/40 leading-none">{stats.betsWon}W · {stats.betsLost}L</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Bets</p>
+            </Link>
+            <div className="flex flex-col items-center py-2 gap-0.5">
+              <Trophy size={10} className="text-paper/40" />
+              <p className="font-display text-sm font-black text-paper leading-none">{stats.hotTakeReactions}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Reactions</p>
+            </div>
           </div>
         </div>
 
