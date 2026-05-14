@@ -10,6 +10,7 @@ import type { FandomLevel } from '@/lib/types';
 import { requestNotificationPermission, startSimulatedNotifications } from '@/lib/notifications';
 import { computeBadges } from '@/lib/badges';
 import BadgeChip from '@/components/BadgeChip';
+import TeamLogo from '@/components/TeamLogo';
 
 const FANDOM_STYLES: Record<FandomLevel, { label: string; bg: string; text: string; border: string }> = {
   diehard:       { label: 'Diehard',      bg: 'bg-[#b8860b]', text: 'text-white',    border: 'border-[#b8860b]' },
@@ -263,7 +264,7 @@ export default function StoopPage() {
                 <span className="flex h-6 w-6 items-center justify-center text-[10px] font-black text-paper rounded-full shrink-0" style={{ backgroundColor: ft.team.color }}>
                   {ft.rank}
                 </span>
-                <span className="text-lg">{ft.team.emoji}</span>
+                <TeamLogo team={ft.team} size={24} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p className="text-xs font-bold text-ink">{ft.team.city} {ft.team.name}</p>

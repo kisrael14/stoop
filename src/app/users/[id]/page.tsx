@@ -7,6 +7,7 @@ import { ArrowLeft, Swords, Handshake, Flame, Star, UserPlus, UserCheck, Message
 import { getUserById, DEBATES, BETS, HOT_TAKES, CHATS, ME } from '@/lib/mock-data';
 import { timeAgo, totalReactions } from '@/lib/utils';
 import { computeBadges } from '@/lib/badges';
+import TeamLogo from '@/components/TeamLogo';
 import BadgeChip from '@/components/BadgeChip';
 
 export default function UserProfilePage() {
@@ -136,7 +137,7 @@ export default function UserProfilePage() {
               <span className="flex h-6 w-6 items-center justify-center text-xs font-bold text-paper rounded-full" style={{ backgroundColor: ft.team.color }}>
                 {ft.rank}
               </span>
-              <span className="text-xl">{ft.team.emoji}</span>
+              <TeamLogo team={ft.team} size={24} />
               <div className="flex-1">
                 <p className="text-sm font-bold text-ink">{ft.team.city} {ft.team.name}</p>
                 <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{ft.team.league}</p>

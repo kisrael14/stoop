@@ -15,6 +15,7 @@ import {
 import { timeAgo, voteLeader, totalReactions } from '@/lib/utils';
 import type { Message, MessageTag, Debate, Bet, HotTake, HotTakeComment, VoteChoice, Analysis } from '@/lib/types';
 import { sendNotification } from '@/lib/notifications';
+import TeamLogo from '@/components/TeamLogo';
 
 type Tab = 'overview' | 'chat' | 'debates' | 'bets' | 'hot-takes' | 'analysts';
 const EMOJI_REACTIONS = ['🔥', '💯', '😂', '🧢', '👀', '😭', '🤬', '❤️'];
@@ -663,8 +664,8 @@ export default function NeighborhoodPage() {
                   </div>
                   <div className="flex gap-1 flex-wrap justify-end">
                     {m!.fanTeams.slice(0, 2).map((ft) => (
-                      <span key={ft.team.id} className="text-sm" title={ft.team.name}>
-                        {ft.team.emoji}
+                      <span key={ft.team.id} title={ft.team.name}>
+                        <TeamLogo team={ft.team} size={16} />
                       </span>
                     ))}
                   </div>
@@ -689,7 +690,7 @@ export default function NeighborhoodPage() {
                     className={`flex items-center gap-3 px-4 py-2.5 border-b border-rule/50 last:border-0 hover:bg-paper-dark transition-colors ${i === 0 ? 'border-t border-rule/50' : ''}`}
                     style={{ borderLeftWidth: '3px', borderLeftColor: team.color, borderLeftStyle: 'solid' }}
                   >
-                    <span className="text-xl">{team.emoji}</span>
+                    <TeamLogo team={team} size={28} />
                     <div className="flex-1">
                       <p className="text-sm font-bold text-ink">{team.city} {team.name}</p>
                       <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{team.league}</p>

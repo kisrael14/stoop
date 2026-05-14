@@ -6,6 +6,7 @@ import { MessageCircle, Search, X, ChevronRight } from 'lucide-react';
 import { CHATS, USERS } from '@/lib/mock-data';
 import { ALL_TEAMS } from '@/lib/teams-data';
 import { timeAgo } from '@/lib/utils';
+import TeamLogo from '@/components/TeamLogo';
 
 const HIDDEN_ON = ['/login', '/onboarding'];
 
@@ -123,10 +124,10 @@ export default function TopBar() {
                   className="flex w-full items-center gap-3 px-4 py-3 hover:bg-paper-dark transition-colors text-left border-b border-rule/40 last:border-0"
                 >
                   <div
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-lg shrink-0"
+                    className="flex h-9 w-9 items-center justify-center rounded-full shrink-0 p-1"
                     style={{ backgroundColor: team.color + '25', border: `2px solid ${team.color}50` }}
                   >
-                    {team.emoji}
+                    <TeamLogo team={team} size={28} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-ink text-sm">{team.city} {team.name}</p>

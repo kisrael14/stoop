@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Search, UserPlus, UserCheck, Phone, AtSign, X } from 'lucide-react';
 import { USERS, TEAMS, ME } from '@/lib/mock-data';
 import type { Team } from '@/lib/types';
+import TeamLogo from '@/components/TeamLogo';
 
 type SearchMode = 'people' | 'teams';
 
@@ -149,7 +150,7 @@ export default function DiscoverPage() {
                       className="px-2 py-0.5 text-[10px] font-bold text-paper uppercase tracking-wide"
                       style={{ backgroundColor: ft.team.color + '90' }}
                     >
-                      {ft.team.emoji} {ft.team.name}
+                      <TeamLogo team={ft.team} size={12} className="inline-block mr-0.5" />{ft.team.name}
                     </span>
                   ))}
                 </div>
@@ -189,7 +190,7 @@ export default function DiscoverPage() {
                       className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-paper border transition-colors hover:opacity-80 uppercase tracking-wide"
                       style={{ backgroundColor: team.color + '40', borderColor: team.color + '80', color: team.color }}
                     >
-                      {team.emoji} {team.name}
+                      <TeamLogo team={team} size={14} className="inline-block mr-0.5" />{team.name}
                       <X size={10} />
                     </button>
                   );
@@ -210,7 +211,7 @@ export default function DiscoverPage() {
                       className={`flex items-center gap-3 px-4 py-3 bg-paper hover:bg-paper-dark transition-colors border-b border-rule/50 ${i === 0 ? 'border-t border-rule/50' : ''}`}
                       style={{ borderLeftWidth: '3px', borderLeftColor: team.color, borderLeftStyle: 'solid' }}
                     >
-                      <span className="text-2xl">{team.emoji}</span>
+                      <TeamLogo team={team} size={32} />
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-ink text-sm">{team.city} {team.name}</p>
                         <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{team.league}</p>
