@@ -8,6 +8,8 @@ import { timeAgo, totalReactions } from '@/lib/utils';
 import { FANDOM_LABELS } from '@/lib/types';
 import type { FandomLevel } from '@/lib/types';
 import { requestNotificationPermission, startSimulatedNotifications } from '@/lib/notifications';
+import { computeBadges } from '@/lib/badges';
+import BadgeChip from '@/components/BadgeChip';
 
 const FANDOM_STYLES: Record<FandomLevel, { label: string; bg: string; text: string; border: string }> = {
   diehard:       { label: 'Diehard',      bg: 'bg-[#b8860b]', text: 'text-white',    border: 'border-[#b8860b]' },
@@ -70,6 +72,7 @@ export default function StoopPage() {
     ...streetsAnalyses.map((a) => ({ type: 'analysis' as const, time: a.createdAt, item: a })),
   ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 6);
   const { stats } = ME;
+  const badges = computeBadges('me');
 
   return (
     <div className="flex flex-col bg-paper min-h-full pb-4">
@@ -180,6 +183,18 @@ export default function StoopPage() {
             <p className="font-display text-xs text-ink-faint">&nbsp;</p>
             <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint mt-0.5">Reactions</p>
           </div>
+        </div>
+      </div>
+
+      {/* ── BADGES ─────────────────────────────────────────── */}
+      <div className="mx-4 mt-4 border-2 border-ink">
+        <div className="px-3 py-2 bg-ink">
+          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper">Badges</p>
+        </div>
+        <div className="px-3 py-3 flex flex-wrap gap-2">
+          {badges.map((badge) => (
+            <BadgeChip key={badge.type} badge={badge} size="sm" />
+          ))}
         </div>
       </div>
 
