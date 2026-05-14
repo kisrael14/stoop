@@ -2,15 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Phone, User, Lock, ChevronRight, Eye, EyeOff, Mail } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { Phone, User, Lock, ChevronRight, Eye, EyeOff, Mail, CheckCircle } from 'lucide-react';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 
 type Mode = 'signin' | 'signup';
-
-const SUPABASE_CONFIGURED =
-  typeof window !== 'undefined' &&
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-  process.env.NEXT_PUBLIC_SUPABASE_URL !== 'your-project-url-here';
 
 function Spinner({ light }: { light?: boolean }) {
   return (
@@ -29,6 +24,7 @@ function Spinner({ light }: { light?: boolean }) {
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
+  const SUPABASE_CONFIGURED = isSupabaseConfigured();
 
   const [mode, setMode] = useState<Mode>('signin');
   const [identifier, setIdentifier] = useState('');
@@ -39,10 +35,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<'google' | 'apple' | null>(null);
   const [error, setError] = useState('');
+  const [emailConfirmSent, setEmailConfirmSent] = useState(false);
 
   const isPhone = /^\+?[\d\s\-()]{7,}$/.test(identifier.replace(/\s/g, ''));
-  const isEmail = identifier.includes('@') && !isPhone;
-  const identifierType = identifier.length > 0 ? (isPhone ? 'phone' : isEmail ? 'email' : 'username') : null;
+  const isEmailType = identifier.includes('@') && !isPhone;
+  const identifierType = identifier.length > 0 ? (isPhone ? 'phone' : isEmailType ? 'email' : 'username') : null;
 
   const signInWithOAuth = async (provider: 'google' | 'apple') => {
     if (!SUPABASE_CONFIGURED) { router.push('/onboarding'); return; }
@@ -72,7 +69,7 @@ export default function LoginPage() {
     });
     setLoading(false);
     if (err) { setError(err.message); return; }
-    router.push('/onboarding');
+    setEmailConfirmSent(true);
   };
 
   const handleSignIn = async () => {
@@ -101,6 +98,40 @@ export default function LoginPage() {
   };
 
   const handleSubmit = () => mode === 'signup' ? handleSignUp() : handleSignIn();
+
+  if (emailConfirmSent) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-paper px-8 text-center gap-6">
+        <div className="border-b-2 border-t-2 border-ink py-2 px-8 w-full text-center">
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-ink-muted">Est. 2024 · Sports Edition</p>
+        </div>
+        <h1 className="font-display text-4xl font-black text-ink tracking-tight leading-tight">
+          Stoop<br />Sports
+        </h1>
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-field/10 border-2 border-field">
+            <CheckCircle size={32} className="text-field" />
+          </div>
+          <div>
+            <h2 className="font-display text-xl font-black text-ink mb-2">Check Your Email</h2>
+            <p className="text-sm text-ink-muted leading-relaxed">
+              We sent a confirmation link to<br />
+              <span className="font-bold text-ink">{email}</span>
+            </p>
+            <p className="text-sm text-ink-muted leading-relaxed mt-3">
+              Click the link in your email to activate your account and set up your stoop.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setEmailConfirmSent(false)}
+          className="text-xs text-ink-faint hover:text-ink-muted underline"
+        >
+          ← Back to sign in
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-paper">
@@ -173,7 +204,6 @@ export default function LoginPage() {
           <div className="flex-1 border-t border-rule" />
         </div>
 
-        {/* Email + username (signup) or email/phone (signin) */}
         {mode === 'signup' ? (
           <>
             <div>
@@ -209,7 +239,6 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Password */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">Password</label>
           <div className="relative">
@@ -232,7 +261,7 @@ export default function LoginPage() {
 
         <button onClick={handleSubmit} disabled={loading}
           className="flex items-center justify-center gap-2 bg-ink py-4 font-bold text-paper hover:bg-ink/80 disabled:opacity-60 transition-colors mt-1 uppercase tracking-widest text-sm">
-          {loading ? <Spinner light /> : <>{mode === 'signin' ? 'Enter the Stoop' : 'Claim Your Spot'}<ChevronRight size={18} /></>}
+          {loading ? <Spinner light /> : <>{mode === 'signin' ? 'Enter the Stoop' : 'Join the Stoop'}<ChevronRight size={18} /></>}
         </button>
 
         {mode === 'signin' && (
