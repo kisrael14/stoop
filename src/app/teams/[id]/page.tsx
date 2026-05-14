@@ -171,7 +171,9 @@ export default function TeamPage() {
           <div className="flex-1 min-w-0">
             <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/50">{team.league}</span>
             <h1 className="font-display text-2xl font-black text-white leading-none">{team.city}</h1>
-            <h2 className="font-display text-2xl font-black leading-none" style={{ color: 'rgba(255,255,255,0.75)' }}>{team.name} Fan</h2>
+            <h2 className="font-display text-2xl font-black leading-none" style={{ color: 'rgba(255,255,255,0.75)' }}>
+              {team.name} <span className="text-sm font-bold tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.5)' }}>fans</span>
+            </h2>
           </div>
           <button
             onClick={() => setIsFollowing((f) => !f)}
