@@ -16,6 +16,7 @@ import { timeAgo, voteLeader, totalReactions } from '@/lib/utils';
 import type { Message, MessageTag, Debate, Bet, HotTake, HotTakeComment, VoteChoice, Analysis } from '@/lib/types';
 import { sendNotification } from '@/lib/notifications';
 import TeamLogo from '@/components/TeamLogo';
+import { detectTeamIds } from '@/lib/players-data';
 
 type Tab = 'overview' | 'chat' | 'debates' | 'bets' | 'hot-takes' | 'analysts';
 const EMOJI_REACTIONS = ['🔥', '💯', '😂', '🧢', '👀', '😭', '🤬', '❤️'];
@@ -133,6 +134,8 @@ export default function NeighborhoodPage() {
     setMessages((prev) => [...prev, msg]);
 
     if (pendingTag === 'debate') {
+      const detectedTeams = detectTeamIds(inputText.trim());
+      const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
       const newDebate: Debate = {
         id: `d-new-${Date.now()}`,
         chatId: chat.id,
@@ -143,13 +146,15 @@ export default function NeighborhoodPage() {
         arguments: [],
         votes: [],
         status: 'active',
-        teamIds: chat.teamIds,
+        teamIds: mergedTeamIds,
         createdAt: new Date().toISOString(),
       };
       setDebates((prev) => [newDebate, ...prev]);
       sendNotification(`⚔️ New Debate — ${chat.name}`, inputText.trim());
     }
     if (pendingTag === 'hot-take') {
+      const detectedTeams = detectTeamIds(inputText.trim());
+      const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
       const newHT: HotTake = {
         id: `ht-new-${Date.now()}`,
         chatId: chat.id,
@@ -157,7 +162,7 @@ export default function NeighborhoodPage() {
         content: inputText.trim(),
         authorId: 'me',
         reactions: [],
-        teamIds: chat.teamIds,
+        teamIds: mergedTeamIds,
         createdAt: new Date().toISOString(),
       };
       setHotTakes((prev) => [newHT, ...prev]);
@@ -191,6 +196,8 @@ export default function NeighborhoodPage() {
       setPendingTag(null);
     }
 
+    const detectedTeams = detectTeamIds(claim);
+    const mergedBetTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
     const newBet: Bet = {
       id: `b-new-${Date.now()}`,
       chatId: chat.id,
@@ -203,7 +210,7 @@ export default function NeighborhoodPage() {
       side2Label: data.side2Label,
       stakes: data.stakes,
       status: 'active',
-      teamIds: chat.teamIds,
+      teamIds: mergedBetTeamIds,
       createdAt: new Date().toISOString(),
     };
     setBets((prev) => [newBet, ...prev]);
@@ -229,6 +236,8 @@ export default function NeighborhoodPage() {
     );
 
     if (tag === 'debate') {
+      const detectedTeams = detectTeamIds(msg.content);
+      const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
       const newDebate: Debate = {
         id: `d-tag-${Date.now()}`,
         chatId: chat.id,
@@ -239,12 +248,14 @@ export default function NeighborhoodPage() {
         arguments: [],
         votes: [],
         status: 'active',
-        teamIds: chat.teamIds,
+        teamIds: mergedTeamIds,
         createdAt: new Date().toISOString(),
       };
       setDebates((prev) => [newDebate, ...prev]);
     }
     if (tag === 'hot-take') {
+      const detectedTeams = detectTeamIds(msg.content);
+      const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
       const newHT: HotTake = {
         id: `ht-tag-${Date.now()}`,
         chatId: chat.id,
@@ -252,7 +263,7 @@ export default function NeighborhoodPage() {
         content: msg.content,
         authorId: msg.userId,
         reactions: [],
-        teamIds: chat.teamIds,
+        teamIds: mergedTeamIds,
         createdAt: new Date().toISOString(),
       };
       setHotTakes((prev) => [newHT, ...prev]);

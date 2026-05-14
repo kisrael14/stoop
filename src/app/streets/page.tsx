@@ -10,6 +10,7 @@ import { HOT_TAKES, DEBATES, BETS, ANALYSES, getUserById, USERS, ME } from '@/li
 import { timeAgo } from '@/lib/utils';
 import type { HotTake, HotTakeComment, Debate, Bet, Analysis, DebateVote } from '@/lib/types';
 import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
+import { detectTeamIds } from '@/lib/players-data';
 
 type Filter = 'all' | 'takes' | 'debates' | 'bets' | 'analysts';
 type PostType = 'take' | 'debate' | 'bet' | 'analysis';
@@ -116,10 +117,11 @@ export default function StreetsPage() {
   const submitPost = () => {
     if (!postText.trim()) return;
     if (postType === 'bet') { setBetSetupClaim(postText.trim()); return; }
+    const detectedTeams = detectTeamIds(postText.trim());
     if (postType === 'take') {
       setLocalHotTakes((prev) => [{
         id: `ht-s-${Date.now()}`, chatId: 'streets', chatName: 'The Streets',
-        content: postText.trim(), authorId: 'me', reactions: [], teamIds: [],
+        content: postText.trim(), authorId: 'me', reactions: [], teamIds: detectedTeams,
         createdAt: new Date().toISOString(), isPublic: true, comments: [],
       }, ...prev]);
     }
@@ -127,7 +129,7 @@ export default function StreetsPage() {
       setLocalAnalyses((prev) => [{
         id: `an-s-${Date.now()}`, chatId: 'streets', chatName: 'The Streets',
         title: postText.trim().split('\n')[0] || postText.trim(),
-        content: postText.trim(), authorId: 'me', reactions: [], teamIds: [],
+        content: postText.trim(), authorId: 'me', reactions: [], teamIds: detectedTeams,
         createdAt: new Date().toISOString(), isPublic: true, comments: [],
       }, ...prev]);
     }
@@ -136,6 +138,9 @@ export default function StreetsPage() {
   };
 
   const confirmBet = (_data: BetSetupResult) => {
+    // Bet object creation for streets is handled by the neighborhood flow;
+    // here we just close the modal. teamIds detection happens if this page
+    // is extended to create a full Bet record.
     setBetSetupClaim(null);
     setPostText('');
     setShowAddModal(false);
