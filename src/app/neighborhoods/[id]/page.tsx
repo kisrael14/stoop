@@ -507,7 +507,6 @@ export default function NeighborhoodPage() {
   };
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
-    { id: 'overview', label: 'Overview', icon: Home },
     { id: 'chat', label: 'Chat', icon: MessageCircle },
     { id: 'debates', label: 'Debates', icon: Swords },
     { id: 'bets', label: 'Bets', icon: Handshake },
@@ -536,6 +535,13 @@ export default function NeighborhoodPage() {
             <p className="font-display font-bold text-paper truncate leading-tight">{chatName}</p>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-paper/50">{members.length} members</p>
           </div>
+        </button>
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full transition-all ${activeTab === 'overview' ? 'bg-paper text-ink' : 'bg-paper/10 hover:bg-paper/20 text-paper/70 hover:text-paper'}`}
+          aria-label="Overview"
+        >
+          <Home size={14} />
         </button>
         <button
           onClick={() => { setEditName(chatName); setEditEmoji(chatEmoji); setShowEditModal(true); }}
