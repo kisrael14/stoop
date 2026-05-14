@@ -75,6 +75,13 @@ export default function StoopPage() {
   const { stats } = ME;
   const badges = computeBadges('me');
 
+  const debatePct = (stats.debatesWon + stats.debatesLost) > 0
+    ? Math.round((stats.debatesWon / (stats.debatesWon + stats.debatesLost)) * 100)
+    : 0;
+  const betPct = (stats.betsWon + stats.betsLost) > 0
+    ? Math.round((stats.betsWon / (stats.betsWon + stats.betsLost)) * 100)
+    : 0;
+
   return (
     <div className="flex flex-col bg-paper min-h-full pb-4">
 
@@ -134,12 +141,14 @@ export default function StoopPage() {
           {/* Row 2 — activity stats */}
           <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-paper/10 transition-colors">
             <Swords size={10} className="text-paper/40" />
-            <p className="font-display text-sm font-black text-paper leading-none">{stats.debatesWon}W <span className="text-paper/40 font-bold">{stats.debatesLost}L</span></p>
+            <p className="font-display text-base font-black text-paper leading-none">{debatePct}%</p>
+            <p className="text-[7px] font-bold text-paper/40 leading-none">{stats.debatesWon}W · {stats.debatesLost}L</p>
             <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Debates</p>
           </Link>
           <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-paper/10 transition-colors">
             <Handshake size={10} className="text-paper/40" />
-            <p className="font-display text-sm font-black text-paper leading-none">{stats.betsWon}W <span className="text-paper/40 font-bold">{stats.betsLost}L</span></p>
+            <p className="font-display text-base font-black text-paper leading-none">{betPct}%</p>
+            <p className="text-[7px] font-bold text-paper/40 leading-none">{stats.betsWon}W · {stats.betsLost}L</p>
             <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Bets</p>
           </Link>
           <div className="flex flex-col items-center py-2 gap-0.5">
