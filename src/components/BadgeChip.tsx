@@ -4,12 +4,13 @@ import { useState } from 'react';
 import { BADGE_DEFINITIONS } from '@/lib/badges';
 import type { UserBadge } from '@/lib/badges';
 
-const LEVEL_COLORS: Record<number, { bg: string; text: string; bar: string }> = {
-  1: { bg: 'bg-paper-dark',   text: 'text-ink-muted',  bar: 'bg-ink-faint'  },
-  2: { bg: 'bg-field/10',     text: 'text-field',      bar: 'bg-field'      },
-  3: { bg: 'bg-navy/10',      text: 'text-navy',       bar: 'bg-navy'       },
-  4: { bg: 'bg-[#f97316]/10', text: 'text-[#f97316]',  bar: 'bg-[#f97316]'  },
-  5: { bg: 'bg-masthead/10',  text: 'text-masthead',   bar: 'bg-masthead'   },
+// Level 1=Stone, 2=Iron, 3=Bronze, 4=Silver, 5=Gold
+const LEVEL_COLORS: Record<number, { bg: string; text: string; bar: string; hex: string }> = {
+  1: { bg: 'bg-[#9E9E9E]/15', text: 'text-[#9E9E9E]', bar: 'bg-[#9E9E9E]', hex: '#9E9E9E' },
+  2: { bg: 'bg-[#6B6B6B]/15', text: 'text-[#6B6B6B]', bar: 'bg-[#6B6B6B]', hex: '#6B6B6B' },
+  3: { bg: 'bg-[#CD7F32]/15', text: 'text-[#CD7F32]', bar: 'bg-[#CD7F32]', hex: '#CD7F32' },
+  4: { bg: 'bg-[#C0C0C0]/15', text: 'text-[#C0C0C0]', bar: 'bg-[#C0C0C0]', hex: '#C0C0C0' },
+  5: { bg: 'bg-[#FFD700]/15', text: 'text-[#FFD700]', bar: 'bg-[#FFD700]', hex: '#FFD700' },
 };
 
 interface Props {
@@ -29,8 +30,8 @@ export default function BadgeChip({ badge, size = 'md' }: Props) {
         onClick={() => setOpen((p) => !p)}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
-        className={`flex flex-col items-center gap-0.5 px-2 py-1.5 border rounded-lg transition-colors ${colors.bg} border-current ${colors.text}`}
-        style={{ minWidth: isSm ? 52 : 64 }}
+        className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors ${colors.bg} ${colors.text}`}
+        style={{ minWidth: isSm ? 52 : 64, border: `1.5px solid ${colors.hex}60` }}
       >
         <span className={isSm ? 'text-base' : 'text-xl'}>{def.emoji}</span>
         <span className={`font-bold uppercase tracking-wide leading-none ${isSm ? 'text-[8px]' : 'text-[9px]'}`}>
@@ -82,7 +83,7 @@ export default function BadgeChip({ badge, size = 'md' }: Props) {
               </div>
             </div>
           ) : (
-            <p className="text-[10px] font-bold text-masthead text-center">🏆 Max level reached</p>
+            <p className="text-[10px] font-bold text-center" style={{ color: colors.hex }}>🏆 Hall of Famer</p>
           )}
         </div>
       )}
