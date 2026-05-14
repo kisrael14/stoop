@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 
 const PUBLIC_ROUTES = ['/login', '/auth/callback'];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   // Skip auth check if Supabase isn't configured yet
