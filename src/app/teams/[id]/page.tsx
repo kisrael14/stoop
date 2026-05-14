@@ -251,7 +251,7 @@ export default function TeamPage() {
             >
               {team.league} ↗
             </Link>
-            {!['EPL','La Liga','Serie A','Ligue 1','Bundesliga'].includes(team.league) && (
+            {!['EPL','LaLiga','SerieA','Ligue1','Bundesliga'].includes(team.league) && (
               <h1 className="font-display text-2xl font-black text-white leading-none">{team.city}</h1>
             )}
             <h2 className="font-display text-2xl font-black leading-none" style={{ color: 'rgba(255,255,255,0.75)' }}>
