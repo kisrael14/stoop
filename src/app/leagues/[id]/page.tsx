@@ -3,83 +3,29 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Flame, Snowflake, Swords, Handshake, Trophy, Star, Users, Plus, X, Send, UserPlus, UserCheck } from 'lucide-react';
-import { DEBATES, BETS, HOT_TAKES, getUserById, USERS, ME } from '@/lib/mock-data';
-import { getTeamByIdFull } from '@/lib/teams-data';
+import { ArrowLeft, Flame, Snowflake, Swords, Handshake, Trophy, Users } from 'lucide-react';
+import { DEBATES, BETS, HOT_TAKES, getUserById } from '@/lib/mock-data';
+import { getLeagueById } from '@/lib/leagues-data';
+import { ALL_TEAMS } from '@/lib/teams-data';
 import { timeAgo, totalReactions } from '@/lib/utils';
-import type { VoteChoice, HotTake } from '@/lib/types';
-import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
+import type { VoteChoice } from '@/lib/types';
 import TeamLogo from '@/components/TeamLogo';
 
 type Tab = 'overview' | 'debates' | 'hot-takes' | 'bets';
-type Period = 'weekly' | 'monthly' | 'yearly';
 
-const PERIOD_DAYS: Record<Period, number> = { weekly: 7, monthly: 30, yearly: 365 };
-
-const RANK_STYLES = [
-  'bg-ink text-paper',
-  'bg-rule-dark text-paper',
-  'bg-paper-deeper border border-rule text-ink',
-  'bg-paper-dark border border-rule/50 text-ink-muted',
-  'bg-paper-dark border border-rule/50 text-ink-muted',
-];
-
-function getTopFans(teamId: string, period: Period) {
-  const cutoff = new Date('2026-05-13');
-  cutoff.setDate(cutoff.getDate() - PERIOD_DAYS[period]);
-
-  const scores: Record<string, number> = {};
-
-  HOT_TAKES
-    .filter((ht) => ht.teamIds.includes(teamId) && new Date(ht.createdAt) >= cutoff)
-    .forEach((ht) => {
-      scores[ht.authorId] = (scores[ht.authorId] || 0) + 5 + totalReactions(ht.reactions) * 2;
-    });
-
-  DEBATES
-    .filter((d) => d.teamIds.includes(teamId) && new Date(d.createdAt) >= cutoff)
-    .forEach((d) => {
-      [...d.side1UserIds, ...d.side2UserIds].forEach((uid) => {
-        scores[uid] = (scores[uid] || 0) + 3;
-      });
-      d.arguments.forEach((arg) => {
-        scores[arg.userId] = (scores[arg.userId] || 0) + 2 + totalReactions(arg.reactions);
-      });
-    });
-
-  BETS
-    .filter((b) => b.teamIds.includes(teamId) && new Date(b.createdAt) >= cutoff)
-    .forEach((b) => {
-      b.participantIds.forEach((pid) => {
-        scores[pid] = (scores[pid] || 0) + 4;
-      });
-    });
-
-  return Object.entries(scores)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([userId, score]) => ({ user: getUserById(userId)!, score }))
-    .filter((x) => x.user);
-}
-
-export default function TeamPage() {
+export default function LeaguePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const team = getTeamByIdFull(id);
+  const league = getLeagueById(id);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
-  const [period, setPeriod] = useState<Period>('weekly');
-  const [showDiscussModal, setShowDiscussModal] = useState(false);
-  const [discussType, setDiscussType] = useState<'take' | 'debate' | 'bet'>('take');
-  const [discussText, setDiscussText] = useState('');
-  const [betSetupClaim, setBetSetupClaim] = useState<string | null>(null);
-  const [isFollowing, setIsFollowing] = useState(() => ME.fanTeams.some((ft) => ft.team.id === id));
-  const [localHotTakes, setLocalHotTakes] = useState(() =>
-    HOT_TAKES
-      .filter((ht) => ht.teamIds.includes(id))
-      .sort((a, b) => totalReactions(b.reactions) - totalReactions(a.reactions))
-  );
+  const [localHotTakes, setLocalHotTakes] = useState(() => {
+    const leagueTeamIds = ALL_TEAMS.filter((t) => t.league === id).map((t) => t.id);
+    return HOT_TAKES
+      .filter((ht) => ht.teamIds.some((tid) => leagueTeamIds.includes(tid)))
+      .sort((a, b) => totalReactions(b.reactions) - totalReactions(a.reactions));
+  });
 
-  const voteHotTakeTeam = (htId: string, vote: '🔥' | '❄️') => {
+  const voteHotTake = (htId: string, vote: '🔥' | '❄️') => {
     const opposite = vote === '🔥' ? '❄️' : '🔥';
     setLocalHotTakes((prev) =>
       prev.map((ht) => {
@@ -100,61 +46,37 @@ export default function TeamPage() {
     );
   };
 
-  const submitDiscuss = () => {
-    if (!discussText.trim()) return;
-    if (discussType === 'bet') {
-      setBetSetupClaim(discussText.trim());
-      return;
-    }
-    if (discussType === 'take') {
-      const newHT: HotTake = {
-        id: `ht-t-${Date.now()}`,
-        chatId: 'streets',
-        chatName: 'The Streets',
-        content: discussText.trim(),
-        authorId: 'me',
-        reactions: [],
-        teamIds: [id],
-        createdAt: new Date().toISOString(),
-        isPublic: true,
-        comments: [],
-      };
-      setLocalHotTakes((prev) => [newHT, ...prev]);
-    }
-    setDiscussText('');
-    setShowDiscussModal(false);
-  };
-
-  if (!team) {
+  if (!league) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-ink-muted italic">Team not found</p>
+        <p className="text-ink-muted italic">League not found</p>
       </div>
     );
   }
 
-  const teamDebates = DEBATES
-    .filter((d) => d.teamIds.includes(id))
+  const leagueTeams = ALL_TEAMS.filter((t) => t.league === id);
+  const leagueTeamIds = leagueTeams.map((t) => t.id);
+
+  const leagueDebates = DEBATES
+    .filter((d) => d.teamIds.some((tid) => leagueTeamIds.includes(tid)))
     .sort((a, b) => (b.votes.length + b.arguments.length) - (a.votes.length + a.arguments.length));
 
-  const teamBets = BETS
-    .filter((b) => b.teamIds.includes(id))
+  const leagueBets = BETS
+    .filter((b) => b.teamIds.some((tid) => leagueTeamIds.includes(tid)))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  const topFans = getTopFans(id, period);
 
   const tabs: { id: Tab; label: string; icon: React.ElementType; count: number }[] = [
     { id: 'overview',   label: 'Overview',  icon: Users,     count: 0 },
-    { id: 'debates',    label: 'Debates',   icon: Swords,    count: teamDebates.length },
+    { id: 'debates',    label: 'Debates',   icon: Swords,    count: leagueDebates.length },
     { id: 'hot-takes',  label: 'Takes',     icon: Flame,     count: localHotTakes.length },
-    { id: 'bets',       label: 'Bets',      icon: Handshake, count: teamBets.length },
+    { id: 'bets',       label: 'Bets',      icon: Handshake, count: leagueBets.length },
   ];
 
-  const headerBg = team.color + 'dd';
+  const headerBg = league.color + 'dd';
 
   return (
     <div className="flex flex-col min-h-full bg-paper">
-      {/* ── Team header ─────────────────────────────────────────────────── */}
+      {/* ── League header ─────────────────────────────────────────────────── */}
       <div className="shrink-0 px-5 pt-10 pb-5" style={{ backgroundColor: headerBg }}>
         <button
           onClick={() => router.back()}
@@ -164,39 +86,25 @@ export default function TeamPage() {
         </button>
         <div className="flex items-center gap-4">
           <div
-            className="flex h-16 w-16 items-center justify-center rounded-2xl shrink-0 p-1"
+            className="flex h-16 w-16 items-center justify-center rounded-2xl shrink-0 text-4xl"
             style={{ backgroundColor: 'rgba(255,255,255,0.12)', border: '2px solid rgba(255,255,255,0.2)' }}
           >
-            <TeamLogo team={team} size={52} />
+            {league.emoji}
           </div>
           <div className="flex-1 min-w-0">
-            <Link
-              href={`/leagues/${team.league}`}
-              className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/50 hover:text-white/80 transition-colors"
-            >
-              {team.league} ↗
-            </Link>
-            <h1 className="font-display text-2xl font-black text-white leading-none">{team.city}</h1>
-            <h2 className="font-display text-2xl font-black leading-none" style={{ color: 'rgba(255,255,255,0.75)' }}>
-              {team.name} <span className="text-sm font-bold tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.5)' }}>fans</span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/50">{league.country}</span>
+            <h1 className="font-display text-2xl font-black text-white leading-none">{league.name}</h1>
+            <h2 className="font-display text-base font-bold leading-none" style={{ color: 'rgba(255,255,255,0.75)' }}>
+              {league.sport}
             </h2>
           </div>
-          <button
-            onClick={() => setIsFollowing((f) => !f)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all shrink-0 ${
-              isFollowing
-                ? 'bg-white/20 text-white border border-white/40 hover:bg-white/10'
-                : 'bg-white text-ink hover:bg-white/90'
-            }`}
-          >
-            {isFollowing ? <><UserCheck size={13} /> Following</> : <><UserPlus size={13} /> Follow</>}
-          </button>
         </div>
         <div className="flex gap-6 mt-5 pt-4 border-t border-white/20">
           {[
-            { label: 'Debates',   value: teamDebates.length },
+            { label: 'Teams',     value: leagueTeams.length },
+            { label: 'Debates',   value: leagueDebates.length },
             { label: 'Hot Takes', value: localHotTakes.length },
-            { label: 'Bets',      value: teamBets.length },
+            { label: 'Bets',      value: leagueBets.length },
           ].map(({ label, value }) => (
             <div key={label}>
               <p className="text-xl font-bold text-white font-mono">{value}</p>
@@ -228,63 +136,28 @@ export default function TeamPage() {
       {/* ── OVERVIEW TAB ──────────────────────────────────────────────────── */}
       {activeTab === 'overview' && (
         <div className="flex-1 overflow-y-auto pb-8">
-
-          {/* Top Fans */}
+          {/* Teams list */}
           <div className="px-5 pt-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Star size={14} className="text-rule-dark" />
-                <h3 className="font-display font-bold text-ink text-lg">Top Fans</h3>
-              </div>
-              {/* Period switcher */}
-              <div className="flex border-2 border-ink overflow-hidden rounded-full">
-                {(['weekly', 'monthly', 'yearly'] as Period[]).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setPeriod(p)}
-                    className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wider transition-colors ${
-                      period === p ? 'bg-ink text-paper' : 'bg-paper text-ink-muted hover:bg-paper-dark'
-                    }`}
-                  >
-                    {p === 'weekly' ? 'Wk' : p === 'monthly' ? 'Mo' : 'Yr'}
-                  </button>
-                ))}
-              </div>
+            <div className="section-header mb-3">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-ink">Teams ({leagueTeams.length})</span>
             </div>
-
-            {topFans.length > 0 ? (
-              <div className="border-2 border-ink overflow-hidden">
-                {topFans.map(({ user, score }, i) => (
-                  <Link
-                    key={user.id}
-                    href={`/users/${user.id}`}
-                    className={`flex items-center gap-3 px-4 py-3 hover:bg-paper-dark transition-colors border-b border-rule/50 last:border-0 ${i === 0 ? 'bg-paper-dark' : ''}`}
-                  >
-                    <div className={`flex h-7 w-7 items-center justify-center text-xs font-bold shrink-0 rounded-full ${RANK_STYLES[i]}`}>
-                      {i + 1}
-                    </div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-paper-dark border border-rule text-xl shrink-0">
-                      {user.avatar}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-ink text-sm">{user.displayName}</p>
-                      <p className="text-[10px] text-ink-faint font-mono">@{user.username}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-ink font-mono">{score}</p>
-                      <p className="text-[9px] text-ink-faint uppercase tracking-wide">pts</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="border border-rule/50 py-8 text-center">
-                <p className="text-ink-muted italic text-sm">
-                  No fan activity yet this {period === 'weekly' ? 'week' : period === 'monthly' ? 'month' : 'year'}
-                </p>
-                <p className="text-[10px] text-ink-faint mt-1">Post hot takes or debates to climb the board</p>
-              </div>
-            )}
+            <div className="flex flex-col">
+              {leagueTeams.map((team, i) => (
+                <Link
+                  key={team.id}
+                  href={`/teams/${team.id}`}
+                  className={`flex items-center gap-3 px-4 py-3 bg-paper hover:bg-paper-dark transition-colors border-b border-rule/50 ${i === 0 ? 'border-t border-rule/50' : ''}`}
+                  style={{ borderLeftWidth: '3px', borderLeftColor: team.color, borderLeftStyle: 'solid' }}
+                >
+                  <TeamLogo team={team} size={32} />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-ink text-sm">{team.city} {team.name}</p>
+                    <p className="text-[10px] text-ink-faint">{team.emoji}</p>
+                  </div>
+                  <span className="text-ink-faint text-xs">→</span>
+                </Link>
+              ))}
+            </div>
           </div>
 
           {/* Recent Activity */}
@@ -292,10 +165,9 @@ export default function TeamPage() {
             <div className="section-header mb-3">
               <span className="text-[10px] font-bold uppercase tracking-widest text-ink">Recent Activity</span>
             </div>
-
-            {teamDebates.length === 0 && localHotTakes.length === 0 && teamBets.length === 0 ? (
+            {leagueDebates.length === 0 && localHotTakes.length === 0 && leagueBets.length === 0 ? (
               <div className="py-10 text-center border border-rule/50">
-                <p className="text-2xl mb-2">{team.emoji}</p>
+                <p className="text-2xl mb-2">{league.emoji}</p>
                 <p className="font-display font-bold text-ink">No activity yet</p>
                 <p className="text-sm text-ink-muted italic mt-1">Start debates in your neighborhoods</p>
               </div>
@@ -303,8 +175,8 @@ export default function TeamPage() {
               <div className="flex flex-col gap-3">
                 {[
                   ...localHotTakes.slice(0, 2).map((ht) => ({ type: 'hot-take' as const, time: ht.createdAt, ht })),
-                  ...teamDebates.slice(0, 2).map((d)  => ({ type: 'debate'   as const, time: d.createdAt,  d  })),
-                  ...teamBets.slice(0, 1).map((b)     => ({ type: 'bet'      as const, time: b.createdAt,  b  })),
+                  ...leagueDebates.slice(0, 2).map((d)  => ({ type: 'debate'   as const, time: d.createdAt,  d  })),
+                  ...leagueBets.slice(0, 1).map((b)     => ({ type: 'bet'      as const, time: b.createdAt,  b  })),
                 ]
                   .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
                   .slice(0, 5)
@@ -360,13 +232,13 @@ export default function TeamPage() {
       {/* ── DEBATES TAB ───────────────────────────────────────────────────── */}
       {activeTab === 'debates' && (
         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 pb-8">
-          {teamDebates.length === 0 ? (
+          {leagueDebates.length === 0 ? (
             <div className="text-center py-16">
               <p className="font-display text-4xl mb-2 text-ink-faint">⚔️</p>
               <p className="font-display font-bold text-ink text-lg">No debates yet</p>
               <p className="text-sm text-ink-muted italic mt-1">Start one in a neighborhood</p>
             </div>
-          ) : teamDebates.map((debate) => {
+          ) : leagueDebates.map((debate) => {
             const side1Users = debate.side1UserIds.map((uid) => getUserById(uid)).filter(Boolean);
             const side2Users = debate.side2UserIds.map((uid) => getUserById(uid)).filter(Boolean);
             return (
@@ -459,7 +331,7 @@ export default function TeamPage() {
                 </div>
                 <div className="border-t border-rule/50 px-4 py-3 flex items-center gap-3 bg-paper-dark">
                   <button
-                    onClick={() => voteHotTakeTeam(ht.id, '🔥')}
+                    onClick={() => voteHotTake(ht.id, '🔥')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-all btn-3d ${
                       myFire ? 'bg-[#f97316] text-white' : 'bg-paper border border-rule text-ink-muted hover:border-[#f97316] hover:text-[#f97316]'
                     }`}
@@ -468,7 +340,7 @@ export default function TeamPage() {
                     {fireCount > 0 && <span className="text-xs">{fireCount}</span>}
                   </button>
                   <button
-                    onClick={() => voteHotTakeTeam(ht.id, '❄️')}
+                    onClick={() => voteHotTake(ht.id, '❄️')}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-sm transition-all btn-3d ${
                       myIce ? 'bg-[#38bdf8] text-white' : 'bg-paper border border-rule text-ink-muted hover:border-[#38bdf8] hover:text-[#38bdf8]'
                     }`}
@@ -489,13 +361,13 @@ export default function TeamPage() {
       {/* ── BETS TAB ──────────────────────────────────────────────────────── */}
       {activeTab === 'bets' && (
         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 pb-8">
-          {teamBets.length === 0 ? (
+          {leagueBets.length === 0 ? (
             <div className="text-center py-16">
               <p className="font-display text-4xl mb-2 text-ink-faint">🤝</p>
               <p className="font-display font-bold text-ink text-lg">No bets yet</p>
               <p className="text-sm text-ink-muted italic mt-1">Make one in a neighborhood</p>
             </div>
-          ) : teamBets.map((bet) => {
+          ) : leagueBets.map((bet) => {
             const participants = bet.participantIds.map((pid) => getUserById(pid)).filter(Boolean);
             const winner = bet.winnerId ? getUserById(bet.winnerId) : null;
             return (
@@ -534,81 +406,6 @@ export default function TeamPage() {
             );
           })}
         </div>
-      )}
-      {/* ── + to Discussion FAB ────────────────────────────── */}
-      <button
-        onClick={() => setShowDiscussModal(true)}
-        className="fixed bottom-20 right-4 flex items-center gap-1.5 bg-ink text-paper px-4 py-2.5 rounded-full shadow-xl font-bold text-[11px] uppercase tracking-widest hover:bg-ink/80 transition-colors z-20"
-        style={{ maxWidth: 'calc(100vw - 2rem)' }}
-      >
-        <Plus size={13} /> to Discussion
-      </button>
-
-      {/* ── Discuss Modal ───────────────────────────────── */}
-      {showDiscussModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
-          <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={() => setShowDiscussModal(false)} />
-          <div className="relative w-full max-w-md bg-paper border-t-2 border-ink">
-            <div className="flex items-center justify-between px-5 py-4 bg-ink">
-              <div>
-                <p className="font-display font-bold text-paper">{team.emoji} {team.name}</p>
-                <p className="text-[10px] text-paper/50 uppercase tracking-widest">Post to The Streets</p>
-              </div>
-              <button onClick={() => setShowDiscussModal(false)} className="text-paper/60 hover:text-paper"><X size={18} /></button>
-            </div>
-            <div className="px-5 py-5 flex flex-col gap-4">
-              <div className="grid grid-cols-3 gap-2">
-                {([
-                  { id: 'take', emoji: '🔥', label: 'Hot Take' },
-                  { id: 'debate', emoji: '⚔️', label: 'Debate' },
-                  { id: 'bet', emoji: '🤝', label: 'Bet' },
-                ] as { id: 'take' | 'debate' | 'bet'; emoji: string; label: string }[]).map(({ id, emoji, label }) => (
-                  <button
-                    key={id}
-                    onClick={() => setDiscussType(id)}
-                    className={`flex flex-col items-center gap-1 py-3 border-2 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
-                      discussType === id ? 'border-ink bg-ink text-paper' : 'border-rule text-ink-muted hover:border-ink-muted'
-                    }`}
-                  >
-                    <span className="text-xl">{emoji}</span>{label}
-                  </button>
-                ))}
-              </div>
-              <textarea
-                value={discussText}
-                onChange={(e) => setDiscussText(e.target.value)}
-                placeholder={
-                  discussType === 'take' ? `Hot take about the ${team.name}…`
-                  : discussType === 'debate' ? `State the debate claim…`
-                  : `What's the bet?`
-                }
-                rows={3}
-                className="w-full border border-rule bg-paper-dark px-4 py-3 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors resize-none rounded-lg"
-              />
-            </div>
-            <div className="border-t-2 border-rule bg-paper px-5 py-4 flex gap-3">
-              <button onClick={() => setShowDiscussModal(false)} className="border border-rule px-5 py-3 text-xs font-bold uppercase tracking-wider text-ink-muted hover:bg-paper-dark transition-colors rounded-full">
-                Cancel
-              </button>
-              <button
-                onClick={submitDiscuss}
-                disabled={!discussText.trim()}
-                className="flex-1 flex items-center justify-center gap-2 bg-press text-paper py-3 text-xs font-bold uppercase tracking-widest disabled:opacity-40 rounded-full btn-3d hover:bg-press/80 transition-colors"
-              >
-                <Send size={13} /> Post to Streets
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {betSetupClaim !== null && (
-        <BetSetupModal
-          claim={betSetupClaim}
-          members={USERS}
-          onConfirm={() => { setBetSetupClaim(null); setDiscussText(''); setShowDiscussModal(false); }}
-          onCancel={() => setBetSetupClaim(null)}
-        />
       )}
     </div>
   );
