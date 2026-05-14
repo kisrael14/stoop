@@ -18,7 +18,7 @@ create table if not exists public.profiles (
 create table if not exists public.user_teams (
   user_id      uuid references public.profiles(id) on delete cascade,
   team_id      text not null,
-  fandom_level text check (fandom_level in ('casual', 'fan', 'super-fan', 'die-hard')),
+  fandom_level text check (fandom_level in ('casual', 'supporter', 'fair-weather', 'diehard')),
   primary key (user_id, team_id)
 );
 

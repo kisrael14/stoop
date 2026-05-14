@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Flame, Snowflake, Swords, Handshake, Trophy, Star, Users, Plus, X, Send, UserPlus, UserCheck, Home, PenLine, Megaphone, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
 import { DEBATES, BETS, HOT_TAKES, ANALYSES, getUserById, USERS, ME } from '@/lib/mock-data';
 import { getTeamByIdFull } from '@/lib/teams-data';
+import { useAuth } from '@/lib/auth-context';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { timeAgo, totalReactions } from '@/lib/utils';
 import type { VoteChoice, HotTake, Analysis, HotTakeComment } from '@/lib/types';
 import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
@@ -65,6 +67,7 @@ function getTopFans(teamId: string, period: Period) {
 export default function TeamPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { user: authUser, refreshProfile } = useAuth();
   const team = getTeamByIdFull(id);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [period, setPeriod] = useState<Period>('weekly');
@@ -73,6 +76,13 @@ export default function TeamPage() {
   const [discussText, setDiscussText] = useState('');
   const [betSetupClaim, setBetSetupClaim] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(() => ME.fanTeams.some((ft) => ft.team.id === id));
+
+  // Sync isFollowing with real auth teams when available
+  useEffect(() => {
+    if (authUser?.teams) {
+      setIsFollowing(authUser.teams.some((t) => t.team_id === id));
+    }
+  }, [authUser?.teams, id]);
   const [localHotTakes, setLocalHotTakes] = useState(() =>
     HOT_TAKES
       .filter((ht) => ht.teamIds.includes(id))
@@ -259,7 +269,20 @@ export default function TeamPage() {
             </h2>
           </div>
           <button
-            onClick={() => setIsFollowing((f) => !f)}
+            onClick={async () => {
+              const next = !isFollowing;
+              setIsFollowing(next);
+              if (authUser && isSupabaseConfigured()) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const supabase = createClient() as any;
+                if (next) {
+                  await supabase.from('user_teams').upsert({ user_id: authUser.id, team_id: id, fandom_level: 'casual' });
+                } else {
+                  await supabase.from('user_teams').delete().eq('user_id', authUser.id).eq('team_id', id);
+                }
+                await refreshProfile();
+              }
+            }}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all shrink-0 ${
               isFollowing
                 ? 'bg-white/20 text-white border border-white/40 hover:bg-white/10'

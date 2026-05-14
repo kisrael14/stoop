@@ -415,6 +415,13 @@ export default function OnboardingPage() {
                     fanTeams.map((ft) => ({ user_id: userId, team_id: ft.team.id, fandom_level: ft.fandomLevel }))
                   );
                 }
+                // Save followed users to follows table (only real Supabase profiles — mock IDs will be silently ignored via FK failure)
+                if (following.length > 0) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  await Promise.allSettled(following.map((fid) =>
+                    (supabase.from('follows') as any).upsert({ follower_id: userId, following_id: fid })
+                  ));
+                }
                 await refreshProfile();
                 setSaving(false);
                 router.push('/stoop');
