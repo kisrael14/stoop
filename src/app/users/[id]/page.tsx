@@ -124,35 +124,35 @@ export default function UserProfilePage() {
           {/* Row 1 — social stats */}
           <div className="grid grid-cols-4 divide-x divide-paper/20">
             {[
-              { label: 'Neighbors', value: user.followerIds.length, accent: false },
-              { label: 'Following', value: user.followingIds.length, accent: false },
-              { label: 'Groups',    value: userNeighborhoods.length, accent: false },
-              { label: 'Hot Takes', value: stats.hotTakesPosted,    accent: true  },
-            ].map(({ label, value, accent }) => (
+              { label: 'Neighbors',  value: user.followerIds.length },
+              { label: 'Following',  value: user.followingIds.length },
+              { label: 'Groups',     value: userNeighborhoods.length },
+              { label: 'Reactions',  value: stats.hotTakeReactions },
+            ].map(({ label, value }) => (
               <div key={label} className="flex flex-col items-center py-2">
-                <p className={`font-display text-lg font-bold leading-none ${accent ? 'text-press' : 'text-paper'}`}>{value}</p>
-                <p className="text-[7px] font-bold uppercase tracking-wider text-paper/50 mt-0.5">{label}</p>
+                <p className="font-display text-lg font-bold leading-none text-paper">{value}</p>
+                <p className="text-[7px] font-bold uppercase tracking-wider text-paper/70 mt-0.5">{label}</p>
               </div>
             ))}
           </div>
           {/* Row 2 — activity stats */}
           <div className="grid grid-cols-3 divide-x divide-paper/20 border-t border-paper/20">
             <div className="flex flex-col items-center py-2 gap-0.5">
-              <Swords size={10} className="text-paper/40" />
-              <p className="font-display text-base font-black text-paper leading-none">{debatePct}%</p>
-              <p className="text-[7px] font-bold text-paper/40 leading-none">{stats.debatesWon}W · {stats.debatesLost}L</p>
-              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Debates</p>
+              <Swords size={10} className="text-paper/60" />
+              <p className="font-display text-base font-black text-press leading-none">{debatePct}%</p>
+              <p className="text-[7px] font-bold text-paper/60 leading-none">{stats.debatesWon}W · {stats.debatesLost}L</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/70">Debates</p>
             </div>
             <div className="flex flex-col items-center py-2 gap-0.5">
-              <Handshake size={10} className="text-paper/40" />
-              <p className="font-display text-base font-black text-paper leading-none">{betPct}%</p>
-              <p className="text-[7px] font-bold text-paper/40 leading-none">{stats.betsWon}W · {stats.betsLost}L</p>
-              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Bets</p>
+              <Handshake size={10} className="text-paper/60" />
+              <p className="font-display text-base font-black text-press leading-none">{betPct}%</p>
+              <p className="text-[7px] font-bold text-paper/60 leading-none">{stats.betsWon}W · {stats.betsLost}L</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/70">Bets</p>
             </div>
             <div className="flex flex-col items-center py-2 gap-0.5">
-              <Trophy size={10} className="text-paper/40" />
-              <p className="font-display text-sm font-black text-paper leading-none">{stats.hotTakeReactions}</p>
-              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/40">Reactions</p>
+              <Flame size={10} className="text-press" />
+              <p className="font-display text-base font-black text-press leading-none">{stats.hotTakesPosted}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/70">Hot Takes</p>
             </div>
           </div>
         </div>
