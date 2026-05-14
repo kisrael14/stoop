@@ -421,7 +421,7 @@ export default function UserProfilePage() {
               const a = item as typeof streetsAnalyses[0];
               const author = getUserById(a.authorId);
               return (
-                <Link key={a.id} href={`/neighborhoods/${a.chatId}?tab=analysts`} className="flex gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors">
+                <Link key={a.id} href={`/analyses/${a.id}`} className="flex gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors">
                   <div className="h-7 w-7 flex items-center justify-center bg-ink/5 border border-ink/20 text-sm rounded-sm shrink-0 mt-0.5">📊</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[9px] font-bold uppercase tracking-widest text-ink-muted mb-0.5">Analysis · {a.chatName}</p>

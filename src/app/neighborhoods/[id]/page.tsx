@@ -1430,10 +1430,12 @@ export default function NeighborhoodPage() {
                         </span>
                       )}
                     </div>
-                    {/* Title */}
-                    <h3 className="font-display text-base font-bold text-ink leading-snug mb-2">{an.title}</h3>
-                    {/* Content */}
-                    <p className="text-sm text-ink-muted leading-relaxed line-clamp-4">{an.content}</p>
+                    {/* Title + Content — tap to read full article */}
+                    <Link href={`/analyses/${an.id}`} className="block group">
+                      <h3 className="font-display text-base font-bold text-ink leading-snug mb-2 group-hover:text-masthead transition-colors">{an.title}</h3>
+                      <p className="text-sm text-ink-muted leading-relaxed line-clamp-4">{an.content}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-press mt-2">Read full article →</p>
+                    </Link>
                   </div>
                   {/* Footer */}
                   <div className="border-t border-rule/50 px-4 py-2.5 flex items-center gap-2 bg-paper-dark">
