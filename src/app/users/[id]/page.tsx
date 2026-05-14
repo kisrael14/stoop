@@ -129,6 +129,39 @@ export default function UserProfilePage() {
             </div>
           ))}
         </div>
+
+        {/* Bragging Rights — inside masthead */}
+        <div className="mt-4 border border-paper/20">
+          <div className="px-3 py-1.5 border-b border-paper/20">
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper/60">Bragging Rights</p>
+          </div>
+          <div className="grid grid-cols-4 divide-x divide-paper/20">
+            <div className="p-3 flex flex-col items-center">
+              <div className="flex items-center gap-1 mb-1"><Swords size={11} className="text-paper/50" /></div>
+              <p className="font-display text-base font-black text-paper">{stats.debatesWon}W</p>
+              <p className="font-display text-xs text-paper/40">{stats.debatesLost}L</p>
+              <p className="text-[8px] font-bold uppercase tracking-wide text-paper/40 mt-0.5">Debates</p>
+            </div>
+            <div className="p-3 flex flex-col items-center">
+              <div className="flex items-center gap-1 mb-1"><Handshake size={11} className="text-paper/50" /></div>
+              <p className="font-display text-base font-black text-paper">{stats.betsWon}W</p>
+              <p className="font-display text-xs text-paper/40">{stats.betsLost}L</p>
+              <p className="text-[8px] font-bold uppercase tracking-wide text-paper/40 mt-0.5">Bets</p>
+            </div>
+            <div className="p-3 flex flex-col items-center">
+              <div className="flex items-center gap-1 mb-1"><Flame size={11} className="text-press" /></div>
+              <p className="font-display text-base font-black text-press">{stats.hotTakesPosted}</p>
+              <p className="font-display text-xs text-paper/40">&nbsp;</p>
+              <p className="text-[8px] font-bold uppercase tracking-wide text-paper/40 mt-0.5">Takes</p>
+            </div>
+            <div className="p-3 flex flex-col items-center">
+              <div className="flex items-center gap-1 mb-1"><Trophy size={11} className="text-paper/50" /></div>
+              <p className="font-display text-base font-black text-paper">{stats.hotTakeReactions}</p>
+              <p className="font-display text-xs text-paper/40">&nbsp;</p>
+              <p className="text-[8px] font-bold uppercase tracking-wide text-paper/40 mt-0.5">Reactions</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── BADGES ─────────────────────────────────────────── */}
@@ -144,38 +177,30 @@ export default function UserProfilePage() {
         </div>
       </section>
 
-      {/* ── BRAGGING RIGHTS ────────────────────────────────── */}
-      <div className="mx-4 mt-4 border-2 border-ink">
-        <div className="px-3 py-2 bg-ink">
-          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper">Bragging Rights</p>
-        </div>
-        <div className="grid grid-cols-4 divide-x divide-rule/60">
-          <Link href="/neighborhoods" className="p-3 hover:bg-paper-dark transition-colors flex flex-col items-center">
-            <div className="flex items-center gap-1 mb-1"><Swords size={11} className="text-navy" /></div>
-            <p className="font-display text-base font-black text-ink">{stats.debatesWon}W</p>
-            <p className="font-display text-xs text-ink-faint">{stats.debatesLost}L</p>
-            <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint mt-0.5">Debates</p>
-          </Link>
-          <Link href="/neighborhoods" className="p-3 hover:bg-paper-dark transition-colors flex flex-col items-center">
-            <div className="flex items-center gap-1 mb-1"><Handshake size={11} className="text-field" /></div>
-            <p className="font-display text-base font-black text-ink">{stats.betsWon}W</p>
-            <p className="font-display text-xs text-ink-faint">{stats.betsLost}L</p>
-            <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint mt-0.5">Bets</p>
-          </Link>
-          <div className="p-3 flex flex-col items-center">
-            <div className="flex items-center gap-1 mb-1"><Flame size={11} className="text-press" /></div>
-            <p className="font-display text-base font-black text-press">{stats.hotTakesPosted}</p>
-            <p className="font-display text-xs text-ink-faint">&nbsp;</p>
-            <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint mt-0.5">Takes</p>
+      {/* ── SHARED NEIGHBORHOODS (other users only) ──────────── */}
+      {!isMe && (() => {
+        const shared = CHATS.filter(
+          (c) => c.memberIds.includes('me') && c.memberIds.includes(user.id)
+        );
+        if (shared.length === 0) return null;
+        return (
+          <div className="mx-4 mt-4 border border-rule bg-paper-dark px-4 py-3">
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-ink-muted mb-2">Shared Neighborhoods</p>
+            <div className="flex gap-2 flex-wrap">
+              {shared.map((c) => (
+                <Link
+                  key={c.id}
+                  href={`/neighborhoods/${c.id}`}
+                  className="flex items-center gap-2 border border-rule bg-paper px-3 py-1.5 text-xs font-semibold text-ink hover:bg-paper-deeper transition-colors"
+                >
+                  <span>{c.emoji}</span>
+                  <span>{c.name}</span>
+                </Link>
+              ))}
+            </div>
           </div>
-          <div className="p-3 flex flex-col items-center">
-            <div className="flex items-center gap-1 mb-1"><Trophy size={11} className="text-rule-dark" /></div>
-            <p className="font-display text-base font-black text-ink">{stats.hotTakeReactions}</p>
-            <p className="font-display text-xs text-ink-faint">&nbsp;</p>
-            <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint mt-0.5">Reactions</p>
-          </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* ── 2-COLUMN: NEIGHBORS + NEIGHBORHOODS ─────────────── */}
       <div className="mx-4 mt-4 grid grid-cols-2 gap-0 border-2 border-ink">
