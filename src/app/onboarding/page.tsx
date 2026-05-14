@@ -7,6 +7,7 @@ import { TEAMS, USERS } from '@/lib/mock-data';
 import type { Team, FanTeam, FandomLevel } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
+import TeamLogo from '@/components/TeamLogo';
 
 type Step = 1 | 2 | 3;
 
@@ -236,7 +237,9 @@ export default function OnboardingPage() {
                       onClick={() => addTeam(team)}
                       className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-paper-dark transition-colors border-b border-rule/50 last:border-0"
                     >
-                      <span className="text-2xl">{team.emoji}</span>
+                      <div className="flex h-8 w-8 items-center justify-center shrink-0">
+                        <TeamLogo team={team} size={32} />
+                      </div>
                       <div className="flex-1">
                         <p className="font-bold text-ink text-sm">{team.city} {team.name}</p>
                         <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{team.league}</p>
@@ -267,7 +270,9 @@ export default function OnboardingPage() {
                       >
                         {index + 1}
                       </span>
-                      <span className="text-xl">{ft.team.emoji}</span>
+                      <div className="flex h-7 w-7 items-center justify-center shrink-0">
+                        <TeamLogo team={ft.team} size={28} />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-ink text-sm truncate">{ft.team.city} {ft.team.name}</p>
                         <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{ft.team.league}</p>

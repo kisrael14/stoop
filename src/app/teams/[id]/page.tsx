@@ -9,6 +9,7 @@ import { getTeamByIdFull } from '@/lib/teams-data';
 import { timeAgo, totalReactions } from '@/lib/utils';
 import type { VoteChoice, HotTake } from '@/lib/types';
 import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
+import TeamLogo from '@/components/TeamLogo';
 
 type Tab = 'overview' | 'debates' | 'hot-takes' | 'bets';
 type Period = 'weekly' | 'monthly' | 'yearly';
@@ -163,10 +164,10 @@ export default function TeamPage() {
         </button>
         <div className="flex items-center gap-4">
           <div
-            className="flex h-16 w-16 items-center justify-center rounded-2xl text-4xl shrink-0"
+            className="flex h-16 w-16 items-center justify-center rounded-2xl shrink-0 p-1"
             style={{ backgroundColor: 'rgba(255,255,255,0.12)', border: '2px solid rgba(255,255,255,0.2)' }}
           >
-            {team.emoji}
+            <TeamLogo team={team} size={52} />
           </div>
           <div className="flex-1 min-w-0">
             <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/50">{team.league}</span>
