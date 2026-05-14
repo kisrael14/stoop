@@ -55,7 +55,7 @@ export default function StoopPage() {
 
   // Teams: map from auth user's Supabase user_teams, fall back to mock
   const fanTeams: FanTeam[] = (() => {
-    if (authUser?.teams && authUser.teams.length > 0) {
+    if (isRealUser && authUser?.teams) {
       return authUser.teams
         .map((ut, i): FanTeam | null => {
           const team = ALL_TEAMS.find((t) => t.id === ut.team_id);

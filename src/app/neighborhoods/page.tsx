@@ -2,16 +2,43 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Swords, Handshake, Flame } from 'lucide-react';
+import { Plus, Search, Swords, Handshake, Flame, X } from 'lucide-react';
 import { CHATS, DEBATES, BETS, HOT_TAKES, getUserById } from '@/lib/mock-data';
 import { timeAgo } from '@/lib/utils';
+import type { Chat } from '@/lib/types';
+
+const EMOJI_OPTIONS = ['🏘️','🏟️','🏈','🏀','⚾','⚽','🏒','🔥','⚡','🎯','🏆','🎪','🌆','🌃'];
+
+type LocalChat = Chat & { isLocal?: boolean };
 
 export default function NeighborhoodsPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newEmoji, setNewEmoji] = useState('🏘️');
+  const [localChats, setLocalChats] = useState<LocalChat[]>([]);
 
-  const filtered = CHATS.filter((c) =>
+  const allChats = [...localChats, ...CHATS];
+  const filtered = allChats.filter((c) =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const createNeighborhood = () => {
+    if (!newName.trim()) return;
+    const newChat: LocalChat = {
+      id: `local-${Date.now()}`,
+      name: newName.trim(),
+      emoji: newEmoji,
+      memberIds: ['me'],
+      teamIds: [],
+      messages: [],
+      isLocal: true,
+    };
+    setLocalChats((prev) => [newChat, ...prev]);
+    setNewName('');
+    setNewEmoji('🏘️');
+    setShowNewModal(false);
+  };
 
   return (
     <div className="flex flex-col bg-paper min-h-full">
@@ -31,7 +58,10 @@ export default function NeighborhoodsPage() {
               className="w-full bg-paper/10 border border-paper/20 py-2 pl-9 pr-4 text-sm text-paper placeholder-paper/40 outline-none focus:border-paper/50 transition-colors rounded-full"
             />
           </div>
-          <button className="flex items-center gap-1.5 bg-paper text-ink px-4 py-2 text-xs font-bold uppercase tracking-wider btn-3d rounded-full shrink-0">
+          <button
+            onClick={() => setShowNewModal(true)}
+            className="flex items-center gap-1.5 bg-paper text-ink px-4 py-2 text-xs font-bold uppercase tracking-wider btn-3d rounded-full shrink-0"
+          >
             <Plus size={14} />
             New
           </button>
@@ -163,6 +193,58 @@ export default function NeighborhoodsPage() {
             {HOT_TAKES.length} takes
           </span>
         </div>
+      )}
+
+      {/* ── New Neighborhood Modal ──────────────────────── */}
+      {showNewModal && (
+        <>
+          <div className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm" onClick={() => setShowNewModal(false)} />
+          <div className="fixed inset-x-4 top-1/4 z-50 bg-paper border-2 border-ink shadow-2xl max-w-sm mx-auto">
+            <div className="flex items-center justify-between px-5 py-4 bg-ink">
+              <p className="font-display font-bold text-paper text-base">New Neighborhood</p>
+              <button onClick={() => setShowNewModal(false)} className="text-paper/60 hover:text-paper">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="px-5 py-5 flex flex-col gap-4">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-faint block mb-1.5">Name</label>
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && createNeighborhood()}
+                  placeholder="e.g. Sunday Crew"
+                  autoFocus
+                  className="w-full border-2 border-rule focus:border-ink bg-paper py-2.5 px-3 text-sm text-ink placeholder-ink-faint outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-faint block mb-1.5">Emoji</label>
+                <div className="flex flex-wrap gap-2">
+                  {EMOJI_OPTIONS.map((e) => (
+                    <button
+                      key={e}
+                      onClick={() => setNewEmoji(e)}
+                      className={`flex items-center justify-center h-9 w-9 text-xl rounded-lg border-2 transition-all ${
+                        newEmoji === e ? 'border-ink bg-paper-dark' : 'border-rule hover:border-ink-muted'
+                      }`}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={createNeighborhood}
+                disabled={!newName.trim()}
+                className="w-full bg-ink text-paper py-3 font-bold uppercase tracking-widest text-xs btn-3d disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Create Neighborhood
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

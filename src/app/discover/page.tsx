@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, UserPlus, UserCheck, Phone, AtSign, X, Plus, Check } from 'lucide-react';
+import { Search, Phone, AtSign, X, Plus, Check } from 'lucide-react';
 import { USERS, TEAMS, ME } from '@/lib/mock-data';
 import { ALL_LEAGUES } from '@/lib/leagues-data';
 import { teamDisplayName } from '@/lib/utils';
@@ -67,6 +67,11 @@ export default function DiscoverPage() {
     acc[team.league].push(team);
     return acc;
   }, {});
+
+  // Sync local team ids when auth loads (initial state may be set before auth resolves)
+  useEffect(() => {
+    if (authUser?.teams) setMyTeamIds(authUser.teams.map((t) => t.team_id));
+  }, [authUser?.teams]);
 
   const toggleFollow = (userId: string) => {
     setFollowing((prev) =>
@@ -200,14 +205,14 @@ export default function DiscoverPage() {
               </div>
               <button
                 onClick={() => toggleFollow(user.id)}
-                className={`shrink-0 flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                className={`shrink-0 flex items-center justify-center h-9 w-9 rounded-full font-bold text-sm transition-all border-2 ${
                   following.includes(user.id)
-                    ? 'bg-paper-dark border border-rule text-ink-muted hover:bg-paper-deeper'
-                    : 'bg-ink text-paper hover:bg-ink/80'
+                    ? 'bg-paper-dark border-ink text-ink'
+                    : 'bg-ink border-transparent text-paper hover:bg-ink/80'
                 }`}
+                title={following.includes(user.id) ? 'Unfollow' : 'Follow'}
               >
-                {following.includes(user.id) ? <UserCheck size={12} /> : <UserPlus size={12} />}
-                {following.includes(user.id) ? 'Following' : 'Follow'}
+                {following.includes(user.id) ? <Check size={14} /> : <Plus size={14} />}
               </button>
             </div>
           ))}

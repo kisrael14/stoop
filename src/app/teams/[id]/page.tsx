@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Flame, Snowflake, Swords, Handshake, Trophy, Star, Users, Plus, X, Send, UserPlus, UserCheck, Home, PenLine, Megaphone, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Flame, Snowflake, Swords, Handshake, Trophy, Star, Users, Plus, Check, X, Send, Home, PenLine, Megaphone, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
 import { DEBATES, BETS, HOT_TAKES, ANALYSES, getUserById, USERS, ME } from '@/lib/mock-data';
 import { getTeamByIdFull } from '@/lib/teams-data';
 import { useAuth } from '@/lib/auth-context';
@@ -283,13 +283,14 @@ export default function TeamPage() {
                 await refreshProfile();
               }
             }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all shrink-0 ${
+            className={`flex items-center justify-center h-10 w-10 rounded-full font-bold text-sm transition-all shrink-0 border-2 ${
               isFollowing
-                ? 'bg-white/20 text-white border border-white/40 hover:bg-white/10'
-                : 'bg-white text-ink hover:bg-white/90'
+                ? 'bg-white/20 border-white/40 text-white hover:bg-white/10'
+                : 'bg-white border-transparent text-ink hover:bg-white/90'
             }`}
+            title={isFollowing ? 'Unfollow' : 'Follow team'}
           >
-            {isFollowing ? <><UserCheck size={13} /> Following</> : <><UserPlus size={13} /> Follow</>}
+            {isFollowing ? <Check size={15} /> : <Plus size={15} />}
           </button>
         </div>
         <div className="flex gap-6 mt-5 pt-4 border-t border-white/20">
