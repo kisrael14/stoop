@@ -434,7 +434,7 @@ export default function StreetsPage() {
             const author = getUserById(a.authorId);
             const isMe = a.authorId === 'me';
             return (
-              <Link key={a.id} href={`/neighborhoods/${a.chatId}?tab=analysts`} className="block border-2 border-ink overflow-hidden hover:bg-paper-dark/30 transition-colors">
+              <Link key={a.id} href={`/analyses/${a.id}`} className="block border-2 border-ink overflow-hidden hover:bg-paper-dark/30 transition-colors">
                 <div className="flex items-center gap-2 px-4 pt-3 pb-2 border-b border-rule/50">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-paper-dark border border-rule text-sm shrink-0">
                     {isMe ? ME.avatar : author?.avatar}

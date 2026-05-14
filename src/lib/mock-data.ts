@@ -652,6 +652,10 @@ export function getChatById(id: string): Chat | undefined {
   return CHATS.find((c) => c.id === id);
 }
 
+export function getAnalysisById(id: string): Analysis | undefined {
+  return ANALYSES.find((a) => a.id === id);
+}
+
 export function getTeamById(id: string): Team | undefined {
   return TEAMS.find((t) => t.id === id);
 }
