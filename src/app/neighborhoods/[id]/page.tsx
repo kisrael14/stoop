@@ -12,7 +12,7 @@ import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
 import {
   getChatById, getUserById, ME, DEBATES, BETS, HOT_TAKES, TEAMS, ANALYSES,
 } from '@/lib/mock-data';
-import { timeAgo, voteLeader, totalReactions } from '@/lib/utils';
+import { timeAgo, voteLeader, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { Message, MessageTag, Debate, Bet, HotTake, HotTakeComment, VoteChoice, Analysis } from '@/lib/types';
 import { sendNotification } from '@/lib/notifications';
 import TeamLogo from '@/components/TeamLogo';
@@ -727,7 +727,7 @@ export default function NeighborhoodPage() {
                   >
                     <TeamLogo team={team} size={28} />
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-ink">{team.city} {team.name}</p>
+                      <p className="text-sm font-bold text-ink">{teamDisplayName(team)}</p>
                       <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{team.league}</p>
                     </div>
                     <span className="text-[11px] text-ink-muted">{count} fan{count !== 1 ? 's' : ''}</span>

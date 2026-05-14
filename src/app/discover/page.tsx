@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Search, UserPlus, UserCheck, Phone, AtSign, X } from 'lucide-react';
 import { USERS, TEAMS, ME } from '@/lib/mock-data';
 import { ALL_LEAGUES } from '@/lib/leagues-data';
+import { teamDisplayName } from '@/lib/utils';
 import type { Team } from '@/lib/types';
 import TeamLogo from '@/components/TeamLogo';
 
@@ -226,7 +227,7 @@ export default function DiscoverPage() {
                     >
                       <TeamLogo team={team} size={32} />
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-ink text-sm">{team.city} {team.name}</p>
+                        <p className="font-bold text-ink text-sm">{teamDisplayName(team)}</p>
                         <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{team.league}</p>
                       </div>
                       <button

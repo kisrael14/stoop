@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Settings, Flame, Swords, Handshake, Trophy, Star, Bell, BellOff, Compass, PenLine, Newspaper } from 'lucide-react';
 import { ME, DEBATES, BETS, HOT_TAKES, ANALYSES, getUserById, CHATS } from '@/lib/mock-data';
-import { timeAgo, totalReactions } from '@/lib/utils';
+import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
 import { FANDOM_LABELS } from '@/lib/types';
 import type { FandomLevel } from '@/lib/types';
 import { requestNotificationPermission, startSimulatedNotifications } from '@/lib/notifications';
@@ -269,7 +269,7 @@ export default function StoopPage() {
                 <TeamLogo team={ft.team} size={24} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-bold text-ink">{ft.team.city} {ft.team.name}</p>
+                    <p className="text-xs font-bold text-ink">{teamDisplayName(ft.team)}</p>
                     {ft.rank === 1 && <Star size={10} className="text-[#b8860b]" fill="currentColor" />}
                   </div>
                   <p className="text-[9px] font-bold uppercase tracking-wide text-ink-faint">{ft.team.league}</p>

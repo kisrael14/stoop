@@ -7,7 +7,7 @@ import { ArrowLeft, Flame, Snowflake, Swords, Handshake, Trophy, Users } from 'l
 import { DEBATES, BETS, HOT_TAKES, getUserById } from '@/lib/mock-data';
 import { getLeagueById } from '@/lib/leagues-data';
 import { ALL_TEAMS } from '@/lib/teams-data';
-import { timeAgo, totalReactions } from '@/lib/utils';
+import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { VoteChoice } from '@/lib/types';
 import TeamLogo from '@/components/TeamLogo';
 
@@ -151,7 +151,7 @@ export default function LeaguePage() {
                 >
                   <TeamLogo team={team} size={32} />
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-ink text-sm">{team.city} {team.name}</p>
+                    <p className="font-bold text-ink text-sm">{teamDisplayName(team)}</p>
                     <p className="text-[10px] text-ink-faint">{team.emoji}</p>
                   </div>
                   <span className="text-ink-faint text-xs">→</span>

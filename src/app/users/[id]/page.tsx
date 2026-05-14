@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, UserPlus, UserCheck, Flame, Swords, Handshake, Trophy, Star, Newspaper, Settings } from 'lucide-react';
 import { getUserById, DEBATES, BETS, HOT_TAKES, ANALYSES, CHATS, ME } from '@/lib/mock-data';
-import { timeAgo, totalReactions } from '@/lib/utils';
+import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { FandomLevel } from '@/lib/types';
 import { computeBadges } from '@/lib/badges';
 import TeamLogo from '@/components/TeamLogo';
@@ -268,7 +268,7 @@ export default function UserProfilePage() {
                 <TeamLogo team={ft.team} size={24} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-bold text-ink">{ft.team.city} {ft.team.name}</p>
+                    <p className="text-xs font-bold text-ink">{teamDisplayName(ft.team)}</p>
                     {ft.rank === 1 && <Star size={10} className="text-[#b8860b]" fill="currentColor" />}
                   </div>
                   <p className="text-[9px] font-bold uppercase tracking-wide text-ink-faint">{ft.team.league}</p>

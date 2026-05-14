@@ -6,7 +6,7 @@ import { MessageCircle, Search, X, ChevronRight } from 'lucide-react';
 import { CHATS, USERS } from '@/lib/mock-data';
 import { ALL_TEAMS } from '@/lib/teams-data';
 import { ALL_LEAGUES } from '@/lib/leagues-data';
-import { timeAgo } from '@/lib/utils';
+import { timeAgo, teamDisplayName } from '@/lib/utils';
 import TeamLogo from '@/components/TeamLogo';
 
 const HIDDEN_ON = ['/login', '/onboarding'];
@@ -145,7 +145,7 @@ export default function TopBar() {
                     <TeamLogo team={team} size={28} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-ink text-sm">{team.city} {team.name}</p>
+                    <p className="font-bold text-ink text-sm">{teamDisplayName(team)}</p>
                   </div>
                   <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0 ${LEAGUE_COLORS[team.league] ?? 'bg-ink-faint text-paper'}`}>
                     {team.league}

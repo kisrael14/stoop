@@ -31,3 +31,9 @@ export function voteLeader(votes: { choice: string }[]): Record<string, number> 
 export function totalReactions(reactions: { userIds: string[] }[]): number {
   return reactions.reduce((sum, r) => sum + r.userIds.length, 0);
 }
+
+const EURO_SOCCER_LEAGUES = new Set(['EPL', 'La Liga', 'Serie A', 'Ligue 1', 'Bundesliga']);
+
+export function teamDisplayName(team: { city: string; name: string; league: string }): string {
+  return EURO_SOCCER_LEAGUES.has(team.league) ? team.name : `${team.city} ${team.name}`;
+}
