@@ -59,7 +59,7 @@ export default function LoginPage() {
     if (!SUPABASE_CONFIGURED) { router.push('/onboarding'); return; }
 
     setLoading(true); setError('');
-    const { error: err } = await supabase.auth.signUp({
+    const { data, error: err } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
       options: {
@@ -69,6 +69,8 @@ export default function LoginPage() {
     });
     setLoading(false);
     if (err) { setError(err.message); return; }
+    // If session exists immediately, email confirmation is disabled → go to onboarding
+    if (data.session) { router.push('/onboarding'); return; }
     setEmailConfirmSent(true);
   };
 
