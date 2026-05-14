@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Flame, Snowflake, Swords, Handshake, Trophy, Star, Users, Plus, X, Send } from 'lucide-react';
-import { DEBATES, BETS, HOT_TAKES, getUserById, USERS } from '@/lib/mock-data';
+import { ArrowLeft, Flame, Snowflake, Swords, Handshake, Trophy, Star, Users, Plus, X, Send, UserPlus, UserCheck } from 'lucide-react';
+import { DEBATES, BETS, HOT_TAKES, getUserById, USERS, ME } from '@/lib/mock-data';
 import { getTeamByIdFull } from '@/lib/teams-data';
 import { timeAgo, totalReactions } from '@/lib/utils';
 import type { VoteChoice, HotTake } from '@/lib/types';
@@ -71,6 +71,7 @@ export default function TeamPage() {
   const [discussType, setDiscussType] = useState<'take' | 'debate' | 'bet'>('take');
   const [discussText, setDiscussText] = useState('');
   const [betSetupClaim, setBetSetupClaim] = useState<string | null>(null);
+  const [isFollowing, setIsFollowing] = useState(() => ME.fanTeams.some((ft) => ft.team.id === id));
   const [localHotTakes, setLocalHotTakes] = useState(() =>
     HOT_TAKES
       .filter((ht) => ht.teamIds.includes(id))
@@ -167,11 +168,21 @@ export default function TeamPage() {
           >
             {team.emoji}
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/50">{team.league}</span>
             <h1 className="font-display text-2xl font-black text-white leading-none">{team.city}</h1>
-            <h2 className="font-display text-2xl font-black leading-none" style={{ color: 'rgba(255,255,255,0.75)' }}>{team.name}</h2>
+            <h2 className="font-display text-2xl font-black leading-none" style={{ color: 'rgba(255,255,255,0.75)' }}>{team.name} Fan</h2>
           </div>
+          <button
+            onClick={() => setIsFollowing((f) => !f)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all shrink-0 ${
+              isFollowing
+                ? 'bg-white/20 text-white border border-white/40 hover:bg-white/10'
+                : 'bg-white text-ink hover:bg-white/90'
+            }`}
+          >
+            {isFollowing ? <><UserCheck size={13} /> Following</> : <><UserPlus size={13} /> Follow</>}
+          </button>
         </div>
         <div className="flex gap-6 mt-5 pt-4 border-t border-white/20">
           {[
