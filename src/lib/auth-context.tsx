@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
-import { createClient } from './supabase/client';
+import { createClient, isSupabaseConfigured } from './supabase/client';
 import type { Database } from './supabase/types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -34,10 +34,10 @@ const AuthContext = createContext<AuthContextValue>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const [loading, setLoading] = useState(isSupabaseConfigured());
 
   const loadProfile = async (authUser: User) => {
+    const supabase = createClient();
     const [{ data: profile }, { data: teams }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', authUser.id).single(),
       supabase.from('user_teams').select('*').eq('user_id', authUser.id),
@@ -55,6 +55,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+
+    const supabase = createClient();
+
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       if (s?.user) {
@@ -78,6 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    if (!isSupabaseConfigured()) return;
+    const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
