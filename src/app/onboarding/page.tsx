@@ -5,15 +5,23 @@ import { useRouter } from 'next/navigation';
 import { Search, X, ChevronRight, Check, GripVertical } from 'lucide-react';
 import { TEAMS, USERS } from '@/lib/mock-data';
 import type { Team, FanTeam, FandomLevel } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/lib/auth-context';
 
 type Step = 1 | 2 | 3;
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { session, refreshProfile } = useAuth();
+  const supabase = createClient();
   const [step, setStep] = useState<Step>(1);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const [displayName, setDisplayName] = useState('');
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(
+    (session?.user?.user_metadata?.username as string | undefined) ?? ''
+  );
   const [bio, setBio] = useState('');
 
   const [teamSearch, setTeamSearch] = useState('');
@@ -315,21 +323,47 @@ export default function OnboardingPage() {
             </button>
           ) : (
             <button
-              onClick={() => router.push('/stoop')}
-              className="flex flex-1 items-center justify-center gap-2 bg-ink py-3 text-xs font-bold text-paper uppercase tracking-widest hover:bg-ink/80 transition-colors"
+              onClick={async () => {
+                if (!session?.user) { router.push('/stoop'); return; }
+                setSaving(true); setSaveError('');
+                const userId = session.user.id;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const { error: profileErr } = await (supabase.from('profiles') as any).upsert({
+                  id: userId,
+                  username: username.trim().toLowerCase(),
+                  display_name: displayName.trim(),
+                  bio: bio.trim() || null,
+                  avatar: '🤙',
+                });
+                if (profileErr) { setSaving(false); setSaveError((profileErr as { message: string }).message); return; }
+                if (fanTeams.length > 0) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  await (supabase.from('user_teams') as any).upsert(
+                    fanTeams.map((ft) => ({ user_id: userId, team_id: ft.team.id, fandom_level: ft.fandomLevel }))
+                  );
+                }
+                await refreshProfile();
+                setSaving(false);
+                router.push('/stoop');
+              }}
+              disabled={saving}
+              className="flex flex-1 items-center justify-center gap-2 bg-ink py-3 text-xs font-bold text-paper uppercase tracking-widest hover:bg-ink/80 disabled:opacity-60 transition-colors"
             >
-              Enter the Stoop 🏟️
+              {saving ? '…' : 'Enter the Stoop 🏟️'}
             </button>
           )}
         </div>
 
         {step === 3 && (
-          <button
-            onClick={() => router.push('/stoop')}
-            className="mt-3 w-full text-center text-xs text-ink-faint hover:text-ink-muted italic"
-          >
-            Skip for now
-          </button>
+          <>
+            {saveError && <p className="text-xs text-masthead text-center mt-2">{saveError}</p>}
+            <button
+              onClick={() => router.push('/stoop')}
+              className="mt-3 w-full text-center text-xs text-ink-faint hover:text-ink-muted italic"
+            >
+              Skip for now
+            </button>
+          </>
         )}
       </div>
     </div>
