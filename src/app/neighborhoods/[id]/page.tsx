@@ -18,7 +18,7 @@ import { sendNotification } from '@/lib/notifications';
 import TeamLogo from '@/components/TeamLogo';
 import { detectTeamIds } from '@/lib/players-data';
 
-type Tab = 'overview' | 'chat' | 'debates' | 'bets' | 'hot-takes' | 'analysts';
+type Tab = 'overview' | 'chat' | 'debates' | 'bets' | 'hot-takes' | 'analysis';
 const EMOJI_REACTIONS = ['🔥', '💯', '😂', '🧢', '👀', '😭', '🤬', '❤️'];
 const HOT_TAKE_MAX = 280;
 
@@ -522,10 +522,10 @@ export default function NeighborhoodPage() {
     { id: 'debates', label: 'Debates', icon: Swords },
     { id: 'bets', label: 'Bets', icon: Handshake },
     { id: 'hot-takes', label: 'Takes', icon: Flame },
-    { id: 'analysts', label: 'Analysts', icon: PenLine },
+    { id: 'analysis', label: 'Analysis', icon: PenLine },
   ];
 
-  const TAB_ORDER: Tab[] = ['overview', 'chat', 'debates', 'bets', 'hot-takes', 'analysts'];
+  const TAB_ORDER: Tab[] = ['overview', 'chat', 'debates', 'bets', 'hot-takes', 'analysis'];
   const swipeStartX = useRef(0);
   const swipeStartY = useRef(0);
 
@@ -740,13 +740,13 @@ export default function NeighborhoodPage() {
           {/* Quick-nav */}
           <div className="px-5 py-4 flex flex-col gap-0">
             <h3 className="font-display font-bold text-ink text-lg mb-3">Jump To</h3>
-            {(['chat', 'debates', 'bets', 'hot-takes', 'analysts'] as const).map((t, i) => {
+            {(['chat', 'debates', 'bets', 'hot-takes', 'analysis'] as const).map((t, i) => {
               const cfgMap = {
                 chat: { label: 'Chat', icon: MessageCircle, color: 'text-ink', count: messages.length, unit: 'messages' },
                 debates: { label: 'Debates', icon: Swords, color: 'text-navy', count: debates.filter((d) => d.status === 'active').length, unit: 'active' },
                 bets: { label: 'Bets', icon: Handshake, color: 'text-field', count: bets.filter((b) => b.status !== 'resolved').length, unit: 'active' },
                 'hot-takes': { label: 'Hot Takes', icon: Flame, color: 'text-press', count: hotTakes.length, unit: 'total' },
-                analysts: { label: 'Analysts', icon: PenLine, color: 'text-ink-muted', count: analyses.length, unit: 'pieces' },
+                analysis: { label: 'Analysis', icon: PenLine, color: 'text-ink-muted', count: analyses.length, unit: 'pieces' },
               };
               const cfg = cfgMap[t];
               const Icon = cfg.icon;
@@ -1382,7 +1382,7 @@ export default function NeighborhoodPage() {
       )}
 
       {/* ── ANALYSTS TAB ─────────────────────────────────────── */}
-      {activeTab === 'analysts' && (
+      {activeTab === 'analysis' && (
         <div className="flex-1 overflow-y-auto flex flex-col bg-paper">
           {/* Compose button */}
           <div className="px-4 py-3 border-b border-rule bg-paper-dark flex items-center justify-between">

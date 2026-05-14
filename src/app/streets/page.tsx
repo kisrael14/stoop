@@ -12,7 +12,7 @@ import type { HotTake, HotTakeComment, Debate, Bet, Analysis, DebateVote } from 
 import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
 import { detectTeamIds } from '@/lib/players-data';
 
-type Filter = 'all' | 'takes' | 'debates' | 'bets' | 'analysts';
+type Filter = 'all' | 'takes' | 'debates' | 'bets' | 'analysis';
 type PostType = 'take' | 'debate' | 'bet' | 'analysis';
 
 const INITIAL_LIMIT = 5;
@@ -157,7 +157,7 @@ export default function StreetsPage() {
       (filter === 'takes' && item.type === 'take') ||
       (filter === 'debates' && item.type === 'debate') ||
       (filter === 'bets' && item.type === 'bet') ||
-      (filter === 'analysts' && item.type === 'analysis')
+      (filter === 'analysis' && item.type === 'analysis')
     )
     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 
@@ -166,7 +166,7 @@ export default function StreetsPage() {
     { id: 'takes', label: '🔥 Takes' },
     { id: 'debates', label: '⚔️ Debates' },
     { id: 'bets', label: '🤝 Bets' },
-    { id: 'analysts', label: '📊 Analysts' },
+    { id: 'analysis', label: '📊 Analysis' },
   ];
 
   const visibleItems = showAll ? feedItems : feedItems.slice(0, INITIAL_LIMIT);
