@@ -105,6 +105,19 @@ export default function UserProfilePage() {
         </div>
       </div>
 
+      {/* Badges */}
+      <section className="px-5 py-4 border-b border-rule">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Badges</h2>
+          <span className="text-[9px] text-ink-faint italic">Tap to learn more</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {badges.map((badge) => (
+            <BadgeChip key={badge.type} badge={badge} />
+          ))}
+        </div>
+      </section>
+
       {/* Shared neighborhoods */}
       {sharedNeighborhoods.length > 0 && !isMe && (
         <div className="px-5 py-4 border-b border-rule">
@@ -163,22 +176,6 @@ export default function UserProfilePage() {
             </div>
           ))}
         </div>
-      </section>
-
-      {/* Badges */}
-      <section className="px-5 py-4 border-b border-rule">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Badges</h2>
-          <span className="text-[9px] text-ink-faint italic">Tap to learn more</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {badges.map((badge) => (
-            <BadgeChip key={badge.type} badge={badge} />
-          ))}
-        </div>
-        <p className="text-[9px] text-ink-faint italic mt-3 leading-relaxed">
-          Badges are earned from activity over the last 6 months. Keep posting to level up — or go quiet and drop back down.
-        </p>
       </section>
 
       {/* Recent debates */}
