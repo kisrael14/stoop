@@ -514,11 +514,29 @@ export default function NeighborhoodPage() {
     { id: 'analysts', label: 'Analysts', icon: PenLine },
   ];
 
+  const TAB_ORDER: Tab[] = ['overview', 'chat', 'debates', 'bets', 'hot-takes', 'analysts'];
+  const swipeStartX = useRef(0);
+  const swipeStartY = useRef(0);
+
+  const onTabSwipeStart = (e: React.TouchEvent) => {
+    swipeStartX.current = e.touches[0].clientX;
+    swipeStartY.current = e.touches[0].clientY;
+  };
+
+  const onTabSwipeEnd = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - swipeStartX.current;
+    const dy = e.changedTouches[0].clientY - swipeStartY.current;
+    if (Math.abs(dy) > Math.abs(dx) || Math.abs(dx) < 50) return;
+    const idx = TAB_ORDER.indexOf(activeTab);
+    if (dx < 0 && idx < TAB_ORDER.length - 1) setActiveTab(TAB_ORDER[idx + 1]);
+    else if (dx > 0 && idx > 0) setActiveTab(TAB_ORDER[idx - 1]);
+  };
+
   const charsLeft = HOT_TAKE_MAX - inputText.length;
   const overLimit = pendingTag === 'hot-take' && inputText.length > HOT_TAKE_MAX;
 
   return (
-    <div className="flex flex-col h-full bg-paper">
+    <div className="flex flex-col h-full bg-paper" onTouchStart={onTabSwipeStart} onTouchEnd={onTabSwipeEnd}>
       {/* Header */}
       <div className="shrink-0 bg-ink px-4 py-3 flex items-center gap-2.5">
         <button onClick={() => router.back()} className="text-paper/60 hover:text-paper p-1 shrink-0">
@@ -1440,7 +1458,7 @@ export default function NeighborhoodPage() {
                     <Link href={`/analyses/${an.id}`} className="block group">
                       <h3 className="font-display text-base font-bold text-ink leading-snug mb-2 group-hover:text-masthead transition-colors">{an.title}</h3>
                       <p className="text-sm text-ink-muted leading-relaxed line-clamp-4">{an.content}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-press mt-2">Read full article →</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-press mt-2">Full analysis →</p>
                     </Link>
                   </div>
                   {/* Footer */}
