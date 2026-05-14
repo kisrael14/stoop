@@ -125,6 +125,16 @@ export default function StoopPage() {
             </Link>
           ))}
         </div>
+
+        {/* Badges */}
+        <div className="mt-3 pt-3 border-t border-paper/20">
+          <p className="text-[8px] font-black uppercase tracking-[0.25em] text-paper/50 mb-2">Badges</p>
+          <div className="flex flex-wrap gap-2">
+            {badges.map((badge) => (
+              <BadgeChip key={badge.type} badge={badge} size="sm" />
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Notification banner */}
@@ -183,18 +193,6 @@ export default function StoopPage() {
             <p className="font-display text-xs text-ink-faint">&nbsp;</p>
             <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint mt-0.5">Reactions</p>
           </div>
-        </div>
-      </div>
-
-      {/* ── BADGES ─────────────────────────────────────────── */}
-      <div className="mx-4 mt-4 border-2 border-ink">
-        <div className="px-3 py-2 bg-ink">
-          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper">Badges</p>
-        </div>
-        <div className="px-3 py-3 flex flex-wrap gap-2">
-          {badges.map((badge) => (
-            <BadgeChip key={badge.type} badge={badge} size="sm" />
-          ))}
         </div>
       </div>
 
