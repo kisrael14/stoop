@@ -1080,7 +1080,11 @@ export default function NeighborhoodPage() {
                 return (
                   <button
                     key={tag}
-                    onClick={() => setPendingTag(isActive ? null : tag)}
+                    onClick={() => {
+                      if (tag === 'debate') { setDebateSetupClaim(inputText.trim()); setDebateSetupMessageId(null); return; }
+                      if (tag === 'bet')    { setBetSetupClaim(inputText.trim() || ''); setBetSetupMessageId(null); return; }
+                      setPendingTag(isActive ? null : tag);
+                    }}
                     className={`flex items-center gap-1 border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-full shrink-0 ${
                       isActive ? `${cfg.bg} text-ink border-transparent` : 'border-rule text-ink-muted hover:border-rule-dark hover:text-ink'
                     }`}
