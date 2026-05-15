@@ -2,16 +2,57 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Search, Swords, Handshake, Flame } from 'lucide-react';
-import { CHATS, DEBATES, BETS, HOT_TAKES, getUserById } from '@/lib/mock-data';
+import { Plus, Search, Swords, Handshake, Flame, X } from 'lucide-react';
+import { CHATS, DEBATES, BETS, HOT_TAKES, USERS, getUserById } from '@/lib/mock-data';
 import { timeAgo } from '@/lib/utils';
+import type { Chat } from '@/lib/types';
+
+const EMOJI_OPTIONS = ['🏘️','🏟️','🏈','🏀','⚾','⚽','🏒','🔥','⚡','🎯','🏆','🎪','🌆','🌃'];
+
+type LocalChat = Chat & { isLocal?: boolean };
 
 export default function NeighborhoodsPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newEmoji, setNewEmoji] = useState('🏘️');
+  const [newMemberIds, setNewMemberIds] = useState<string[]>([]);
+  const [memberSearch, setMemberSearch] = useState('');
+  const [localChats, setLocalChats] = useState<LocalChat[]>([]);
 
-  const filtered = CHATS.filter((c) =>
+  const allChats = [...localChats, ...CHATS];
+  const filtered = allChats.filter((c) =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const otherUsers = USERS.filter((u) => u.id !== 'me');
+  const memberSearchResults = memberSearch.length > 0
+    ? otherUsers.filter((u) =>
+        !newMemberIds.includes(u.id) && (
+          u.displayName.toLowerCase().includes(memberSearch.toLowerCase()) ||
+          u.username.toLowerCase().includes(memberSearch.toLowerCase())
+        )
+      ).slice(0, 5)
+    : otherUsers.filter((u) => !newMemberIds.includes(u.id)).slice(0, 4);
+
+  const createNeighborhood = () => {
+    if (!newName.trim()) return;
+    const newChat: LocalChat = {
+      id: `local-${Date.now()}`,
+      name: newName.trim(),
+      emoji: newEmoji,
+      memberIds: ['me', ...newMemberIds],
+      teamIds: [],
+      messages: [],
+      isLocal: true,
+    };
+    setLocalChats((prev) => [newChat, ...prev]);
+    setNewName('');
+    setNewEmoji('🏘️');
+    setNewMemberIds([]);
+    setMemberSearch('');
+    setShowNewModal(false);
+  };
 
   return (
     <div className="flex flex-col bg-paper min-h-full">
@@ -31,7 +72,10 @@ export default function NeighborhoodsPage() {
               className="w-full bg-paper/10 border border-paper/20 py-2 pl-9 pr-4 text-sm text-paper placeholder-paper/40 outline-none focus:border-paper/50 transition-colors rounded-full"
             />
           </div>
-          <button className="flex items-center gap-1.5 bg-paper text-ink px-4 py-2 text-xs font-bold uppercase tracking-wider btn-3d rounded-full shrink-0">
+          <button
+            onClick={() => setShowNewModal(true)}
+            className="flex items-center gap-1.5 bg-paper text-ink px-4 py-2 text-xs font-bold uppercase tracking-wider btn-3d rounded-full shrink-0"
+          >
             <Plus size={14} />
             New
           </button>
@@ -163,6 +207,111 @@ export default function NeighborhoodsPage() {
             {HOT_TAKES.length} takes
           </span>
         </div>
+      )}
+
+      {/* ── New Neighborhood Modal ──────────────────────── */}
+      {showNewModal && (
+        <>
+          <div className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm" onClick={() => setShowNewModal(false)} />
+          <div className="fixed inset-x-4 top-1/4 z-50 bg-paper border-2 border-ink shadow-2xl max-w-sm mx-auto">
+            <div className="flex items-center justify-between px-5 py-4 bg-ink">
+              <p className="font-display font-bold text-paper text-base">New Neighborhood</p>
+              <button onClick={() => setShowNewModal(false)} className="text-paper/60 hover:text-paper">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="px-5 py-5 flex flex-col gap-4">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-faint block mb-1.5">Name</label>
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && createNeighborhood()}
+                  placeholder="e.g. Sunday Crew"
+                  autoFocus
+                  className="w-full border-2 border-rule focus:border-ink bg-paper py-2.5 px-3 text-sm text-ink placeholder-ink-faint outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-faint block mb-1.5">Emoji</label>
+                <div className="flex flex-wrap gap-2">
+                  {EMOJI_OPTIONS.map((e) => (
+                    <button
+                      key={e}
+                      onClick={() => setNewEmoji(e)}
+                      className={`flex items-center justify-center h-9 w-9 text-xl rounded-lg border-2 transition-all ${
+                        newEmoji === e ? 'border-ink bg-paper-dark' : 'border-rule hover:border-ink-muted'
+                      }`}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Member selection */}
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-faint block mb-1.5">
+                  Add Neighbors ({newMemberIds.length} added)
+                </label>
+                {/* Selected members chips */}
+                {newMemberIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {newMemberIds.map((uid) => {
+                      const u = getUserById(uid);
+                      if (!u) return null;
+                      return (
+                        <span key={uid} className="flex items-center gap-1 px-2 py-1 bg-paper-dark border border-rule text-xs font-bold text-ink">
+                          {u.avatar} {u.displayName.split(' ')[0]}
+                          <button onClick={() => setNewMemberIds((p) => p.filter((id) => id !== uid))} className="text-ink-faint hover:text-press ml-0.5">
+                            <X size={10} />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="relative mb-2">
+                  <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+                  <input
+                    type="text"
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    placeholder="Search neighbors to add…"
+                    className="w-full border border-rule bg-paper py-2 pl-8 pr-3 text-xs text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col border border-rule/50 max-h-36 overflow-y-auto">
+                  {memberSearchResults.map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => { setNewMemberIds((p) => [...p, u.id]); setMemberSearch(''); }}
+                      className="flex items-center gap-2 px-3 py-2 border-b border-rule/40 last:border-0 hover:bg-paper-dark transition-colors text-left"
+                    >
+                      <span className="text-base">{u.avatar}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-ink leading-none">{u.displayName}</p>
+                        <p className="text-[10px] text-ink-faint font-mono">@{u.username}</p>
+                      </div>
+                      <Plus size={12} className="text-ink-muted shrink-0" />
+                    </button>
+                  ))}
+                  {memberSearchResults.length === 0 && memberSearch.length > 0 && (
+                    <p className="text-[10px] text-ink-faint italic py-3 text-center">No neighbors found</p>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={createNeighborhood}
+                disabled={!newName.trim()}
+                className="w-full bg-ink text-paper py-3 font-bold uppercase tracking-widest text-xs btn-3d disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Create Neighborhood
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

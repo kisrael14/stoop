@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, UserPlus, UserCheck, Flame, Swords, Handshake, Trophy, Star, Newspaper, Settings } from 'lucide-react';
+import { ArrowLeft, Plus, Check, Flame, Swords, Handshake, Trophy, Star, Newspaper, Settings } from 'lucide-react';
 import { getUserById, DEBATES, BETS, HOT_TAKES, ANALYSES, CHATS, ME } from '@/lib/mock-data';
 import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { FandomLevel } from '@/lib/types';
@@ -123,14 +123,14 @@ export default function UserProfilePage() {
                   await refreshProfile();
                 }
               }}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors rounded-sm ${
+              className={`shrink-0 flex items-center justify-center h-10 w-10 rounded-full font-bold text-sm transition-all border-2 ${
                 following
-                  ? 'bg-paper/15 text-paper/70 hover:bg-paper/25'
-                  : 'bg-press text-paper hover:bg-press/80'
+                  ? 'bg-paper/15 border-paper/40 text-paper hover:bg-paper/10'
+                  : 'bg-paper border-transparent text-ink hover:opacity-80'
               }`}
+              title={following ? 'Unfollow' : 'Follow'}
             >
-              {following ? <UserCheck size={13} /> : <UserPlus size={13} />}
-              {following ? 'Following' : 'Follow'}
+              {following ? <Check size={15} /> : <Plus size={15} />}
             </button>
           )}
         </div>
@@ -177,7 +177,7 @@ export default function UserProfilePage() {
       {/* ── BADGES ─────────────────────────────────────────── */}
       <section className="mx-4 mt-4 border border-rule bg-paper px-4 py-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Badges</h2>
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Trophy Room</h2>
           <span className="text-[9px] text-ink-faint italic">Tap to learn more</span>
         </div>
         <div className="flex flex-wrap gap-2">

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Flame, Snowflake, Swords, Handshake, Trophy, Users } from 'lucide-react';
+import { ArrowLeft, Flame, Snowflake, Swords, Handshake, Trophy, Users, Plus, Check } from 'lucide-react';
 import { DEBATES, BETS, HOT_TAKES, getUserById } from '@/lib/mock-data';
 import { getLeagueById } from '@/lib/leagues-data';
 import { ALL_TEAMS } from '@/lib/teams-data';
@@ -18,6 +18,7 @@ export default function LeaguePage() {
   const router = useRouter();
   const league = getLeagueById(id);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [isFollowing, setIsFollowing] = useState(false);
   const [localHotTakes, setLocalHotTakes] = useState(() => {
     const leagueTeamIds = ALL_TEAMS.filter((t) => t.league === id).map((t) => t.id);
     return HOT_TAKES
@@ -98,6 +99,17 @@ export default function LeaguePage() {
               {league.sport}
             </h2>
           </div>
+          <button
+            onClick={() => setIsFollowing((f) => !f)}
+            className={`flex items-center justify-center h-10 w-10 rounded-full font-bold text-sm transition-all shrink-0 border-2 ${
+              isFollowing
+                ? 'bg-white/20 border-white/40 text-white hover:bg-white/10'
+                : 'bg-white border-transparent text-ink hover:bg-white/90'
+            }`}
+            title={isFollowing ? 'Unfollow league' : 'Follow league'}
+          >
+            {isFollowing ? <Check size={15} /> : <Plus size={15} />}
+          </button>
         </div>
         <div className="flex gap-6 mt-5 pt-4 border-t border-white/20">
           {[

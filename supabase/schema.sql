@@ -214,6 +214,7 @@ create policy "profiles_update" on public.profiles for update to authenticated u
 -- User teams
 create policy "user_teams_read"   on public.user_teams for select to authenticated using (true);
 create policy "user_teams_insert" on public.user_teams for insert to authenticated with check (auth.uid() = user_id);
+create policy "user_teams_update" on public.user_teams for update to authenticated using (auth.uid() = user_id);
 create policy "user_teams_delete" on public.user_teams for delete to authenticated using (auth.uid() = user_id);
 
 -- Follows

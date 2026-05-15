@@ -1,24 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, UserPlus, UserCheck, Phone, AtSign, X } from 'lucide-react';
+import { Search, Phone, AtSign, X, Plus, Check } from 'lucide-react';
 import { USERS, TEAMS, ME } from '@/lib/mock-data';
 import { ALL_LEAGUES } from '@/lib/leagues-data';
 import { teamDisplayName } from '@/lib/utils';
-import type { Team } from '@/lib/types';
+import type { FandomLevel } from '@/lib/types';
 import TeamLogo from '@/components/TeamLogo';
+import { useAuth } from '@/lib/auth-context';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 
-type SearchMode = 'people' | 'teams' | 'leagues';
+type SearchMode = 'people' | 'browse';
+
+const FANDOM_OPTIONS: { level: FandomLevel; label: string; emoji: string }[] = [
+  { level: 'diehard',      label: 'Diehard',      emoji: '🔥' },
+  { level: 'supporter',    label: 'Supporter',    emoji: '✊' },
+  { level: 'fair-weather', label: 'Fair Weather', emoji: '☁️' },
+  { level: 'casual',       label: 'Casual',       emoji: '👋' },
+];
 
 export default function DiscoverPage() {
+  const { user: authUser, refreshProfile } = useAuth();
   const [mode, setMode] = useState<SearchMode>('people');
   const [query, setQuery] = useState('');
   const [following, setFollowing] = useState<string[]>(ME.followingIds);
-  const [myTeamIds, setMyTeamIds] = useState<string[]>(ME.fanTeams.map((ft) => ft.team.id));
+  const [myTeamIds, setMyTeamIds] = useState<string[]>(() => {
+    if (authUser?.teams?.length) return authUser.teams.map((t) => t.team_id);
+    return ME.fanTeams.map((ft) => ft.team.id);
+  });
+  const [myLeagueIds, setMyLeagueIds] = useState<string[]>([]);
+  const [fandomPickerFor, setFandomPickerFor] = useState<string | null>(null);
 
   const otherUsers = USERS.filter((u) => u.id !== 'me');
-
   const isPhone = /^\+?[\d\s\-()]{4,}$/.test(query.replace(/\s/g, ''));
   const queryType = query.length >= 2 ? (isPhone ? 'phone' : 'username') : null;
 
@@ -29,6 +43,15 @@ export default function DiscoverPage() {
       )
     : otherUsers;
 
+  const filteredLeagues = query.length >= 1
+    ? ALL_LEAGUES.filter((l) =>
+        l.name.toLowerCase().includes(query.toLowerCase()) ||
+        l.shortName.toLowerCase().includes(query.toLowerCase()) ||
+        l.country.toLowerCase().includes(query.toLowerCase()) ||
+        l.sport.toLowerCase().includes(query.toLowerCase())
+      )
+    : ALL_LEAGUES;
+
   const filteredTeams = query.length >= 1
     ? TEAMS.filter(
         (t) =>
@@ -38,74 +61,88 @@ export default function DiscoverPage() {
       )
     : TEAMS;
 
+  // Group filtered teams by league
+  const teamsByLeague = filteredTeams.reduce<Record<string, typeof TEAMS>>((acc, team) => {
+    if (!acc[team.league]) acc[team.league] = [];
+    acc[team.league].push(team);
+    return acc;
+  }, {});
+
+  // Sync local team ids when auth loads (initial state may be set before auth resolves)
+  useEffect(() => {
+    if (authUser?.teams) setMyTeamIds(authUser.teams.map((t) => t.team_id));
+  }, [authUser?.teams]);
+
   const toggleFollow = (userId: string) => {
     setFollowing((prev) =>
       prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
     );
   };
 
-  const toggleTeam = (teamId: string) => {
-    setMyTeamIds((prev) =>
-      prev.includes(teamId) ? prev.filter((id) => id !== teamId) : [...prev, teamId]
+  const addTeamWithFandom = async (teamId: string, level: FandomLevel) => {
+    setMyTeamIds((prev) => (prev.includes(teamId) ? prev : [...prev, teamId]));
+    setFandomPickerFor(null);
+    if (authUser && isSupabaseConfigured()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient() as any;
+      await supabase.from('user_teams').upsert({ user_id: authUser.id, team_id: teamId, fandom_level: level });
+      await refreshProfile();
+    }
+  };
+
+  const removeTeam = async (teamId: string) => {
+    setMyTeamIds((prev) => prev.filter((id) => id !== teamId));
+    if (authUser && isSupabaseConfigured()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient() as any;
+      await supabase.from('user_teams').delete().eq('user_id', authUser.id).eq('team_id', teamId);
+      await refreshProfile();
+    }
+  };
+
+  const toggleLeague = (leagueId: string) => {
+    setMyLeagueIds((prev) =>
+      prev.includes(leagueId) ? prev.filter((id) => id !== leagueId) : [...prev, leagueId]
     );
   };
 
-  const filteredLeagues = query.length >= 1
-    ? ALL_LEAGUES.filter(
-        (l) =>
-          l.name.toLowerCase().includes(query.toLowerCase()) ||
-          l.shortName.toLowerCase().includes(query.toLowerCase()) ||
-          l.country.toLowerCase().includes(query.toLowerCase()) ||
-          l.sport.toLowerCase().includes(query.toLowerCase())
-      )
-    : ALL_LEAGUES;
-
-  const leagueGroups = filteredTeams.reduce<Record<string, Team[]>>((acc, team) => {
-    if (!acc[team.league]) acc[team.league] = [];
-    acc[team.league].push(team);
-    return acc;
-  }, {});
-
   return (
     <div className="flex flex-col bg-paper min-h-full">
-      {/* Masthead */}
+
+      {/* ── Masthead ─────────────────────────────────────────── */}
       <div className="sticky top-0 z-10 bg-paper/97 backdrop-blur-sm px-5 pt-10 pb-4 border-b-2 border-ink">
         <h1 className="font-display text-2xl font-bold text-ink mb-1">Discover</h1>
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink-faint mb-4">Find Neighbors · Follow Teams</p>
 
         {/* Mode toggle */}
         <div className="flex gap-0 border border-ink overflow-hidden mb-4">
-          {(['people', 'teams', 'leagues'] as SearchMode[]).map((m) => (
+          {([
+            { id: 'people', label: '👥 Neighbors' },
+            { id: 'browse', label: '🏆 Teams & Leagues' },
+          ] as const).map(({ id: m, label }) => (
             <button
               key={m}
-              onClick={() => { setMode(m); setQuery(''); }}
+              onClick={() => { setMode(m); setQuery(''); setFandomPickerFor(null); }}
               className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors border-r last:border-r-0 border-ink ${
                 mode === m ? 'bg-ink text-paper' : 'bg-paper text-ink-muted hover:bg-paper-dark'
               }`}
             >
-              {m === 'people' ? '👥 Neighbors' : m === 'teams' ? '🏆 Teams' : '🌍 Leagues'}
+              {label}
             </button>
           ))}
         </div>
 
         {/* Search bar */}
         <div className="relative">
-          {queryType === 'phone' ? (
-            <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
-          ) : (
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
-          )}
+          {queryType === 'phone'
+            ? <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+            : <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+          }
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={
-              mode === 'people'
-                ? 'Name, @username, or phone...'
-                : mode === 'teams'
-                ? 'Search teams, leagues, cities...'
-                : 'Search leagues, countries, sports...'
-            }
+            placeholder={mode === 'people' ? 'Name, @username, or phone…' : 'Search teams, leagues, cities…'}
             className="w-full border border-rule bg-paper-dark py-2.5 pl-9 pr-10 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors"
           />
           {query && (
@@ -114,22 +151,19 @@ export default function DiscoverPage() {
             </button>
           )}
         </div>
-
         {queryType === 'phone' && (
           <p className="mt-1.5 text-[10px] text-ink-faint px-1 font-bold uppercase tracking-wide">
-            <Phone size={9} className="inline mr-1" />
-            Searching by phone number
+            <Phone size={9} className="inline mr-1" />Searching by phone number
           </p>
         )}
         {queryType === 'username' && query.startsWith('@') && (
           <p className="mt-1.5 text-[10px] text-ink-faint px-1 font-bold uppercase tracking-wide">
-            <AtSign size={9} className="inline mr-1" />
-            Searching by username
+            <AtSign size={9} className="inline mr-1" />Searching by username
           </p>
         )}
       </div>
 
-      {/* Neighbors results */}
+      {/* ── NEIGHBORS ───────────────────────────────────────── */}
       {mode === 'people' && (
         <div className="flex flex-col py-4 pb-8">
           {query.length < 1 && (
@@ -171,25 +205,27 @@ export default function DiscoverPage() {
               </div>
               <button
                 onClick={() => toggleFollow(user.id)}
-                className={`shrink-0 flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                className={`shrink-0 flex items-center justify-center h-9 w-9 rounded-full font-bold text-sm transition-all border-2 ${
                   following.includes(user.id)
-                    ? 'bg-paper-dark border border-rule text-ink-muted hover:bg-paper-deeper'
-                    : 'bg-ink text-paper hover:bg-ink/80'
+                    ? 'bg-paper-dark border-ink text-ink'
+                    : 'bg-ink border-transparent text-paper hover:bg-ink/80'
                 }`}
+                title={following.includes(user.id) ? 'Unfollow' : 'Follow'}
               >
-                {following.includes(user.id) ? <UserCheck size={12} /> : <UserPlus size={12} />}
-                {following.includes(user.id) ? 'Following' : 'Follow'}
+                {following.includes(user.id) ? <Check size={14} /> : <Plus size={14} />}
               </button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Teams & leagues results */}
-      {mode === 'teams' && (
-        <div className="px-5 py-4 pb-8">
+      {/* ── TEAMS & LEAGUES BROWSE ───────────────────────────── */}
+      {mode === 'browse' && (
+        <div className="pb-8">
+
+          {/* Your teams chips */}
           {myTeamIds.length > 0 && (
-            <div className="mb-5">
+            <div className="px-5 pt-4 pb-3 border-b border-rule">
               <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint mb-2">
                 Your Teams ({myTeamIds.length})
               </p>
@@ -200,11 +236,12 @@ export default function DiscoverPage() {
                   return (
                     <button
                       key={tid}
-                      onClick={() => toggleTeam(tid)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold text-paper border transition-colors hover:opacity-80 uppercase tracking-wide"
-                      style={{ backgroundColor: team.color + '40', borderColor: team.color + '80', color: team.color }}
+                      onClick={() => removeTeam(tid)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-bold border transition-all hover:opacity-70 uppercase tracking-wide"
+                      style={{ backgroundColor: team.color + '20', borderColor: team.color + '60', color: team.color }}
                     >
-                      <TeamLogo team={team} size={14} className="inline-block mr-0.5" />{team.name}
+                      <TeamLogo team={team} size={14} className="inline-block" />
+                      {team.name}
                       <X size={10} />
                     </button>
                   );
@@ -213,80 +250,113 @@ export default function DiscoverPage() {
             </div>
           )}
 
-          {Object.entries(leagueGroups).map(([league, teams]) => (
-            <div key={league} className="mb-5">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint mb-2 border-b border-rule pb-1">{league}</p>
-              <div className="flex flex-col gap-0">
-                {teams.map((team, i) => {
-                  const added = myTeamIds.includes(team.id);
+          {/* Leagues + teams under each */}
+          {filteredLeagues.map((league) => {
+            const leagueTeams = teamsByLeague[league.id] ?? [];
+            if (leagueTeams.length === 0 && query.length > 0) return null;
+            const leagueFollowed = myLeagueIds.includes(league.id);
+
+            return (
+              <div key={league.id}>
+                {/* League header row */}
+                <div
+                  className="flex items-center gap-3 px-4 py-3 bg-paper-dark border-b border-t border-rule/60"
+                  style={{ borderLeftWidth: '4px', borderLeftColor: league.color, borderLeftStyle: 'solid' }}
+                >
+                  <Link
+                    href={`/leagues/${league.id}`}
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-xl shrink-0 hover:opacity-80 transition-opacity"
+                    style={{ backgroundColor: league.color + '30', border: `2px solid ${league.color}60` }}
+                  >
+                    {league.emoji}
+                  </Link>
+                  <Link href={`/leagues/${league.id}`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+                    <p className="font-bold text-ink text-sm">{league.name}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{league.country} · {league.sport}</p>
+                  </Link>
+                  <button
+                    onClick={() => toggleLeague(league.id)}
+                    className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full font-bold text-sm transition-all border-2 ${
+                      leagueFollowed
+                        ? 'bg-paper border-ink text-ink'
+                        : 'text-paper border-transparent hover:opacity-80'
+                    }`}
+                    style={leagueFollowed ? {} : { backgroundColor: league.color }}
+                    title={leagueFollowed ? 'Unfollow league' : 'Follow league'}
+                  >
+                    {leagueFollowed ? <Check size={14} /> : <Plus size={14} />}
+                  </button>
+                </div>
+
+                {/* Teams */}
+                {leagueTeams.map((team) => {
+                  const followed = myTeamIds.includes(team.id);
+                  const showingPicker = fandomPickerFor === team.id;
+
                   return (
-                    <div
-                      key={team.id}
-                      className={`flex items-center gap-3 px-4 py-3 bg-paper hover:bg-paper-dark transition-colors border-b border-rule/50 ${i === 0 ? 'border-t border-rule/50' : ''}`}
-                      style={{ borderLeftWidth: '3px', borderLeftColor: team.color, borderLeftStyle: 'solid' }}
-                    >
-                      <TeamLogo team={team} size={32} />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-ink text-sm">{teamDisplayName(team)}</p>
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{team.league}</p>
-                      </div>
-                      <button
-                        onClick={() => toggleTeam(team.id)}
-                        className={`shrink-0 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                          added
-                            ? 'border border-rule bg-paper-dark text-ink-muted hover:bg-paper-deeper'
-                            : 'text-paper hover:opacity-80'
-                        }`}
-                        style={added ? {} : { backgroundColor: team.color }}
+                    <div key={team.id} className="border-b border-rule/40">
+                      <div
+                        className="flex items-center gap-3 px-5 py-2.5 bg-paper hover:bg-paper-dark transition-colors"
+                        style={{ borderLeftWidth: '3px', borderLeftColor: team.color + '70', borderLeftStyle: 'solid' }}
                       >
-                        {added ? '✓ Following' : '+ Follow'}
-                      </button>
+                        <Link href={`/teams/${team.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+                          <TeamLogo team={team} size={28} />
+                          <p className="font-bold text-ink text-sm">{teamDisplayName(team)}</p>
+                        </Link>
+                        <button
+                          onClick={() => {
+                            if (followed) {
+                              removeTeam(team.id);
+                            } else {
+                              setFandomPickerFor(showingPicker ? null : team.id);
+                            }
+                          }}
+                          className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full font-bold text-sm transition-all border-2 ${
+                            followed
+                              ? 'bg-paper border-ink text-ink'
+                              : showingPicker
+                              ? 'bg-ink border-ink text-paper'
+                              : 'text-paper border-transparent hover:opacity-80'
+                          }`}
+                          style={followed || showingPicker ? {} : { backgroundColor: team.color }}
+                          title={followed ? 'Unfollow' : 'Follow team'}
+                        >
+                          {followed ? <Check size={14} /> : <Plus size={14} />}
+                        </button>
+                      </div>
+
+                      {/* Inline fandom picker */}
+                      {showingPicker && (
+                        <div className="px-5 py-3 bg-paper-dark flex flex-col gap-2" style={{ borderLeftWidth: '3px', borderLeftColor: team.color + '70', borderLeftStyle: 'solid' }}>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Select your fandom level:</p>
+                          <div className="grid grid-cols-4 gap-2">
+                            {FANDOM_OPTIONS.map(({ level, label, emoji }) => (
+                              <button
+                                key={level}
+                                onClick={() => addTeamWithFandom(team.id, level)}
+                                className="flex flex-col items-center gap-1 py-2.5 border-2 border-rule rounded-xl bg-paper hover:border-ink hover:bg-paper-dark transition-all"
+                              >
+                                <span className="text-lg">{emoji}</span>
+                                <span className="text-[9px] font-bold uppercase tracking-wide text-ink leading-tight text-center px-0.5">{label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            );
+          })}
 
-      {/* Leagues results */}
-      {mode === 'leagues' && (
-        <div className="px-5 py-4 pb-8">
           {filteredLeagues.length === 0 && query.length > 0 && (
             <div className="text-center py-12 px-5">
               <p className="font-display text-3xl mb-2 text-ink-faint">🔍</p>
-              <p className="font-display font-bold text-ink">No leagues found</p>
-              <p className="text-xs text-ink-muted mt-1 italic">Try a different name or country</p>
+              <p className="font-display font-bold text-ink">No results found</p>
+              <p className="text-xs text-ink-muted mt-1 italic">Try a team name, city, or league</p>
             </div>
           )}
-          <div className="flex flex-col gap-0">
-            {filteredLeagues.map((league, i) => (
-              <Link
-                key={league.id}
-                href={`/leagues/${league.id}`}
-                className={`flex items-center gap-3 px-4 py-3 bg-paper hover:bg-paper-dark transition-colors border-b border-rule/50 ${i === 0 ? 'border-t border-rule/50' : ''}`}
-                style={{ borderLeftWidth: '3px', borderLeftColor: league.color, borderLeftStyle: 'solid' }}
-              >
-                <div
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-xl shrink-0"
-                  style={{ backgroundColor: league.color + '25', border: `2px solid ${league.color}50` }}
-                >
-                  {league.emoji}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-ink text-sm">{league.name}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{league.country} · {league.sport}</p>
-                </div>
-                <span
-                  className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 text-paper shrink-0"
-                  style={{ backgroundColor: league.color }}
-                >
-                  {league.shortName}
-                </span>
-              </Link>
-            ))}
-          </div>
         </div>
       )}
     </div>

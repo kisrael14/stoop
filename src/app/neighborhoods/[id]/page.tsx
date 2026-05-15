@@ -5,12 +5,12 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Home, MessageCircle, Swords, Handshake, Flame, Snowflake,
-  Send, Sparkles, X, Trophy, Users, Pencil, Check,
+  Send, Sparkles, X, Trophy, Users, Pencil, Check, Plus, Search,
   AlertCircle, CheckCircle, Clock, Megaphone, MessageSquare, ChevronDown, ChevronUp, PenLine,
 } from 'lucide-react';
 import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
 import {
-  getChatById, getUserById, ME, DEBATES, BETS, HOT_TAKES, TEAMS, ANALYSES,
+  getChatById, getUserById, ME, DEBATES, BETS, HOT_TAKES, TEAMS, ANALYSES, USERS,
 } from '@/lib/mock-data';
 import { timeAgo, voteLeader, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { Message, MessageTag, Debate, Bet, HotTake, HotTakeComment, VoteChoice, Analysis } from '@/lib/types';
@@ -78,6 +78,9 @@ export default function NeighborhoodPage() {
   const [editEmoji, setEditEmoji] = useState('');
   const [chatName, setChatName] = useState(chat?.name ?? '');
   const [chatEmoji, setChatEmoji] = useState(chat?.emoji ?? '');
+  const [localMemberIds, setLocalMemberIds] = useState<string[]>(chat?.memberIds ?? []);
+  const [editingMembers, setEditingMembers] = useState(false);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
 
   useEffect(() => {
     if (activeTab === 'chat') {
@@ -93,7 +96,7 @@ export default function NeighborhoodPage() {
     );
   }
 
-  const members = chat.memberIds.map((id) => getUserById(id)).filter(Boolean);
+  const members = localMemberIds.map((mid) => getUserById(mid)).filter(Boolean);
   const allFanTeams = members.flatMap((m) => m!.fanTeams).reduce<Record<string, number>>((acc, ft) => {
     acc[ft.team.id] = (acc[ft.team.id] || 0) + 1;
     return acc;
@@ -681,36 +684,106 @@ export default function NeighborhoodPage() {
           <div className="px-5 py-4 border-b border-rule">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-display font-bold text-ink text-lg">Members</h3>
-              <span className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{members.length} total</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{members.length} total</span>
+                <button
+                  onClick={() => { setEditingMembers((v) => !v); setMemberSearchQuery(''); }}
+                  className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 border transition-colors ${
+                    editingMembers ? 'bg-ink text-paper border-ink' : 'bg-paper text-ink-muted border-rule hover:border-ink'
+                  }`}
+                >
+                  {editingMembers ? 'Done' : 'Edit'}
+                </button>
+              </div>
             </div>
             <div className="flex flex-col gap-0">
               {members.map((m, i) => (
-                <Link
+                <div
                   key={m!.id}
-                  href={`/users/${m!.id}`}
-                  className={`flex items-center gap-3 px-4 py-3 hover:bg-paper-dark transition-colors border-b border-rule/50 last:border-0 ${i === 0 ? 'border-t border-rule/50' : ''}`}
+                  className={`flex items-center gap-3 px-4 py-3 border-b border-rule/50 last:border-0 ${i === 0 ? 'border-t border-rule/50' : ''} ${editingMembers ? 'bg-paper' : 'hover:bg-paper-dark transition-colors'}`}
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-paper-dark border border-rule text-xl shrink-0">
-                    {m!.avatar}
-                  </div>
+                  {editingMembers && m!.id !== 'me' && (
+                    <button
+                      onClick={() => setLocalMemberIds((prev) => prev.filter((mid) => mid !== m!.id))}
+                      className="shrink-0 flex items-center justify-center h-7 w-7 rounded-full bg-press/10 border border-press/40 text-press hover:bg-press hover:text-paper transition-all"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                  {(!editingMembers || m!.id === 'me') && (
+                    <Link href={`/users/${m!.id}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-paper-dark border border-rule text-xl shrink-0 hover:border-ink transition-all">
+                      {m!.avatar}
+                    </Link>
+                  )}
+                  {editingMembers && m!.id !== 'me' && (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-paper-dark border border-rule text-xl shrink-0">
+                      {m!.avatar}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-ink text-sm">{m!.displayName}</p>
                     <p className="text-[11px] text-ink-faint font-mono">@{m!.username}</p>
                   </div>
-                  <div className="flex gap-1 flex-wrap justify-end">
-                    {m!.fanTeams.slice(0, 2).map((ft) => (
-                      <span key={ft.team.id} title={ft.team.name}>
-                        <TeamLogo team={ft.team} size={16} />
-                      </span>
-                    ))}
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-xs font-bold text-field">{m!.stats.debatesWon}W</p>
-                    <p className="text-[9px] uppercase tracking-wide text-ink-faint">debates</p>
-                  </div>
-                </Link>
+                  {!editingMembers && (
+                    <>
+                      <div className="flex gap-1 flex-wrap justify-end">
+                        {m!.fanTeams.slice(0, 2).map((ft) => (
+                          <span key={ft.team.id} title={ft.team.name}>
+                            <TeamLogo team={ft.team} size={16} />
+                          </span>
+                        ))}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs font-bold text-field">{m!.stats.debatesWon}W</p>
+                        <p className="text-[9px] uppercase tracking-wide text-ink-faint">debates</p>
+                      </div>
+                    </>
+                  )}
+                </div>
               ))}
             </div>
+
+            {/* Add member search */}
+            {editingMembers && (() => {
+              const nonMembers = USERS.filter((u) => u.id !== 'me' && !localMemberIds.includes(u.id));
+              const filtered = memberSearchQuery.length > 0
+                ? nonMembers.filter((u) =>
+                    u.displayName.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+                    u.username.toLowerCase().includes(memberSearchQuery.toLowerCase())
+                  )
+                : nonMembers.slice(0, 5);
+              return (
+                <div className="mt-3 border-t border-rule pt-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint mb-2">Add Member</p>
+                  <div className="relative mb-2">
+                    <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+                    <input
+                      type="text"
+                      value={memberSearchQuery}
+                      onChange={(e) => setMemberSearchQuery(e.target.value)}
+                      placeholder="Search by name or @username…"
+                      className="w-full border border-rule bg-paper py-2 pl-8 pr-3 text-xs text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors"
+                    />
+                  </div>
+                  {filtered.map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => setLocalMemberIds((prev) => [...prev, u.id])}
+                      className="flex w-full items-center gap-3 px-3 py-2.5 border-b border-rule/40 last:border-0 hover:bg-paper-dark transition-colors"
+                    >
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-lg shrink-0">
+                        {u.avatar}
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="font-bold text-ink text-xs">{u.displayName}</p>
+                        <p className="text-[10px] text-ink-faint font-mono">@{u.username}</p>
+                      </div>
+                      <Plus size={14} className="text-ink-muted shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Neighborhood teams */}

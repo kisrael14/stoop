@@ -55,7 +55,7 @@ export default function StoopPage() {
 
   // Teams: map from auth user's Supabase user_teams, fall back to mock
   const fanTeams: FanTeam[] = (() => {
-    if (authUser?.teams && authUser.teams.length > 0) {
+    if (isRealUser && authUser?.teams) {
       return authUser.teams
         .map((ut, i): FanTeam | null => {
           const team = ALL_TEAMS.find((t) => t.id === ut.team_id);
@@ -232,7 +232,7 @@ export default function StoopPage() {
       {/* ── BADGES ─────────────────────────────────────────── */}
       <section className="mx-4 mt-4 border border-rule bg-paper px-4 py-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Badges</h2>
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Trophy Room</h2>
           <span className="text-[9px] text-ink-faint italic">Tap to learn more</span>
         </div>
         <div className="flex flex-wrap gap-2">
