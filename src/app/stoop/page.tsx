@@ -75,33 +75,7 @@ export default function StoopPage() {
   const myBets = BETS.filter((b) => b.participantIds.includes('me')).slice(0, 2);
   const myHotTakes = HOT_TAKES.filter((h) => h.authorId === 'me' || h.teamIds.some((t) => myTeamIds.includes(t))).slice(0, 2);
 
-  type NeighborDisplay = { id: string; displayName: string; username: string; avatar: string };
   type NeighborhoodDisplay = { id: string; name: string; emoji: string; memberCount?: number };
-
-  const myNeighbors: NeighborDisplay[] = (() => {
-    if (isRealUser && authUser?.followingProfiles != null) {
-      return authUser.followingProfiles.map((fp) => ({
-        id: fp.id,
-        displayName: fp.display_name,
-        username: fp.username,
-        avatar: fp.avatar,
-      }));
-    }
-    const mockChats = CHATS.filter((c) => c.memberIds.includes('me'));
-    const msgCounts: Record<string, number> = {};
-    mockChats.forEach((chat) => {
-      chat.messages.forEach((msg) => {
-        if (msg.userId !== 'me' && msg.userId !== 'ai') {
-          msgCounts[msg.userId] = (msgCounts[msg.userId] ?? 0) + 1;
-        }
-      });
-    });
-    return ME.followingIds
-      .map((id) => getUserById(id))
-      .filter((u): u is NonNullable<ReturnType<typeof getUserById>> => u != null)
-      .sort((a, b) => (msgCounts[b.id] ?? 0) - (msgCounts[a.id] ?? 0))
-      .map((u) => ({ id: u.id, displayName: u.displayName, username: u.username, avatar: u.avatar }));
-  })();
 
   const myNeighborhoods: NeighborhoodDisplay[] = (() => {
     if (isRealUser && authUser?.neighborhoodMemberships != null) {
@@ -171,17 +145,17 @@ export default function StoopPage() {
         <div className="mt-4 border border-ink/20">
           {/* Row 1 — social stats */}
           <div className="grid grid-cols-4 divide-x divide-ink/20">
-            <Link href="/discover?filter=followers" className="flex flex-col items-center py-2 hover:bg-ink/10 transition-colors">
-              <p className="font-display text-lg font-bold leading-none text-ink">{followerCount}</p>
+            <Link href="/neighbors" className="flex flex-col items-center py-2 hover:bg-ink/10 transition-colors">
+              <p className="font-display text-lg font-bold leading-none text-ink">{followingCount}</p>
               <p className="text-[7px] font-bold uppercase tracking-wider text-ink/70 mt-0.5">Neighbors</p>
             </Link>
-            <Link href="/discover?filter=following" className="flex flex-col items-center py-2 hover:bg-ink/10 transition-colors">
-              <p className="font-display text-lg font-bold leading-none text-ink">{followingCount}</p>
+            <Link href="/followers" className="flex flex-col items-center py-2 hover:bg-ink/10 transition-colors">
+              <p className="font-display text-lg font-bold leading-none text-ink">{followerCount}</p>
               <p className="text-[7px] font-bold uppercase tracking-wider text-ink/70 mt-0.5">Following</p>
             </Link>
             <Link href="/neighborhoods" className="flex flex-col items-center py-2 hover:bg-ink/10 transition-colors">
               <p className="font-display text-lg font-bold leading-none text-ink">{myNeighborhoods.length}</p>
-              <p className="text-[7px] font-bold uppercase tracking-wider text-ink/70 mt-0.5">Groups</p>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-ink/70 mt-0.5">Neighborhoods</p>
             </Link>
             <div className="flex flex-col items-center py-2">
               <p className="font-display text-lg font-bold leading-none text-ink">{stats.hotTakeReactions}</p>
@@ -250,55 +224,6 @@ export default function StoopPage() {
           ))}
         </div>
       </section>
-
-      {/* ── 2-COLUMN: NEIGHBORS + NEIGHBORHOODS ─────────────── */}
-      <div className="mx-4 mt-4 grid grid-cols-2 gap-0 border border-rule">
-        {/* LEFT: Neighbors */}
-        <div className="col-rule p-3">
-          <div className="section-header mb-3">
-            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-ink">Neighbors</p>
-          </div>
-          <div className="flex flex-col gap-2">
-            {myNeighbors.slice(0, 4).map((user) => (
-              <Link key={user.id} href={`/users/${user.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-base shrink-0">
-                  {user.avatar}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[11px] font-bold text-ink truncate">{user.displayName.split(' ')[0]}</p>
-                  <p className="text-[9px] text-ink-faint font-mono truncate">@{user.username}</p>
-                </div>
-              </Link>
-            ))}
-            <Link href="/discover" className="mt-1 text-[10px] font-bold uppercase tracking-wider text-masthead hover:underline">
-              Find more →
-            </Link>
-          </div>
-        </div>
-
-        {/* RIGHT: Neighborhoods */}
-        <div className="p-3">
-          <div className="section-header mb-3">
-            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-ink">Neighborhoods</p>
-          </div>
-          <div className="flex flex-col gap-2">
-            {myNeighborhoods.slice(0, 4).map((n) => (
-              <Link key={n.id} href={`/neighborhoods/${n.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <div className="flex h-8 w-8 items-center justify-center bg-nav-bg text-base shrink-0 rounded-sm">
-                  {n.emoji}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[11px] font-bold text-ink truncate">{n.name}</p>
-                  {n.memberCount != null && <p className="text-[9px] text-ink-faint">{n.memberCount} members</p>}
-                </div>
-              </Link>
-            ))}
-            <Link href="/neighborhoods" className="mt-1 text-[10px] font-bold uppercase tracking-wider text-masthead hover:underline">
-              See all →
-            </Link>
-          </div>
-        </div>
-      </div>
 
       {/* ── MY NEIGHBORHOOD ────────────────────────────────── */}
       <div className="mx-4 mt-4 border border-rule">
