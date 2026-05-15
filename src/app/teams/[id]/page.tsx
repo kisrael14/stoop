@@ -3,17 +3,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Flame, Snowflake, Swords, Handshake, Trophy, Star, Users, Plus, Check, X, Send, Home, PenLine, Megaphone, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
-import { DEBATES, BETS, HOT_TAKES, ANALYSES, getUserById, USERS, ME } from '@/lib/mock-data';
+import { ArrowLeft, Flame, Snowflake, Swords, Trophy, Star, Users, Plus, Check, X, Send, Home, PenLine, Megaphone, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import { DEBATES, HOT_TAKES, ANALYSES, getUserById, USERS, ME } from '@/lib/mock-data';
 import { getTeamByIdFull } from '@/lib/teams-data';
 import { useAuth } from '@/lib/auth-context';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { timeAgo, totalReactions } from '@/lib/utils';
 import type { VoteChoice, HotTake, Analysis, HotTakeComment } from '@/lib/types';
-import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
 import TeamLogo from '@/components/TeamLogo';
 
-type Tab = 'overview' | 'debates' | 'hot-takes' | 'bets' | 'analysis';
+type Tab = 'overview' | 'debates' | 'hot-takes' | 'analysis';
 type Period = 'weekly' | 'monthly' | 'yearly';
 
 const PERIOD_DAYS: Record<Period, number> = { weekly: 7, monthly: 30, yearly: 365 };
@@ -49,13 +48,6 @@ function getTopFans(teamId: string, period: Period) {
       });
     });
 
-  BETS
-    .filter((b) => b.teamIds.includes(teamId) && new Date(b.createdAt) >= cutoff)
-    .forEach((b) => {
-      b.participantIds.forEach((pid) => {
-        scores[pid] = (scores[pid] || 0) + 4;
-      });
-    });
 
   return Object.entries(scores)
     .sort((a, b) => b[1] - a[1])
@@ -72,9 +64,8 @@ export default function TeamPage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [period, setPeriod] = useState<Period>('weekly');
   const [showDiscussModal, setShowDiscussModal] = useState(false);
-  const [discussType, setDiscussType] = useState<'take' | 'debate' | 'bet'>('take');
+  const [discussType, setDiscussType] = useState<'take' | 'debate'>('take');
   const [discussText, setDiscussText] = useState('');
-  const [betSetupClaim, setBetSetupClaim] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(() => ME.fanTeams.some((ft) => ft.team.id === id));
 
   // Sync isFollowing with real auth teams when available
@@ -123,10 +114,6 @@ export default function TeamPage() {
 
   const submitDiscuss = () => {
     if (!discussText.trim()) return;
-    if (discussType === 'bet') {
-      setBetSetupClaim(discussText.trim());
-      return;
-    }
     if (discussType === 'take') {
       const newHT: HotTake = {
         id: `ht-t-${Date.now()}`,
@@ -146,7 +133,7 @@ export default function TeamPage() {
     setShowDiscussModal(false);
   };
 
-  const TAB_ORDER: Tab[] = ['overview', 'debates', 'hot-takes', 'bets', 'analysis'];
+  const TAB_ORDER: Tab[] = ['overview', 'debates', 'hot-takes', 'analysis'];
   const onSwipeStart = (e: React.TouchEvent) => {
     swipeStartX.current = e.touches[0].clientX;
     swipeStartY.current = e.touches[0].clientY;
@@ -213,17 +200,12 @@ export default function TeamPage() {
     .filter((d) => d.teamIds.includes(id))
     .sort((a, b) => (b.votes.length + b.arguments.length) - (a.votes.length + a.arguments.length));
 
-  const teamBets = BETS
-    .filter((b) => b.teamIds.includes(id))
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
   const topFans = getTopFans(id, period);
 
   const tabs: { id: Tab; label: string; icon: React.ElementType; count: number }[] = [
-    { id: 'debates',   label: 'Debates',  icon: Swords,   count: teamDebates.length },
-    { id: 'hot-takes', label: 'Takes',    icon: Flame,    count: localHotTakes.length },
-    { id: 'bets',      label: 'Bets',     icon: Handshake, count: teamBets.length },
-    { id: 'analysis',  label: 'Analysis', icon: PenLine,  count: localAnalyses.length },
+    { id: 'debates',   label: 'Debates',  icon: Swords,  count: teamDebates.length },
+    { id: 'hot-takes', label: 'Takes',    icon: Flame,   count: localHotTakes.length },
+    { id: 'analysis',  label: 'Analysis', icon: PenLine, count: localAnalyses.length },
   ];
 
   const headerBg = team.color + 'dd';
@@ -297,7 +279,6 @@ export default function TeamPage() {
           {[
             { label: 'Debates',   value: teamDebates.length },
             { label: 'Hot Takes', value: localHotTakes.length },
-            { label: 'Bets',      value: teamBets.length },
           ].map(({ label, value }) => (
             <div key={label}>
               <p className="text-xl font-bold text-white font-mono">{value}</p>
@@ -394,7 +375,7 @@ export default function TeamPage() {
               <span className="text-[10px] font-bold uppercase tracking-widest text-ink">Recent Activity</span>
             </div>
 
-            {teamDebates.length === 0 && localHotTakes.length === 0 && teamBets.length === 0 ? (
+            {teamDebates.length === 0 && localHotTakes.length === 0 ? (
               <div className="py-10 text-center border border-rule/50">
                 <p className="text-2xl mb-2">{team.emoji}</p>
                 <p className="font-display font-bold text-ink">No activity yet</p>
@@ -405,7 +386,6 @@ export default function TeamPage() {
                 {[
                   ...localHotTakes.slice(0, 2).map((ht) => ({ type: 'hot-take' as const, time: ht.createdAt, ht })),
                   ...teamDebates.slice(0, 2).map((d)  => ({ type: 'debate'   as const, time: d.createdAt,  d  })),
-                  ...teamBets.slice(0, 1).map((b)     => ({ type: 'bet'      as const, time: b.createdAt,  b  })),
                 ]
                   .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
                   .slice(0, 5)
@@ -439,18 +419,6 @@ export default function TeamPage() {
                         </Link>
                       );
                     }
-                    const b = entry.b;
-                    const participants = b.participantIds.map((pid) => getUserById(pid)).filter(Boolean);
-                    return (
-                      <div key={b.id} className="border border-rule/50 border-l-4 border-l-field px-4 py-3 bg-paper">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-field">🤝 Bet</span>
-                          <span className="text-[10px] text-ink-faint font-mono ml-auto">{timeAgo(b.createdAt)}</span>
-                        </div>
-                        <p className="text-sm text-ink italic leading-snug">&ldquo;{b.claim}&rdquo;</p>
-                        <p className="text-[10px] text-ink-faint mt-1.5">{participants.map((p) => p!.displayName).join(' vs ')}</p>
-                      </div>
-                    );
                   })}
               </div>
             )}
@@ -587,55 +555,6 @@ export default function TeamPage() {
         </div>
       )}
 
-      {/* ── BETS TAB ──────────────────────────────────────────────────────── */}
-      {activeTab === 'bets' && (
-        <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 pb-8">
-          {teamBets.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="font-display text-4xl mb-2 text-ink-faint">🤝</p>
-              <p className="font-display font-bold text-ink text-lg">No bets yet</p>
-              <p className="text-sm text-ink-muted italic mt-1">Make one in a neighborhood</p>
-            </div>
-          ) : teamBets.map((bet) => {
-            const participants = bet.participantIds.map((pid) => getUserById(pid)).filter(Boolean);
-            const winner = bet.winnerId ? getUserById(bet.winnerId) : null;
-            return (
-              <div key={bet.id} className="border border-rule px-4 py-4 bg-paper">
-                <div className="flex items-center gap-2 mb-2">
-                  <Handshake size={12} className="text-field" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-field">Bet</span>
-                  <span className={`ml-auto text-[10px] font-bold uppercase tracking-wide ${
-                    bet.status === 'resolved' ? 'text-ink-faint' : 'text-field'
-                  }`}>{bet.status}</span>
-                </div>
-                <p className="text-sm text-ink italic mb-3 leading-snug">&ldquo;{bet.claim}&rdquo;</p>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {participants.map((p, i) => (
-                    <span key={p!.id} className="flex items-center gap-1">
-                      {i > 0 && <span className="text-ink-faint text-xs">🤝</span>}
-                      <Link href={`/users/${p!.id}`} className="flex items-center gap-1 border border-rule px-2 py-0.5 text-xs text-ink-muted hover:border-ink bg-paper-dark">
-                        <span>{p!.avatar}</span><span>{p!.displayName.split(' ')[0]}</span>
-                      </Link>
-                    </span>
-                  ))}
-                  {bet.status === 'resolved' && (
-                    <div className="ml-auto flex items-center gap-1.5">
-                      <Trophy size={12} className="text-rule-dark" />
-                      <span className="text-[11px] font-bold text-ink">{bet.isPush ? 'Push' : `${winner?.displayName} won`}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="text-[10px] text-ink-faint font-mono">{timeAgo(bet.createdAt)}</span>
-                  <Link href={`/neighborhoods/${bet.chatId}`} className="text-[10px] font-bold text-masthead hover:underline">
-                    {bet.chatName} →
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
       {/* ── ANALYSIS TAB ──────────────────────────────────────────────── */}
       {activeTab === 'analysis' && (
         <div className="flex-1 overflow-y-auto flex flex-col bg-paper">
@@ -812,12 +731,11 @@ export default function TeamPage() {
               <button onClick={() => setShowDiscussModal(false)} className="text-ink/60 hover:text-ink"><X size={18} /></button>
             </div>
             <div className="px-5 py-5 flex flex-col gap-4">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {([
                   { id: 'take', emoji: '🔥', label: 'Hot Take' },
                   { id: 'debate', emoji: '⚔️', label: 'Debate' },
-                  { id: 'bet', emoji: '🤝', label: 'Bet' },
-                ] as { id: 'take' | 'debate' | 'bet'; emoji: string; label: string }[]).map(({ id, emoji, label }) => (
+                ] as { id: 'take' | 'debate'; emoji: string; label: string }[]).map(({ id, emoji, label }) => (
                   <button
                     key={id}
                     onClick={() => setDiscussType(id)}
@@ -834,8 +752,7 @@ export default function TeamPage() {
                 onChange={(e) => setDiscussText(e.target.value)}
                 placeholder={
                   discussType === 'take' ? `Hot take about the ${team.name}…`
-                  : discussType === 'debate' ? `State the debate claim…`
-                  : `What's the bet?`
+                  : `State the debate claim…`
                 }
                 rows={3}
                 className="w-full border border-rule bg-paper-dark px-4 py-3 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors resize-none rounded-lg"
@@ -857,13 +774,6 @@ export default function TeamPage() {
         </div>
       )}
 
-      {betSetupClaim !== null && (
-        <BetSetupModal
-          claim={betSetupClaim}
-          onConfirm={() => { setBetSetupClaim(null); setDiscussText(''); setShowDiscussModal(false); }}
-          onCancel={() => setBetSetupClaim(null)}
-        />
-      )}
     </div>
   );
 }

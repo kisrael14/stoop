@@ -132,12 +132,10 @@ export default function StoopPage() {
   // "From The Streets" — public content filtered to user's followed teams
   const streetsHotTakes = HOT_TAKES.filter((h) => h.isPublic && h.teamIds.some((t) => myTeamIds.includes(t)));
   const streetsDebates = DEBATES.filter((d) => d.isPublic && d.teamIds.some((t) => myTeamIds.includes(t)));
-  const streetsBets = BETS.filter((b) => b.isPublic && b.teamIds.some((t) => myTeamIds.includes(t)));
   const streetsAnalyses = ANALYSES.filter((a) => a.isPublic && a.teamIds.some((t) => myTeamIds.includes(t)));
   const streetsFeed = [
     ...streetsHotTakes.map((ht) => ({ type: 'take' as const, time: ht.createdAt, item: ht })),
     ...streetsDebates.map((d) => ({ type: 'debate' as const, time: d.createdAt, item: d })),
-    ...streetsBets.map((b) => ({ type: 'bet' as const, time: b.createdAt, item: b })),
     ...streetsAnalyses.map((a) => ({ type: 'analysis' as const, time: a.createdAt, item: a })),
   ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 6);
 
@@ -492,19 +490,6 @@ export default function StoopPage() {
                       <p className="text-[9px] font-bold uppercase tracking-widest text-navy mb-0.5">Debate · {d.chatName}</p>
                       <p className="text-xs text-ink leading-snug line-clamp-2 italic">&ldquo;{d.claim}&rdquo;</p>
                       <p className="text-[9px] text-ink-faint mt-0.5">{d.votes.length} votes · {timeAgo(d.createdAt)}</p>
-                    </div>
-                  </Link>
-                );
-              }
-              if (type === 'bet') {
-                const b = item as typeof streetsBets[0];
-                return (
-                  <Link key={b.id} href={`/neighborhoods/${b.chatId}?tab=bets`} className="flex gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors">
-                    <div className="h-7 w-7 flex items-center justify-center bg-field/10 border border-field/30 text-sm rounded-sm shrink-0 mt-0.5">🤝</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-field mb-0.5">Bet · {b.chatName}</p>
-                      <p className="text-xs text-ink leading-snug line-clamp-2 italic">&ldquo;{b.claim}&rdquo;</p>
-                      {b.stakes && <p className="text-[9px] text-ink-faint mt-0.5">Stakes: {b.stakes}</p>}
                     </div>
                   </Link>
                 );

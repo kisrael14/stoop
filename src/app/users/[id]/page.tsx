@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Check, Flame, Swords, Handshake, Trophy, Star, Newspaper, Settings } from 'lucide-react';
-import { getUserById, DEBATES, BETS, HOT_TAKES, ANALYSES, CHATS, ME } from '@/lib/mock-data';
+import { getUserById, DEBATES, HOT_TAKES, ANALYSES, CHATS, ME } from '@/lib/mock-data';
 import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { FandomLevel } from '@/lib/types';
 import { ALL_LEAGUES } from '@/lib/leagues-data';
@@ -70,19 +70,16 @@ export default function UserProfilePage() {
   const userDebates = DEBATES.filter(
     (d) => d.side1UserIds.includes(user.id) || d.side2UserIds.includes(user.id)
   ).slice(0, 3);
-  const userBets = BETS.filter((b) => b.participantIds.includes(user.id)).slice(0, 2);
   const userHotTakes = HOT_TAKES.filter((h) => h.authorId === user.id).slice(0, 2);
 
   // From The Streets — public content filtered to this user's teams
   const userTeamIds = user.fanTeams.map((ft) => ft.team.id);
   const streetsHotTakes = HOT_TAKES.filter((h) => h.isPublic && h.teamIds.some((t) => userTeamIds.includes(t)));
   const streetsDebates = DEBATES.filter((d) => d.isPublic && d.teamIds.some((t) => userTeamIds.includes(t)));
-  const streetsBets = BETS.filter((b) => b.isPublic && b.teamIds.some((t) => userTeamIds.includes(t)));
   const streetsAnalyses = ANALYSES.filter((a) => a.isPublic && a.teamIds.some((t) => userTeamIds.includes(t)));
   const streetsFeed = [
     ...streetsHotTakes.map((ht) => ({ type: 'take' as const, time: ht.createdAt, item: ht })),
     ...streetsDebates.map((d) => ({ type: 'debate' as const, time: d.createdAt, item: d })),
-    ...streetsBets.map((b) => ({ type: 'bet' as const, time: b.createdAt, item: b })),
     ...streetsAnalyses.map((a) => ({ type: 'analysis' as const, time: a.createdAt, item: a })),
   ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 6);
 
@@ -326,7 +323,7 @@ export default function UserProfilePage() {
       </div>
 
       {/* ── NEIGHBORHOOD ACTIVITY ──────────────────────────── */}
-      {(userDebates.length > 0 || userBets.length > 0 || userHotTakes.length > 0) && (
+      {(userDebates.length > 0 || userHotTakes.length > 0) && (
         <div className="mx-4 mt-4 border border-rule">
           <div className="flex items-center justify-between px-3 py-2 bg-nav-bg">
             <p className="text-[9px] font-black uppercase tracking-[0.25em] text-masthead">
@@ -356,29 +353,6 @@ export default function UserProfilePage() {
                       <span className="font-bold">{debate.side2Label ?? 'Side 2'}</span> {side2First?.displayName.split(' ')[0]}
                       {' · '}{debate.votes.length} votes
                     </p>
-                  </div>
-                </Link>
-              );
-            })}
-            {userBets.map((bet) => {
-              const p1 = getUserById(bet.participantIds[0]);
-              const p2 = getUserById(bet.participantIds[1]);
-              return (
-                <Link
-                  key={bet.id}
-                  href={`/neighborhoods/${bet.chatId}?tab=bets`}
-                  className="flex gap-3 px-3 py-3 hover:bg-paper-dark transition-colors"
-                >
-                  <div className="shrink-0 mt-0.5">
-                    <div className="h-8 w-8 flex items-center justify-center bg-field text-ink text-base rounded-sm">🤝</div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-field mb-0.5">Bet · {bet.chatName}</p>
-                      <span className={`text-[9px] font-bold uppercase ml-auto ${bet.status === 'awaiting-resolution' ? 'text-rule-dark' : 'text-field'}`}>{bet.status}</span>
-                    </div>
-                    <p className="text-xs font-medium text-ink leading-snug line-clamp-2 italic">&ldquo;{bet.claim}&rdquo;</p>
-                    <p className="text-[9px] text-ink-faint mt-1">{p1?.displayName.split(' ')[0]} 🤝 {p2?.displayName.split(' ')[0]}</p>
                   </div>
                 </Link>
               );
@@ -444,19 +418,6 @@ export default function UserProfilePage() {
                       <p className="text-[9px] font-bold uppercase tracking-widest text-navy mb-0.5">Debate · {d.chatName}</p>
                       <p className="text-xs text-ink leading-snug line-clamp-2 italic">&ldquo;{d.claim}&rdquo;</p>
                       <p className="text-[9px] text-ink-faint mt-0.5">{d.votes.length} votes · {timeAgo(d.createdAt)}</p>
-                    </div>
-                  </Link>
-                );
-              }
-              if (type === 'bet') {
-                const b = item as typeof streetsBets[0];
-                return (
-                  <Link key={b.id} href={`/neighborhoods/${b.chatId}?tab=bets`} className="flex gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors">
-                    <div className="h-7 w-7 flex items-center justify-center bg-field/10 border border-field/30 text-sm rounded-sm shrink-0 mt-0.5">🤝</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-field mb-0.5">Bet · {b.chatName}</p>
-                      <p className="text-xs text-ink leading-snug line-clamp-2 italic">&ldquo;{b.claim}&rdquo;</p>
-                      {b.stakes && <p className="text-[9px] text-ink-faint mt-0.5">Stakes: {b.stakes}</p>}
                     </div>
                   </Link>
                 );
