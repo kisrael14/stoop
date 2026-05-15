@@ -5,6 +5,7 @@ import BottomNav from '@/components/BottomNav';
 import TopBar from '@/components/TopBar';
 import SwipeMain from '@/components/SwipeMain';
 import { AuthProvider } from '@/lib/auth-context';
+import { ThemeProvider } from '@/lib/theme-context';
 
 const bebasNeue = Bebas_Neue({
   subsets: ['latin'],
@@ -49,13 +50,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`h-full ${bebasNeue.variable} ${barlowCondensed.variable} ${dmSans.variable} ${dmMono.variable}`}>
       <body className="h-full bg-paper text-ink">
-        <AuthProvider>
-          <div className="relative mx-auto flex h-full max-w-md flex-col overflow-hidden shadow-2xl">
-            <SwipeMain>{children}</SwipeMain>
-            <BottomNav />
-          </div>
-          <TopBar />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <div className="relative mx-auto flex h-full max-w-md flex-col overflow-hidden shadow-2xl">
+              <SwipeMain>{children}</SwipeMain>
+              <BottomNav />
+            </div>
+            <TopBar />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

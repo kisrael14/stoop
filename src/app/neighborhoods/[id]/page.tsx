@@ -7,8 +7,10 @@ import {
   ArrowLeft, Home, MessageCircle, Swords, Handshake, Flame, Snowflake,
   Send, Sparkles, X, Trophy, Users, Pencil, Check, Plus, Search,
   AlertCircle, CheckCircle, Clock, Megaphone, MessageSquare, ChevronDown, ChevronUp, PenLine,
+  Paperclip, Link2,
 } from 'lucide-react';
 import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
+import DebateSetupModal, { type DebateSetupResult } from '@/components/DebateSetupModal';
 import {
   getChatById, getUserById, ME, DEBATES, BETS, HOT_TAKES, TEAMS, ANALYSES, USERS,
 } from '@/lib/mock-data';
@@ -43,6 +45,14 @@ export default function NeighborhoodPage() {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [betSetupClaim, setBetSetupClaim] = useState<string | null>(null);
   const [betSetupMessageId, setBetSetupMessageId] = useState<string | null>(null);
+  const [debateSetupClaim, setDebateSetupClaim] = useState<string | null>(null);
+  const [debateSetupMessageId, setDebateSetupMessageId] = useState<string | null>(null);
+  const [typingUserId, setTypingUserId] = useState<string | null>(null);
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+  const [pendingMediaUrl, setPendingMediaUrl] = useState<string | null>(null);
+  const [pendingMediaType, setPendingMediaType] = useState<'photo' | 'link' | null>(null);
+  const [pendingLinkUrl, setPendingLinkUrl] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [debates, setDebates] = useState<Debate[]>(
     DEBATES.filter((d) => d.chatId === id)
@@ -114,14 +124,43 @@ export default function NeighborhoodPage() {
     analysis: { label: 'Analysis', emoji: '📊', bg: 'bg-nav-bg', border: 'border-ink/40', surface: 'bg-ink/5 border-ink/20' },
   };
 
+  const QUICK_REPLIES = [
+    'Facts! 💯', 'Nah bro 🧢', 'Lmaooo 😂', "Let's gooo 🔥", 'Real talk',
+    'Say less 👀', 'Not wrong tbh', 'Bro no 💀', 'I actually fw that',
+  ];
+
+  const triggerTypingReply = () => {
+    const nonMe = members.filter((m) => m?.id !== 'me');
+    if (nonMe.length === 0) return;
+    const responder = nonMe[Math.floor(Math.random() * nonMe.length)]!;
+    setTypingUserId(responder.id);
+    setTimeout(() => {
+      setTypingUserId(null);
+      setMessages((prev) => [...prev, {
+        id: `reply-${Date.now()}`,
+        chatId: chat.id,
+        userId: responder.id,
+        content: QUICK_REPLIES[Math.floor(Math.random() * QUICK_REPLIES.length)],
+        timestamp: new Date().toISOString(),
+        reactions: [],
+      }]);
+    }, 1500 + Math.random() * 800);
+  };
+
   // ─── Chat actions ────────────────────────────────────────
   const sendMessage = () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() && !pendingMediaUrl) return;
     if (pendingTag === 'hot-take' && inputText.length > HOT_TAKE_MAX) return;
 
     if (pendingTag === 'bet') {
       setBetSetupClaim(inputText.trim());
       setBetSetupMessageId(null);
+      return;
+    }
+
+    if (pendingTag === 'debate') {
+      setDebateSetupClaim(inputText.trim());
+      setDebateSetupMessageId(null);
       return;
     }
 
@@ -133,28 +172,16 @@ export default function NeighborhoodPage() {
       timestamp: new Date().toISOString(),
       tag: pendingTag ?? undefined,
       reactions: [],
+      mediaUrl: pendingMediaUrl ?? undefined,
+      mediaType: pendingMediaType ?? undefined,
     };
     setMessages((prev) => [...prev, msg]);
+    setPendingMediaUrl(null);
+    setPendingMediaType(null);
+    setPendingLinkUrl('');
+    setAttachMenuOpen(false);
+    triggerTypingReply();
 
-    if (pendingTag === 'debate') {
-      const detectedTeams = detectTeamIds(inputText.trim());
-      const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
-      const newDebate: Debate = {
-        id: `d-new-${Date.now()}`,
-        chatId: chat.id,
-        chatName: chat.name,
-        claim: inputText.trim(),
-        side1UserIds: ['me'],
-        side2UserIds: [members.find((m) => m!.id !== 'me')?.id ?? 'marcus'],
-        arguments: [],
-        votes: [],
-        status: 'active',
-        teamIds: mergedTeamIds,
-        createdAt: new Date().toISOString(),
-      };
-      setDebates((prev) => [newDebate, ...prev]);
-      sendNotification(`⚔️ New Debate — ${chat.name}`, inputText.trim());
-    }
     if (pendingTag === 'hot-take') {
       const detectedTeams = detectTeamIds(inputText.trim());
       const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
@@ -223,6 +250,51 @@ export default function NeighborhoodPage() {
     setBetSetupMessageId(null);
   };
 
+  const confirmDebateSetup = (data: DebateSetupResult) => {
+    const claim = debateSetupClaim!;
+    if (debateSetupMessageId) {
+      setMessages((prev) =>
+        prev.map((m) => m.id === debateSetupMessageId ? { ...m, tag: 'debate' as const } : m)
+      );
+    } else {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `new-${Date.now()}`,
+          chatId: chat.id,
+          userId: 'me',
+          content: claim,
+          timestamp: new Date().toISOString(),
+          tag: 'debate' as const,
+          reactions: [],
+        },
+      ]);
+      setInputText('');
+      setPendingTag(null);
+    }
+    const detectedTeams = detectTeamIds(claim);
+    const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
+    const newDebate: Debate = {
+      id: `d-new-${Date.now()}`,
+      chatId: chat.id,
+      chatName: chat.name,
+      claim,
+      side1Label: data.side1Label,
+      side2Label: data.side2Label,
+      side1UserIds: data.side1Ids.length > 0 ? data.side1Ids : ['me'],
+      side2UserIds: data.side2Ids,
+      arguments: [],
+      votes: [],
+      status: 'active',
+      teamIds: mergedTeamIds,
+      createdAt: new Date().toISOString(),
+    };
+    setDebates((prev) => [newDebate, ...prev]);
+    sendNotification(`⚔️ New Debate — ${chat.name}`, claim);
+    setDebateSetupClaim(null);
+    setDebateSetupMessageId(null);
+  };
+
   const tagExistingMessage = (messageId: string, tag: MessageTag) => {
     const msg = messages.find((m) => m.id === messageId);
     if (!msg) return;
@@ -234,28 +306,15 @@ export default function NeighborhoodPage() {
       return;
     }
 
+    if (tag === 'debate') {
+      setDebateSetupClaim(msg.content);
+      setDebateSetupMessageId(messageId);
+      return;
+    }
+
     setMessages((prev) =>
       prev.map((m) => (m.id === messageId ? { ...m, tag } : m))
     );
-
-    if (tag === 'debate') {
-      const detectedTeams = detectTeamIds(msg.content);
-      const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
-      const newDebate: Debate = {
-        id: `d-tag-${Date.now()}`,
-        chatId: chat.id,
-        chatName: chat.name,
-        claim: msg.content,
-        side1UserIds: [msg.userId === 'me' ? 'me' : msg.userId],
-        side2UserIds: [msg.userId === 'me' ? (members.find((m) => m!.id !== 'me')?.id ?? 'marcus') : 'me'],
-        arguments: [],
-        votes: [],
-        status: 'active',
-        teamIds: mergedTeamIds,
-        createdAt: new Date().toISOString(),
-      };
-      setDebates((prev) => [newDebate, ...prev]);
-    }
     if (tag === 'hot-take') {
       const detectedTeams = detectTeamIds(msg.content);
       const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
@@ -984,6 +1043,24 @@ export default function NeighborhoodPage() {
             </div>
           )}
 
+          {/* Typing indicator */}
+          {typingUserId && (
+            <div className="shrink-0 px-4 py-2 flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-paper-dark border border-rule text-sm shrink-0">
+                {getUserById(typingUserId)?.avatar}
+              </div>
+              <div className="flex items-center gap-1 bg-paper-dark border border-rule px-3 py-2 rounded-2xl rounded-tl-sm">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="w-1.5 h-1.5 bg-ink-muted rounded-full animate-bounce"
+                    style={{ animationDelay: `${i * 200}ms` }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {pendingTag && (
             <div className="shrink-0 px-4 py-2 flex items-center gap-2 bg-paper-dark border-t border-rule">
               <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Tagging as:</span>
@@ -1021,7 +1098,97 @@ export default function NeighborhoodPage() {
                 </button>
               </div>
             </div>
+
+            {/* Attachment menu */}
+            {attachMenuOpen && (
+              <div className="flex gap-2 mb-2">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 border border-rule px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-muted hover:text-ink hover:border-ink rounded-full transition-colors"
+                >
+                  📷 Photo
+                </button>
+                <button
+                  onClick={() => { setPendingMediaType('link'); setAttachMenuOpen(false); }}
+                  className="flex items-center gap-1.5 border border-rule px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-muted hover:text-ink hover:border-ink rounded-full transition-colors"
+                >
+                  <Link2 size={10} /> Link
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setPendingMediaUrl(URL.createObjectURL(file));
+                      setPendingMediaType('photo');
+                      setAttachMenuOpen(false);
+                    }
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Link URL input */}
+            {pendingMediaType === 'link' && (
+              <div className="flex gap-2 items-center mb-2">
+                <input
+                  type="url"
+                  value={pendingLinkUrl}
+                  onChange={(e) => setPendingLinkUrl(e.target.value)}
+                  placeholder="Paste link URL…"
+                  className="flex-1 border border-rule bg-paper px-3 py-2 text-sm text-ink placeholder-ink-faint outline-none focus:border-masthead rounded-full transition-colors"
+                />
+                <button
+                  onClick={() => { setPendingMediaUrl(pendingLinkUrl); setPendingMediaType(null); }}
+                  disabled={!pendingLinkUrl.trim()}
+                  className="px-3 py-2 bg-nav-bg text-ink text-[10px] font-bold uppercase tracking-wider rounded-full disabled:opacity-40 transition-colors"
+                >
+                  Attach
+                </button>
+                <button onClick={() => { setPendingMediaType(null); setPendingLinkUrl(''); }} className="text-ink-faint hover:text-ink">
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* Pending photo preview */}
+            {pendingMediaUrl && pendingMediaType === 'photo' && (
+              <div className="mb-2 relative w-fit">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={pendingMediaUrl} alt="" className="h-16 rounded-xl object-cover border border-rule" />
+                <button
+                  onClick={() => { setPendingMediaUrl(null); setPendingMediaType(null); }}
+                  className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-nav-bg border border-rule text-ink hover:bg-paper-darker transition-colors"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            )}
+
+            {/* Pending link preview */}
+            {pendingMediaUrl && pendingMediaType !== 'photo' && (
+              <div className="mb-2 flex items-center gap-2 border border-rule bg-paper px-3 py-1.5 rounded-xl w-full">
+                <Link2 size={12} className="text-ink-muted shrink-0" />
+                <span className="text-xs text-ink-muted truncate flex-1">{pendingMediaUrl}</span>
+                <button onClick={() => { setPendingMediaUrl(null); setPendingMediaType(null); setPendingLinkUrl(''); }} className="text-ink-faint hover:text-ink shrink-0">
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
+              {/* Attachment button */}
+              <button
+                onClick={() => setAttachMenuOpen((o) => !o)}
+                className={`flex h-9 w-9 items-center justify-center border rounded-full transition-colors shrink-0 ${
+                  attachMenuOpen ? 'border-masthead text-masthead bg-masthead/10' : 'border-rule bg-paper-dark text-ink-muted hover:text-ink hover:border-rule-dark'
+                }`}
+              >
+                <Paperclip size={15} />
+              </button>
               <input
                 type="text"
                 value={inputText}
@@ -1034,7 +1201,7 @@ export default function NeighborhoodPage() {
               />
               <button
                 onClick={sendMessage}
-                disabled={!inputText.trim() || overLimit}
+                disabled={(!inputText.trim() && !pendingMediaUrl) || overLimit}
                 className="flex h-9 w-9 items-center justify-center bg-nav-bg text-ink hover:bg-nav-bg/80 disabled:opacity-40 transition-colors rounded-full btn-3d shrink-0"
               >
                 <Send size={15} />
@@ -1638,6 +1805,16 @@ export default function NeighborhoodPage() {
           members={members.filter(Boolean) as NonNullable<typeof members[0]>[]}
           onConfirm={confirmBetSetup}
           onCancel={() => { setBetSetupClaim(null); setBetSetupMessageId(null); }}
+        />
+      )}
+
+      {/* ── DEBATE SETUP MODAL ───────────────────────────────── */}
+      {debateSetupClaim !== null && (
+        <DebateSetupModal
+          initialClaim={debateSetupClaim}
+          members={members.filter(Boolean) as NonNullable<typeof members[0]>[]}
+          onConfirm={confirmDebateSetup}
+          onCancel={() => { setDebateSetupClaim(null); setDebateSetupMessageId(null); }}
         />
       )}
     </div>

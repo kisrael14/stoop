@@ -21,6 +21,19 @@
   --gold-glow:    rgba(245,197,24,0.25);
 }
 
+/* ─── Light mode overrides ─── */
+[data-theme="light"] {
+  --paper:        #ffffff;
+  --paper-dark:   #f0f0f5;
+  --paper-deeper: #e4e4ec;
+  --ink:          #1a1928;
+  --ink-muted:    #4a5068;
+  --ink-faint:    #8090b0;
+  --rule:         rgba(0,0,0,0.10);
+  --rule-dark:    rgba(0,0,0,0.20);
+  /* nav-bg, masthead, navy, field, press stay the same */
+}
+
 @theme inline {
   --color-paper:        var(--paper);
   --color-paper-dark:   var(--paper-dark);

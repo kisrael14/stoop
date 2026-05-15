@@ -10,6 +10,7 @@ import { HOT_TAKES, DEBATES, BETS, ANALYSES, getUserById, USERS, ME } from '@/li
 import { timeAgo } from '@/lib/utils';
 import type { HotTake, HotTakeComment, Debate, Bet, Analysis, DebateVote } from '@/lib/types';
 import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
+import DebateSetupModal, { type DebateSetupResult } from '@/components/DebateSetupModal';
 import { detectTeamIds } from '@/lib/players-data';
 
 type Filter = 'all' | 'takes' | 'debates' | 'bets' | 'analysis';
@@ -39,6 +40,7 @@ export default function StreetsPage() {
   const [postType, setPostType] = useState<PostType>('take');
   const [postText, setPostText] = useState('');
   const [betSetupClaim, setBetSetupClaim] = useState<string | null>(null);
+  const [debateSetupClaim, setDebateSetupClaim] = useState<string | null>(null);
 
   const [showCommentsFor, setShowCommentsFor] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
@@ -117,6 +119,7 @@ export default function StreetsPage() {
   const submitPost = () => {
     if (!postText.trim()) return;
     if (postType === 'bet') { setBetSetupClaim(postText.trim()); return; }
+    if (postType === 'debate') { setDebateSetupClaim(postText.trim()); return; }
     const detectedTeams = detectTeamIds(postText.trim());
     if (postType === 'take') {
       setLocalHotTakes((prev) => [{
@@ -138,10 +141,24 @@ export default function StreetsPage() {
   };
 
   const confirmBet = (_data: BetSetupResult) => {
-    // Bet object creation for streets is handled by the neighborhood flow;
-    // here we just close the modal. teamIds detection happens if this page
-    // is extended to create a full Bet record.
     setBetSetupClaim(null);
+    setPostText('');
+    setShowAddModal(false);
+  };
+
+  const confirmDebate = (data: DebateSetupResult) => {
+    const detectedTeams = detectTeamIds(data.claim);
+    const newDebate: Debate = {
+      id: `d-s-${Date.now()}`, chatId: 'streets', chatName: 'The Streets',
+      claim: data.claim,
+      side1Label: data.side1Label, side2Label: data.side2Label,
+      side1UserIds: data.side1Ids.length > 0 ? data.side1Ids : ['me'],
+      side2UserIds: data.side2Ids,
+      arguments: [], votes: [], status: 'active', teamIds: detectedTeams,
+      createdAt: new Date().toISOString(), isPublic: true,
+    };
+    setLocalDebates((prev) => [newDebate, ...prev]);
+    setDebateSetupClaim(null);
     setPostText('');
     setShowAddModal(false);
   };
@@ -183,7 +200,7 @@ export default function StreetsPage() {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1.5 bg-press text-ink px-3.5 py-2 rounded-full font-bold text-[11px] uppercase tracking-widest btn-3d hover:bg-press/80 transition-colors shrink-0"
+          className="flex items-center gap-1.5 bg-masthead text-[#12111a] px-3.5 py-2 rounded-full font-bold text-[11px] uppercase tracking-widest btn-3d hover:bg-masthead/80 transition-colors shrink-0"
         >
           <Plus size={12} /> Post
         </button>
@@ -599,7 +616,7 @@ export default function StreetsPage() {
               <button
                 onClick={submitPost}
                 disabled={!postText.trim()}
-                className="flex-1 bg-press text-ink py-2.5 text-xs font-bold uppercase tracking-widest disabled:opacity-40 rounded-full btn-3d hover:bg-press/80"
+                className="flex-1 bg-masthead text-[#12111a] py-2.5 text-xs font-bold uppercase tracking-widest disabled:opacity-40 rounded-full btn-3d hover:bg-masthead/80"
               >
                 Post to The Streets
               </button>
@@ -614,6 +631,14 @@ export default function StreetsPage() {
           members={USERS}
           onConfirm={confirmBet}
           onCancel={() => setBetSetupClaim(null)}
+        />
+      )}
+
+      {debateSetupClaim !== null && (
+        <DebateSetupModal
+          initialClaim={debateSetupClaim}
+          onConfirm={confirmDebate}
+          onCancel={() => setDebateSetupClaim(null)}
         />
       )}
     </div>
