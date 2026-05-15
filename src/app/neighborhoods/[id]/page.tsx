@@ -1805,6 +1805,7 @@ export default function NeighborhoodPage() {
       {betSetupClaim !== null && (
         <BetSetupModal
           claim={betSetupClaim}
+          members={members.filter(Boolean) as NonNullable<typeof members[0]>[]}
           onConfirm={confirmBetSetup}
           onCancel={() => { setBetSetupClaim(null); setBetSetupMessageId(null); }}
         />
