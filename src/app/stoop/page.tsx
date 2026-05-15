@@ -83,27 +83,46 @@ export default function StoopPage() {
   const myBets = BETS.filter((b) => b.participantIds.includes('me')).slice(0, 2);
   const myHotTakes = HOT_TAKES.filter((h) => h.authorId === 'me' || h.teamIds.some((t) => myTeamIds.includes(t))).slice(0, 2);
 
-  // Sort neighbors by message frequency in shared chats
-  const myChats = CHATS.filter((c) => c.memberIds.includes('me'));
-  const msgCounts: Record<string, number> = {};
-  myChats.forEach((chat) => {
-    chat.messages.forEach((msg) => {
-      if (msg.userId !== 'me' && msg.userId !== 'ai') {
-        msgCounts[msg.userId] = (msgCounts[msg.userId] ?? 0) + 1;
-      }
-    });
-  });
-  const myNeighbors = ME.followingIds
-    .map((id) => getUserById(id))
-    .filter(Boolean)
-    .sort((a, b) => (msgCounts[b!.id] ?? 0) - (msgCounts[a!.id] ?? 0));
+  type NeighborDisplay = { id: string; displayName: string; username: string; avatar: string };
+  type NeighborhoodDisplay = { id: string; name: string; emoji: string; memberCount?: number };
 
-  // Sort neighborhoods by most recent message
-  const myNeighborhoods = myChats.sort((a, b) => {
-    const aTime = a.messages[a.messages.length - 1]?.timestamp ?? '0';
-    const bTime = b.messages[b.messages.length - 1]?.timestamp ?? '0';
-    return new Date(bTime).getTime() - new Date(aTime).getTime();
-  });
+  const myNeighbors: NeighborDisplay[] = (() => {
+    if (isRealUser && authUser?.followingProfiles != null) {
+      return authUser.followingProfiles.map((fp) => ({
+        id: fp.id,
+        displayName: fp.display_name,
+        username: fp.username,
+        avatar: fp.avatar,
+      }));
+    }
+    const mockChats = CHATS.filter((c) => c.memberIds.includes('me'));
+    const msgCounts: Record<string, number> = {};
+    mockChats.forEach((chat) => {
+      chat.messages.forEach((msg) => {
+        if (msg.userId !== 'me' && msg.userId !== 'ai') {
+          msgCounts[msg.userId] = (msgCounts[msg.userId] ?? 0) + 1;
+        }
+      });
+    });
+    return ME.followingIds
+      .map((id) => getUserById(id))
+      .filter((u): u is NonNullable<ReturnType<typeof getUserById>> => u != null)
+      .sort((a, b) => (msgCounts[b.id] ?? 0) - (msgCounts[a.id] ?? 0))
+      .map((u) => ({ id: u.id, displayName: u.displayName, username: u.username, avatar: u.avatar }));
+  })();
+
+  const myNeighborhoods: NeighborhoodDisplay[] = (() => {
+    if (isRealUser && authUser?.neighborhoodMemberships != null) {
+      return authUser.neighborhoodMemberships;
+    }
+    return CHATS.filter((c) => c.memberIds.includes('me'))
+      .sort((a, b) => {
+        const aTime = a.messages[a.messages.length - 1]?.timestamp ?? '0';
+        const bTime = b.messages[b.messages.length - 1]?.timestamp ?? '0';
+        return new Date(bTime).getTime() - new Date(aTime).getTime();
+      })
+      .map((c) => ({ id: c.id, name: c.name, emoji: c.emoji, memberCount: c.memberIds.length }));
+  })();
 
   // "From The Streets" — public content filtered to user's followed teams
   const streetsHotTakes = HOT_TAKES.filter((h) => h.isPublic && h.teamIds.some((t) => myTeamIds.includes(t)));
@@ -251,13 +270,13 @@ export default function StoopPage() {
           </div>
           <div className="flex flex-col gap-2">
             {myNeighbors.slice(0, 4).map((user) => (
-              <Link key={user!.id} href={`/users/${user!.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <Link key={user.id} href={`/users/${user.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-base shrink-0">
-                  {user!.avatar}
+                  {user.avatar}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-bold text-ink truncate">{user!.displayName.split(' ')[0]}</p>
-                  <p className="text-[9px] text-ink-faint font-mono truncate">@{user!.username}</p>
+                  <p className="text-[11px] font-bold text-ink truncate">{user.displayName.split(' ')[0]}</p>
+                  <p className="text-[9px] text-ink-faint font-mono truncate">@{user.username}</p>
                 </div>
               </Link>
             ))}
@@ -273,14 +292,14 @@ export default function StoopPage() {
             <p className="text-[9px] font-black uppercase tracking-[0.25em] text-ink">Neighborhoods</p>
           </div>
           <div className="flex flex-col gap-2">
-            {myNeighborhoods.slice(0, 4).map((chat) => (
-              <Link key={chat.id} href={`/neighborhoods/${chat.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            {myNeighborhoods.slice(0, 4).map((n) => (
+              <Link key={n.id} href={`/neighborhoods/${n.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <div className="flex h-8 w-8 items-center justify-center bg-ink text-base shrink-0 rounded-sm">
-                  {chat.emoji}
+                  {n.emoji}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-bold text-ink truncate">{chat.name}</p>
-                  <p className="text-[9px] text-ink-faint">{chat.memberIds.length} members</p>
+                  <p className="text-[11px] font-bold text-ink truncate">{n.name}</p>
+                  {n.memberCount != null && <p className="text-[9px] text-ink-faint">{n.memberCount} members</p>}
                 </div>
               </Link>
             ))}

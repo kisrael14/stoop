@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { MessageCircle, Search, X, ChevronRight, Plus, Check } from 'lucide-react';
-import { CHATS, USERS } from '@/lib/mock-data';
+import { CHATS } from '@/lib/mock-data';
 import { ALL_TEAMS } from '@/lib/teams-data';
 import { ALL_LEAGUES } from '@/lib/leagues-data';
 import { timeAgo, teamDisplayName } from '@/lib/utils';
@@ -95,15 +95,6 @@ export default function TopBar() {
       ).slice(0, 7)
     : [];
 
-  const matchedUsers = q.length >= 1
-    ? USERS.filter((u) =>
-        u.id !== 'me' && (
-          u.displayName.toLowerCase().includes(q) ||
-          u.username.toLowerCase().includes(q)
-        )
-      ).slice(0, 4)
-    : [];
-
   const matchedLeagues = q.length >= 1
     ? ALL_LEAGUES.filter((l) =>
         l.name.toLowerCase().includes(q) ||
@@ -113,7 +104,7 @@ export default function TopBar() {
       ).slice(0, 4)
     : [];
 
-  const hasResults = matchedTeams.length > 0 || matchedUsers.length > 0 || matchedLeagues.length > 0;
+  const hasResults = matchedTeams.length > 0 || matchedLeagues.length > 0;
 
   const closeAll = () => {
     setChatOpen(false);
@@ -141,7 +132,7 @@ export default function TopBar() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Teams, leagues, neighbors…"
+              placeholder="Teams & leagues…"
               className="flex-1 bg-transparent text-paper text-sm placeholder-paper/40 outline-none min-w-0"
             />
           ) : (
@@ -149,7 +140,7 @@ export default function TopBar() {
               onClick={() => { setSearchOpen(true); setChatOpen(false); }}
               className="flex-1 text-left text-paper/40 text-sm truncate"
             >
-              Teams, leagues, neighbors…
+              Teams & leagues…
             </button>
           )}
           {searchOpen && (
@@ -298,30 +289,6 @@ export default function TopBar() {
                   </div>
                 );
               })}
-            </>
-          )}
-
-          {matchedUsers.length > 0 && (
-            <>
-              <div className="section-header px-4">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-ink-faint">Neighbors</span>
-              </div>
-              {matchedUsers.map((user) => (
-                <button
-                  key={user.id}
-                  onClick={() => { closeAll(); router.push(`/users/${user.id}`); }}
-                  className="flex w-full items-center gap-3 px-4 py-3 hover:bg-paper-dark transition-colors text-left border-b border-rule/40 last:border-0"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-paper-dark border border-rule text-lg shrink-0">
-                    {user.avatar}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-ink text-sm">{user.displayName}</p>
-                    <p className="text-[10px] text-ink-faint font-mono">@{user.username}</p>
-                  </div>
-                  <ChevronRight size={13} className="text-ink-faint shrink-0" />
-                </button>
-              ))}
             </>
           )}
 

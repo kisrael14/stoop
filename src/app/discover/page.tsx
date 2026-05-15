@@ -24,7 +24,7 @@ export default function DiscoverPage() {
   const { user: authUser, refreshProfile } = useAuth();
   const [mode, setMode] = useState<SearchMode>('people');
   const [query, setQuery] = useState('');
-  const [following, setFollowing] = useState<string[]>(ME.followingIds);
+  const [following, setFollowing] = useState<string[]>([]);
   const [myTeamIds, setMyTeamIds] = useState<string[]>(() => {
     if (authUser?.teams?.length) return authUser.teams.map((t) => t.team_id);
     return ME.fanTeams.map((ft) => ft.team.id);
@@ -61,22 +61,36 @@ export default function DiscoverPage() {
       )
     : TEAMS;
 
-  // Group filtered teams by league
-  const teamsByLeague = filteredTeams.reduce<Record<string, typeof TEAMS>>((acc, team) => {
-    if (!acc[team.league]) acc[team.league] = [];
-    acc[team.league].push(team);
-    return acc;
-  }, {});
 
-  // Sync local team ids when auth loads (initial state may be set before auth resolves)
+  // Sync local state from auth when it loads
   useEffect(() => {
     if (authUser?.teams) setMyTeamIds(authUser.teams.map((t) => t.team_id));
   }, [authUser?.teams]);
 
-  const toggleFollow = (userId: string) => {
+  useEffect(() => {
+    if (authUser?.followingProfiles != null) {
+      setFollowing(authUser.followingProfiles.map((fp) => fp.id));
+    } else if (!authUser) {
+      setFollowing(ME.followingIds);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?.followingProfiles]);
+
+  const toggleFollow = async (userId: string) => {
+    const isNowFollowing = !following.includes(userId);
     setFollowing((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+      isNowFollowing ? [...prev, userId] : prev.filter((id) => id !== userId)
     );
+    if (authUser && isSupabaseConfigured()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient() as any;
+      if (isNowFollowing) {
+        await supabase.from('follows').insert({ follower_id: authUser.id, following_id: userId });
+      } else {
+        await supabase.from('follows').delete().eq('follower_id', authUser.id).eq('following_id', userId);
+      }
+      await refreshProfile();
+    }
   };
 
   const addTeamWithFandom = async (teamId: string, level: FandomLevel) => {
@@ -250,107 +264,107 @@ export default function DiscoverPage() {
             </div>
           )}
 
-          {/* Leagues + teams under each */}
-          {filteredLeagues.map((league) => {
-            const leagueTeams = teamsByLeague[league.id] ?? [];
-            if (leagueTeams.length === 0 && query.length > 0) return null;
-            const leagueFollowed = myLeagueIds.includes(league.id);
-
-            return (
-              <div key={league.id}>
-                {/* League header row */}
-                <div
-                  className="flex items-center gap-3 px-4 py-3 bg-paper-dark border-b border-t border-rule/60"
-                  style={{ borderLeftWidth: '4px', borderLeftColor: league.color, borderLeftStyle: 'solid' }}
-                >
-                  <Link
-                    href={`/leagues/${league.id}`}
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-xl shrink-0 hover:opacity-80 transition-opacity"
-                    style={{ backgroundColor: league.color + '30', border: `2px solid ${league.color}60` }}
-                  >
-                    {league.emoji}
-                  </Link>
-                  <Link href={`/leagues/${league.id}`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
-                    <p className="font-bold text-ink text-sm">{league.name}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{league.country} · {league.sport}</p>
-                  </Link>
-                  <button
-                    onClick={() => toggleLeague(league.id)}
-                    className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full font-bold text-sm transition-all border-2 ${
-                      leagueFollowed
-                        ? 'bg-paper border-ink text-ink'
-                        : 'text-paper border-transparent hover:opacity-80'
-                    }`}
-                    style={leagueFollowed ? {} : { backgroundColor: league.color }}
-                    title={leagueFollowed ? 'Unfollow league' : 'Follow league'}
-                  >
-                    {leagueFollowed ? <Check size={14} /> : <Plus size={14} />}
-                  </button>
-                </div>
-
-                {/* Teams */}
-                {leagueTeams.map((team) => {
-                  const followed = myTeamIds.includes(team.id);
-                  const showingPicker = fandomPickerFor === team.id;
-
-                  return (
-                    <div key={team.id} className="border-b border-rule/40">
-                      <div
-                        className="flex items-center gap-3 px-5 py-2.5 bg-paper hover:bg-paper-dark transition-colors"
-                        style={{ borderLeftWidth: '3px', borderLeftColor: team.color + '70', borderLeftStyle: 'solid' }}
-                      >
-                        <Link href={`/teams/${team.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-                          <TeamLogo team={team} size={28} />
-                          <p className="font-bold text-ink text-sm">{teamDisplayName(team)}</p>
-                        </Link>
-                        <button
-                          onClick={() => {
-                            if (followed) {
-                              removeTeam(team.id);
-                            } else {
-                              setFandomPickerFor(showingPicker ? null : team.id);
-                            }
-                          }}
-                          className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full font-bold text-sm transition-all border-2 ${
-                            followed
-                              ? 'bg-paper border-ink text-ink'
-                              : showingPicker
-                              ? 'bg-ink border-ink text-paper'
-                              : 'text-paper border-transparent hover:opacity-80'
-                          }`}
-                          style={followed || showingPicker ? {} : { backgroundColor: team.color }}
-                          title={followed ? 'Unfollow' : 'Follow team'}
-                        >
-                          {followed ? <Check size={14} /> : <Plus size={14} />}
-                        </button>
-                      </div>
-
-                      {/* Inline fandom picker */}
-                      {showingPicker && (
-                        <div className="px-5 py-3 bg-paper-dark flex flex-col gap-2" style={{ borderLeftWidth: '3px', borderLeftColor: team.color + '70', borderLeftStyle: 'solid' }}>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Select your fandom level:</p>
-                          <div className="grid grid-cols-4 gap-2">
-                            {FANDOM_OPTIONS.map(({ level, label, emoji }) => (
-                              <button
-                                key={level}
-                                onClick={() => addTeamWithFandom(team.id, level)}
-                                className="flex flex-col items-center gap-1 py-2.5 border-2 border-rule rounded-xl bg-paper hover:border-ink hover:bg-paper-dark transition-all"
-                              >
-                                <span className="text-lg">{emoji}</span>
-                                <span className="text-[9px] font-bold uppercase tracking-wide text-ink leading-tight text-center px-0.5">{label}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+          {/* Teams flat list */}
+          {filteredTeams.length > 0 && (
+            <div>
+              <div className="px-4 py-2 bg-paper-dark border-b border-t border-rule/60">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-ink-faint">Teams</span>
               </div>
-            );
-          })}
+              {filteredTeams.map((team) => {
+                const followed = myTeamIds.includes(team.id);
+                const showingPicker = fandomPickerFor === team.id;
+                return (
+                  <div key={team.id} className="border-b border-rule/40">
+                    <div
+                      className="flex items-center gap-3 px-5 py-2.5 bg-paper hover:bg-paper-dark transition-colors"
+                      style={{ borderLeftWidth: '3px', borderLeftColor: team.color + '70', borderLeftStyle: 'solid' }}
+                    >
+                      <Link href={`/teams/${team.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+                        <TeamLogo team={team} size={28} />
+                        <div>
+                          <p className="font-bold text-ink text-sm">{teamDisplayName(team)}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{team.league}</p>
+                        </div>
+                      </Link>
+                      <button
+                        onClick={() => {
+                          if (followed) { removeTeam(team.id); }
+                          else { setFandomPickerFor(showingPicker ? null : team.id); }
+                        }}
+                        className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full font-bold text-sm transition-all border-2 ${
+                          followed ? 'bg-paper border-ink text-ink'
+                          : showingPicker ? 'bg-ink border-ink text-paper'
+                          : 'text-paper border-transparent hover:opacity-80'
+                        }`}
+                        style={followed || showingPicker ? {} : { backgroundColor: team.color }}
+                        title={followed ? 'Unfollow' : 'Follow team'}
+                      >
+                        {followed ? <Check size={14} /> : <Plus size={14} />}
+                      </button>
+                    </div>
+                    {showingPicker && (
+                      <div className="px-5 py-3 bg-paper-dark flex flex-col gap-2" style={{ borderLeftWidth: '3px', borderLeftColor: team.color + '70', borderLeftStyle: 'solid' }}>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Select your fandom level:</p>
+                        <div className="grid grid-cols-4 gap-2">
+                          {FANDOM_OPTIONS.map(({ level, label, emoji }) => (
+                            <button
+                              key={level}
+                              onClick={() => addTeamWithFandom(team.id, level)}
+                              className="flex flex-col items-center gap-1 py-2.5 border-2 border-rule rounded-xl bg-paper hover:border-ink hover:bg-paper-dark transition-all"
+                            >
+                              <span className="text-lg">{emoji}</span>
+                              <span className="text-[9px] font-bold uppercase tracking-wide text-ink leading-tight text-center px-0.5">{label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-          {filteredLeagues.length === 0 && query.length > 0 && (
+          {/* Leagues flat list */}
+          {filteredLeagues.length > 0 && (
+            <div>
+              <div className="px-4 py-2 bg-paper-dark border-b border-t border-rule/60">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-ink-faint">Leagues</span>
+              </div>
+              {filteredLeagues.map((league) => {
+                const leagueFollowed = myLeagueIds.includes(league.id);
+                return (
+                  <div key={league.id} className="flex items-center gap-3 px-4 py-3 border-b border-rule/40 hover:bg-paper-dark transition-colors"
+                    style={{ borderLeftWidth: '4px', borderLeftColor: league.color, borderLeftStyle: 'solid' }}
+                  >
+                    <Link
+                      href={`/leagues/${league.id}`}
+                      className="flex h-10 w-10 items-center justify-center rounded-full text-xl shrink-0 hover:opacity-80 transition-opacity"
+                      style={{ backgroundColor: league.color + '30', border: `2px solid ${league.color}60` }}
+                    >
+                      {league.emoji}
+                    </Link>
+                    <Link href={`/leagues/${league.id}`} className="flex-1 min-w-0 hover:opacity-80 transition-opacity">
+                      <p className="font-bold text-ink text-sm">{league.name}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{league.country} · {league.sport}</p>
+                    </Link>
+                    <button
+                      onClick={() => toggleLeague(league.id)}
+                      className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full font-bold text-sm transition-all border-2 ${
+                        leagueFollowed ? 'bg-paper border-ink text-ink' : 'text-paper border-transparent hover:opacity-80'
+                      }`}
+                      style={leagueFollowed ? {} : { backgroundColor: league.color }}
+                      title={leagueFollowed ? 'Unfollow league' : 'Follow league'}
+                    >
+                      {leagueFollowed ? <Check size={14} /> : <Plus size={14} />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {filteredTeams.length === 0 && filteredLeagues.length === 0 && query.length > 0 && (
             <div className="text-center py-12 px-5">
               <p className="font-display text-3xl mb-2 text-ink-faint">🔍</p>
               <p className="font-display font-bold text-ink">No results found</p>
