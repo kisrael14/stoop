@@ -179,16 +179,14 @@ export default function TopBar() {
           </div>
         ) : (
           <>
-            {/* Compact search pill */}
+            {/* Search pill — grows to fill available space */}
             <button
               onClick={() => { setSearchOpen(true); setChatOpen(false); setFandomOpen(false); }}
-              className="flex items-center gap-1.5 bg-white/10 hover:bg-white/15 rounded-full px-3 h-9 transition-colors shrink-0"
+              className="flex flex-1 items-center gap-2 bg-white/10 hover:bg-white/15 rounded-full px-4 h-9 transition-colors min-w-0"
             >
-              <Search size={14} className="text-ink/60" />
-              <span className="text-ink/40 text-xs font-medium">Search</span>
+              <Search size={14} className="text-ink/60 shrink-0" />
+              <span className="text-ink/40 text-sm font-medium truncate">Search teams &amp; leagues…</span>
             </button>
-
-            <div className="flex-1" />
 
             {/* Discover */}
             <button
@@ -377,46 +375,76 @@ export default function TopBar() {
           style={{ right: DROPDOWN_RIGHT }}
         >
           <div className="flex items-center justify-between px-4 py-3 bg-nav-bg">
-            <p className="font-display font-bold text-ink text-sm">Your Teams</p>
+            <p className="font-display font-bold text-ink text-sm">Your Fandom</p>
             <button onClick={() => setFandomOpen(false)} className="text-ink/60 hover:text-ink">
               <X size={16} />
             </button>
           </div>
-          <div className="max-h-72 overflow-y-auto">
-            {myTeamObjects.length === 0 ? (
+
+          {/* Fully expanded, swipeable list */}
+          <div className="overflow-y-auto max-h-[60vh] overscroll-contain">
+            {myTeamObjects.length === 0 && myLeagueIds.length === 0 ? (
               <div className="px-4 py-6 text-center">
-                <p className="text-ink-muted italic text-sm">No teams followed yet</p>
-                <p className="text-ink-faint text-xs mt-1">Use Search to add teams</p>
+                <p className="text-ink-muted italic text-sm">No teams or leagues followed yet</p>
+                <p className="text-ink-faint text-xs mt-1">Use Search to add</p>
               </div>
             ) : (
-              myTeamObjects.map((team) => (
-                <button
-                  key={team.id}
-                  onClick={() => { closeAll(); router.push(`/teams/${team.id}`); }}
-                  className="flex w-full items-center gap-3 px-4 py-3 hover:bg-paper-deeper transition-colors text-left border-b border-rule/50 last:border-0"
-                >
-                  <div
-                    className="flex h-9 w-9 items-center justify-center rounded-full shrink-0 p-1"
-                    style={{ backgroundColor: team.color + '25', border: `2px solid ${team.color}50` }}
-                  >
-                    <TeamLogo team={team} size={28} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-ink text-sm">{teamDisplayName(team)}</p>
-                    <p className="text-[10px] text-ink-faint">{team.league}</p>
-                  </div>
-                  <ChevronRight size={13} className="text-ink-faint" />
-                </button>
-              ))
+              <>
+                {myTeamObjects.length > 0 && (
+                  <>
+                    <p className="px-4 pt-3 pb-1 text-[9px] font-bold uppercase tracking-widest text-ink-faint">Teams</p>
+                    {myTeamObjects.map((team) => (
+                      <button
+                        key={team.id}
+                        onClick={() => { closeAll(); router.push(`/teams/${team.id}`); }}
+                        className="flex w-full items-center gap-3 px-4 py-3 hover:bg-paper-deeper transition-colors text-left border-b border-rule/50 last:border-0"
+                      >
+                        <div
+                          className="flex h-9 w-9 items-center justify-center rounded-full shrink-0 p-1"
+                          style={{ backgroundColor: team.color + '25', border: `2px solid ${team.color}50` }}
+                        >
+                          <TeamLogo team={team} size={28} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-ink text-sm">{teamDisplayName(team)}</p>
+                          <p className="text-[10px] text-ink-faint">{team.league}</p>
+                        </div>
+                        <ChevronRight size={13} className="text-ink-faint" />
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                {myLeagueIds.length > 0 && (
+                  <>
+                    <p className="px-4 pt-3 pb-1 text-[9px] font-bold uppercase tracking-widest text-ink-faint">Leagues</p>
+                    {myLeagueIds.map((lid) => {
+                      const league = ALL_LEAGUES.find((l) => l.id === lid);
+                      if (!league) return null;
+                      return (
+                        <button
+                          key={league.id}
+                          onClick={() => { closeAll(); router.push(`/leagues/${league.id}`); }}
+                          className="flex w-full items-center gap-3 px-4 py-3 hover:bg-paper-deeper transition-colors text-left border-b border-rule/50 last:border-0"
+                        >
+                          <div
+                            className="flex h-9 w-9 items-center justify-center rounded-full shrink-0 text-xl"
+                            style={{ backgroundColor: league.color + '25', border: `2px solid ${league.color}50` }}
+                          >
+                            {league.emoji}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-ink text-sm">{league.name}</p>
+                            <p className="text-[10px] text-ink-faint">{league.sport} · {league.country}</p>
+                          </div>
+                          <ChevronRight size={13} className="text-ink-faint" />
+                        </button>
+                      );
+                    })}
+                  </>
+                )}
+              </>
             )}
-          </div>
-          <div className="border-t border-rule px-4 py-2.5 bg-paper-dark">
-            <button
-              onClick={() => { closeAll(); setSearchOpen(true); }}
-              className="w-full text-center text-[11px] font-bold uppercase tracking-widest text-masthead hover:underline"
-            >
-              Search Teams →
-            </button>
           </div>
         </div>
       )}

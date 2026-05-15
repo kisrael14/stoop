@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Settings, Flame, Swords, Handshake, Trophy, Star, Bell, BellOff, Compass, PenLine, Newspaper } from 'lucide-react';
+import { Settings, Flame, Swords, Handshake, Trophy, Bell, BellOff, Compass, PenLine, Newspaper } from 'lucide-react';
 import { ME, DEBATES, BETS, HOT_TAKES, ANALYSES, getUserById, CHATS } from '@/lib/mock-data';
 import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
-import { FANDOM_LABELS } from '@/lib/types';
 import type { FandomLevel, FanTeam } from '@/lib/types';
 import { requestNotificationPermission, startSimulatedNotifications } from '@/lib/notifications';
 import { computeBadges } from '@/lib/badges';
@@ -13,7 +12,6 @@ import BadgeChip from '@/components/BadgeChip';
 import TeamLogo from '@/components/TeamLogo';
 import { useAuth } from '@/lib/auth-context';
 import { ALL_TEAMS } from '@/lib/teams-data';
-import { ALL_LEAGUES } from '@/lib/leagues-data';
 
 function mapFandomLevel(level: string | null): FandomLevel {
   if (!level) return 'casual';
@@ -23,13 +21,6 @@ function mapFandomLevel(level: string | null): FandomLevel {
   if (level === 'fair-weather') return 'fair-weather';
   return 'casual';
 }
-
-const FANDOM_STYLES: Record<FandomLevel, { label: string; bg: string; text: string; border: string }> = {
-  diehard:       { label: 'Diehard',      bg: 'bg-[#b8860b]', text: 'text-white',   border: 'border-[#b8860b]' },
-  supporter:     { label: 'Supporter',    bg: 'bg-ink-muted',  text: 'text-ink',    border: 'border-ink-muted' },
-  'fair-weather':{ label: 'Fair Weather', bg: 'bg-rule-dark',  text: 'text-ink',    border: 'border-rule-dark' },
-  casual:        { label: 'Casual',       bg: 'bg-ink-faint',  text: 'text-ink',    border: 'border-ink-faint' },
-};
 
 export default function StoopPage() {
   const { user: authUser } = useAuth();
@@ -78,10 +69,6 @@ export default function StoopPage() {
     betsWon: 0, betsLost: 0, betsPending: 0,
     hotTakesPosted: 0, hotTakeReactions: 0,
   } : ME.stats;
-
-  const fanLeagues = isRealUser && authUser?.leagues
-    ? authUser.leagues.map((lid) => ALL_LEAGUES.find((l) => l.id === lid)).filter(Boolean)
-    : [];
 
   const myTeamIds = fanTeams.map((ft) => ft.team.id);
   const myDebates = DEBATES.filter((d) => d.side1UserIds.includes('me') || d.side2UserIds.includes('me')).slice(0, 3);
@@ -310,67 +297,6 @@ export default function StoopPage() {
               See all →
             </Link>
           </div>
-        </div>
-      </div>
-
-      {/* ── FANDOM ─────────────────────────────────────────── */}
-      <div className="mx-4 mt-4 border border-rule">
-        <div className="flex items-center justify-between px-3 py-2 bg-nav-bg">
-          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-masthead">Fandom</p>
-          <Link href="/discover?mode=teams" className="text-[10px] font-bold text-press hover:text-press/80">+ Add teams</Link>
-        </div>
-        <div className="divide-y divide-rule/60">
-          {fanTeams.map((ft) => {
-            const style = FANDOM_STYLES[ft.fandomLevel];
-            return (
-              <Link
-                key={ft.team.id}
-                href={`/teams/${ft.team.id}`}
-                className="flex items-center gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors"
-              >
-                <span className="flex h-6 w-6 items-center justify-center text-[10px] font-black text-[#12111a] rounded-full shrink-0" style={{ backgroundColor: ft.team.color }}>
-                  {ft.rank}
-                </span>
-                <TeamLogo team={ft.team} size={24} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-bold text-ink">{teamDisplayName(ft.team)}</p>
-                    {ft.rank === 1 && <Star size={10} className="text-[#b8860b]" fill="currentColor" />}
-                  </div>
-                  <p className="text-[9px] font-bold uppercase tracking-wide text-ink-faint">{ft.team.league}</p>
-                </div>
-                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
-                  {style.label}
-                </span>
-              </Link>
-            );
-          })}
-          {fanLeagues.map((league) => (
-            <Link
-              key={league!.id}
-              href={`/leagues/${league!.id}`}
-              className="flex items-center gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors"
-            >
-              <div
-                className="flex h-6 w-6 items-center justify-center text-sm rounded-full shrink-0"
-                style={{ backgroundColor: league!.color + '30', border: `1.5px solid ${league!.color}60` }}
-              >
-                {league!.emoji}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-ink">{league!.name}</p>
-                <p className="text-[9px] font-bold uppercase tracking-wide text-ink-faint">{league!.sport} · {league!.country}</p>
-              </div>
-              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ backgroundColor: league!.color + '20', color: league!.color }}>
-                League
-              </span>
-            </Link>
-          ))}
-          {fanTeams.length === 0 && fanLeagues.length === 0 && (
-            <Link href="/discover?mode=teams" className="flex items-center justify-center px-3 py-4 text-[10px] text-ink-faint italic hover:bg-paper-dark transition-colors">
-              Follow teams and leagues to fill your fandom →
-            </Link>
-          )}
         </div>
       </div>
 
