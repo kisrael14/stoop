@@ -32,8 +32,8 @@ export default function BadgeChip({ badge, size = 'md' }: Props) {
         onClick={() => setOpen((p) => !p)}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
-        className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors hover:bg-paper-dark"
-        style={{ minWidth: isSm ? 52 : 64, border: `1.5px solid ${colors.hex}60`, background: `${colors.hex}12` }}
+        className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-colors hover:bg-paper-dark w-full"
+        style={{ border: `1.5px solid ${colors.hex}60`, background: `${colors.hex}12` }}
       >
         <TrophySvg type={badge.type} level={badge.level} size={trophySize} />
         <span className={`font-bold uppercase tracking-wide leading-none ${isSm ? 'text-[8px]' : 'text-[9px]'}`} style={{ color: colors.hex }}>

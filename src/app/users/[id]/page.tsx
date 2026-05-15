@@ -180,7 +180,7 @@ export default function UserProfilePage() {
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Trophy Room</h2>
           <span className="text-[9px] text-ink-faint italic">Tap to learn more</span>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {badges.map((badge) => (
             <BadgeChip key={badge.type} badge={badge} />
           ))}
