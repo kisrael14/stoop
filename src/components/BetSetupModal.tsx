@@ -55,15 +55,15 @@ export default function BetSetupModal({ claim, members, onConfirm, onCancel }: P
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={onCancel} />
+      <div className="absolute inset-0 bg-nav-bg/80 backdrop-blur-sm" onClick={onCancel} />
 
       {/* Sheet */}
-      <div className="relative w-full max-w-md bg-paper border-t-2 border-ink max-h-[88vh] overflow-y-auto">
+      <div className="relative w-full max-w-md bg-paper-dark border-t border-rule max-h-[88vh] overflow-y-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 bg-ink sticky top-0 z-10">
-          <p className="font-display font-bold text-paper text-base">🤝 New Bet</p>
-          <button onClick={onCancel} className="text-paper/60 hover:text-paper transition-colors">
+        <div className="flex items-center justify-between px-5 py-4 bg-nav-bg sticky top-0 z-10">
+          <p className="font-display font-bold text-ink text-base">🤝 New Bet</p>
+          <button onClick={onCancel} className="text-ink/60 hover:text-ink transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -105,7 +105,7 @@ export default function BetSetupModal({ claim, members, onConfirm, onCancel }: P
                 const nameA = labelA.trim() || 'A';
                 const nameB = labelB.trim() || 'B';
                 return (
-                  <div key={member.id} className="flex items-center gap-3 border border-rule/60 bg-paper px-3 py-2.5 rounded-xl">
+                  <div key={member.id} className="flex items-center gap-3 border border-rule/60 bg-paper-dark px-3 py-2.5 rounded-xl">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-paper-dark border border-rule text-lg shrink-0">
                       {member.avatar}
                     </div>
@@ -117,7 +117,7 @@ export default function BetSetupModal({ claim, members, onConfirm, onCancel }: P
                         onClick={() => assign(member.id, 'A')}
                         className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all rounded-full btn-3d ${
                           side === 'A'
-                            ? 'bg-navy text-paper shadow-none translate-y-0.5'
+                            ? 'bg-navy text-ink shadow-none translate-y-0.5'
                             : 'border border-rule/60 text-ink-muted hover:border-navy hover:text-navy'
                         }`}
                       >
@@ -127,7 +127,7 @@ export default function BetSetupModal({ claim, members, onConfirm, onCancel }: P
                         onClick={() => assign(member.id, 'B')}
                         className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all rounded-full btn-3d ${
                           side === 'B'
-                            ? 'bg-field text-paper shadow-none translate-y-0.5'
+                            ? 'bg-field text-ink shadow-none translate-y-0.5'
                             : 'border border-rule/60 text-ink-muted hover:border-field hover:text-field'
                         }`}
                       >
@@ -168,7 +168,7 @@ export default function BetSetupModal({ claim, members, onConfirm, onCancel }: P
         </div>
 
         {/* Footer CTA */}
-        <div className="sticky bottom-0 border-t-2 border-rule bg-paper px-5 py-4 flex gap-3">
+        <div className="sticky bottom-0 border-t border-rule bg-paper-dark px-5 py-4 flex gap-3">
           <button
             onClick={onCancel}
             className="border border-rule px-5 py-3 text-xs font-bold uppercase tracking-wider text-ink-muted hover:bg-paper-dark transition-colors rounded-full"
@@ -178,7 +178,7 @@ export default function BetSetupModal({ claim, members, onConfirm, onCancel }: P
           <button
             onClick={submit}
             disabled={!valid}
-            className="flex-1 flex items-center justify-center gap-2 bg-field text-paper py-3 text-xs font-bold uppercase tracking-widest disabled:opacity-40 disabled:cursor-not-allowed rounded-full btn-3d hover:bg-field/80 transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 bg-field text-ink py-3 text-xs font-bold uppercase tracking-widest disabled:opacity-40 disabled:cursor-not-allowed rounded-full btn-3d hover:bg-field/80 transition-colors"
           >
             <Check size={14} />
             Lock In Bet

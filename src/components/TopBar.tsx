@@ -15,16 +15,16 @@ import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 const HIDDEN_ON = ['/login', '/onboarding'];
 
 const LEAGUE_COLORS: Record<string, string> = {
-  NFL: 'bg-masthead text-paper',
-  NBA: 'bg-navy text-paper',
-  MLB: 'bg-field text-paper',
-  NHL: 'bg-ink text-paper',
-  MLS: 'bg-press text-paper',
-  EPL: 'bg-[#3d195b] text-paper',
-  LaLiga: 'bg-[#e63329] text-paper',
-  SerieA: 'bg-[#024494] text-paper',
-  Ligue1: 'bg-[#0f4fa8] text-paper',
-  Bundesliga: 'bg-[#d20515] text-paper',
+  NFL: 'bg-masthead text-ink',
+  NBA: 'bg-navy text-ink',
+  MLB: 'bg-field text-ink',
+  NHL: 'bg-nav-bg text-ink',
+  MLS: 'bg-press text-ink',
+  EPL: 'bg-[#3d195b] text-ink',
+  LaLiga: 'bg-[#e63329] text-ink',
+  SerieA: 'bg-[#024494] text-ink',
+  Ligue1: 'bg-[#0f4fa8] text-ink',
+  Bundesliga: 'bg-[#d20515] text-ink',
 };
 
 const FANDOM_OPTIONS: { level: FandomLevel; label: string; emoji: string }[] = [
@@ -136,11 +136,11 @@ export default function TopBar() {
       )}
 
       {/* ── Full-width top bar ─────────────────────────── */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md h-14 z-50 bg-ink flex items-center gap-3 px-4 shadow-[0_2px_12px_rgba(0,0,0,0.35)]">
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md h-14 z-50 bg-nav-bg flex items-center gap-3 px-4 shadow-[0_2px_12px_rgba(0,0,0,0.35)]">
 
         {/* Search pill — stretches to fill */}
         <div className="flex-1 flex items-center gap-3 bg-white/10 hover:bg-white/15 rounded-full px-4 h-10 transition-colors min-w-0">
-          <Search size={22} className="text-paper/60 shrink-0" />
+          <Search size={22} className="text-ink/60 shrink-0" />
           {searchOpen ? (
             <input
               ref={inputRef}
@@ -148,18 +148,18 @@ export default function TopBar() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Teams & leagues…"
-              className="flex-1 bg-transparent text-paper text-sm placeholder-paper/40 outline-none min-w-0"
+              className="flex-1 bg-transparent text-ink text-sm placeholder-ink/40 outline-none min-w-0"
             />
           ) : (
             <button
               onClick={() => { setSearchOpen(true); setChatOpen(false); }}
-              className="flex-1 text-left text-paper/40 text-sm truncate"
+              className="flex-1 text-left text-ink/40 text-sm truncate"
             >
               Teams & leagues…
             </button>
           )}
           {searchOpen && (
-            <button onClick={closeAll} className="text-paper/50 hover:text-paper shrink-0 transition-colors">
+            <button onClick={closeAll} className="text-ink/50 hover:text-ink shrink-0 transition-colors">
               <X size={16} />
             </button>
           )}
@@ -168,11 +168,11 @@ export default function TopBar() {
         {/* Chat icon */}
         <button
           onClick={() => { setChatOpen((o) => !o); setSearchOpen(false); setSearchQuery(''); }}
-          className="relative shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-paper transition-all"
+          className="relative shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-ink transition-all"
           aria-label="Open chats"
         >
           <MessageCircle size={21} />
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-masthead text-[8px] font-bold text-paper leading-none">
+          <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-masthead text-[8px] font-bold text-[#12111a] leading-none">
             {CHATS.length}
           </span>
         </button>
@@ -180,7 +180,7 @@ export default function TopBar() {
 
       {/* ── Search results ─────────────────────────────── */}
       {searchOpen && q.length >= 1 && (
-        <div className="fixed top-14 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-paper border-t-2 border-rule max-h-[70vh] overflow-y-auto shadow-2xl">
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-paper-dark border-t border-rule max-h-[70vh] overflow-y-auto shadow-2xl">
 
           {matchedTeams.length > 0 && (
             <>
@@ -207,7 +207,7 @@ export default function TopBar() {
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-ink text-sm">{teamDisplayName(team)}</p>
                         </div>
-                        <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0 ${LEAGUE_COLORS[team.league] ?? 'bg-ink-faint text-paper'}`}>
+                        <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0 ${LEAGUE_COLORS[team.league] ?? 'bg-ink-faint text-ink'}`}>
                           {team.league}
                         </span>
                       </button>
@@ -222,10 +222,10 @@ export default function TopBar() {
                         }}
                         className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full font-bold text-sm transition-all border-2 ${
                           followed
-                            ? 'bg-paper border-ink text-ink'
+                            ? 'bg-paper-dark border-rule text-ink'
                             : showingPicker
-                            ? 'bg-ink border-ink text-paper'
-                            : 'text-paper border-transparent hover:opacity-80'
+                            ? 'bg-nav-bg border-rule text-ink'
+                            : 'bg-masthead border-transparent text-[#12111a] hover:bg-masthead/80'
                         }`}
                         style={followed || showingPicker ? {} : { backgroundColor: team.color }}
                         title={followed ? 'Unfollow' : 'Follow team'}
@@ -282,7 +282,7 @@ export default function TopBar() {
                         <p className="font-bold text-ink text-sm">{league.name}</p>
                         <p className="text-[10px] text-ink-faint">{league.country} · {league.sport}</p>
                       </div>
-                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0 ${LEAGUE_COLORS[league.id] ?? 'bg-ink-faint text-paper'}`}>
+                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full shrink-0 ${LEAGUE_COLORS[league.id] ?? 'bg-ink-faint text-ink'}`}>
                         {league.shortName}
                       </span>
                     </button>
@@ -293,8 +293,8 @@ export default function TopBar() {
                       }}
                       className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full font-bold text-sm transition-all border-2 ${
                         leagueFollowed
-                          ? 'bg-paper border-ink text-ink'
-                          : 'text-paper border-transparent hover:opacity-80'
+                          ? 'bg-paper-dark border-rule text-ink'
+                          : 'bg-masthead border-transparent text-[#12111a] hover:bg-masthead/80'
                       }`}
                       style={leagueFollowed ? {} : { backgroundColor: league.color }}
                       title={leagueFollowed ? 'Unfollow league' : 'Follow league'}
@@ -318,12 +318,12 @@ export default function TopBar() {
       {/* ── Chat drawer ────────────────────────────────── */}
       {chatOpen && (
         <div
-          className="fixed top-14 z-50 w-72 bg-paper border-2 border-ink rounded-2xl shadow-2xl overflow-hidden"
+          className="fixed top-14 z-50 w-72 bg-paper-dark border border-rule rounded-2xl shadow-2xl overflow-hidden"
           style={{ right: 'max(1rem, calc(50vw - 224px + 1rem))' }}
         >
-          <div className="flex items-center justify-between px-4 py-3 bg-ink">
-            <p className="font-display font-bold text-paper text-sm">Your Chats</p>
-            <button onClick={() => setChatOpen(false)} className="text-paper/60 hover:text-paper">
+          <div className="flex items-center justify-between px-4 py-3 bg-nav-bg">
+            <p className="font-display font-bold text-ink text-sm">Your Chats</p>
+            <button onClick={() => setChatOpen(false)} className="text-ink/60 hover:text-ink">
               <X size={16} />
             </button>
           </div>
@@ -336,7 +336,7 @@ export default function TopBar() {
                   onClick={() => { closeAll(); router.push(`/neighborhoods/${chat.id}?tab=chat`); }}
                   className="flex w-full items-center gap-3 px-4 py-3 hover:bg-paper-dark transition-colors text-left border-b border-rule/50 last:border-0"
                 >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-ink text-lg shrink-0">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-nav-bg text-lg shrink-0">
                     {chat.emoji}
                   </div>
                   <div className="flex-1 min-w-0">

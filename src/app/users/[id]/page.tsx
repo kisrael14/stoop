@@ -16,9 +16,9 @@ import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 
 const FANDOM_STYLES: Record<FandomLevel, { label: string; bg: string; text: string }> = {
   diehard:        { label: 'Diehard',      bg: 'bg-[#b8860b]', text: 'text-white' },
-  supporter:      { label: 'Supporter',    bg: 'bg-ink-muted',  text: 'text-paper' },
-  'fair-weather': { label: 'Fair Weather', bg: 'bg-rule-dark',  text: 'text-paper' },
-  casual:         { label: 'Casual',       bg: 'bg-ink-faint',  text: 'text-paper' },
+  supporter:      { label: 'Supporter',    bg: 'bg-ink-muted',  text: 'text-ink' },
+  'fair-weather': { label: 'Fair Weather', bg: 'bg-rule-dark',  text: 'text-ink' },
+  casual:         { label: 'Casual',       bg: 'bg-ink-faint',  text: 'text-ink' },
 };
 
 export default function UserProfilePage() {
@@ -90,28 +90,28 @@ export default function UserProfilePage() {
     <div className="flex flex-col bg-paper min-h-full pb-4">
 
       {/* Back header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b-2 border-ink bg-ink">
-        <button onClick={() => router.back()} className="text-paper/60 hover:text-paper p-1">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-rule bg-nav-bg">
+        <button onClick={() => router.back()} className="text-ink/60 hover:text-ink p-1">
           <ArrowLeft size={20} />
         </button>
-        <p className="font-bold text-paper font-mono">@{user.username}</p>
+        <p className="font-bold text-ink font-mono">@{user.username}</p>
         {isMe && (
-          <Link href="/onboarding" className="ml-auto h-8 w-8 flex items-center justify-center rounded-full bg-paper/10 text-paper/70 hover:bg-paper/20 transition-colors">
+          <Link href="/onboarding" className="ml-auto h-8 w-8 flex items-center justify-center rounded-full bg-ink/10 text-ink/70 hover:bg-ink/20 transition-colors">
             <Settings size={16} />
           </Link>
         )}
       </div>
 
       {/* ── MASTHEAD ──────────────────────────────────────── */}
-      <div className="bg-ink px-5 pt-6 pb-5">
+      <div className="bg-nav-bg px-5 pt-6 pb-5">
         <div className="flex items-center gap-4 mb-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-paper/15 text-4xl ring-2 ring-press shrink-0">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-ink/15 text-4xl ring-2 ring-masthead shrink-0">
             {user.avatar}
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="font-display text-2xl font-black text-paper leading-tight">{user.displayName}</h1>
-            <p className="text-[11px] font-mono text-paper/50">@{user.username}</p>
-            {user.bio && <p className="text-xs text-paper/70 italic mt-0.5 line-clamp-2">{user.bio}</p>}
+            <h1 className="font-display text-2xl font-black text-ink leading-tight">{user.displayName}</h1>
+            <p className="text-[11px] font-mono text-ink/50">@{user.username}</p>
+            {user.bio && <p className="text-xs text-ink/70 italic mt-0.5 line-clamp-2">{user.bio}</p>}
           </div>
           {!isMe && (
             <button
@@ -131,8 +131,8 @@ export default function UserProfilePage() {
               }}
               className={`shrink-0 flex items-center justify-center h-10 w-10 rounded-full font-bold text-sm transition-all border-2 ${
                 following
-                  ? 'bg-paper/15 border-paper/40 text-paper hover:bg-paper/10'
-                  : 'bg-paper border-transparent text-ink hover:opacity-80'
+                  ? 'bg-ink/15 border-ink/40 text-ink hover:bg-ink/10'
+                  : 'bg-masthead border-transparent text-[#12111a] hover:opacity-80'
               }`}
               title={following ? 'Unfollow' : 'Follow'}
             >
@@ -142,9 +142,9 @@ export default function UserProfilePage() {
         </div>
 
         {/* Unified stats + bragging rights grid */}
-        <div className="mt-4 border border-paper/20">
+        <div className="mt-4 border border-ink/20">
           {/* Row 1 — social stats */}
-          <div className="grid grid-cols-4 divide-x divide-paper/20">
+          <div className="grid grid-cols-4 divide-x divide-ink/20">
             {[
               { label: 'Neighbors',  value: user.followerIds.length },
               { label: 'Following',  value: user.followingIds.length },
@@ -152,29 +152,29 @@ export default function UserProfilePage() {
               { label: 'Reactions',  value: stats.hotTakeReactions },
             ].map(({ label, value }) => (
               <div key={label} className="flex flex-col items-center py-2">
-                <p className="font-display text-lg font-bold leading-none text-paper">{value}</p>
-                <p className="text-[7px] font-bold uppercase tracking-wider text-paper/70 mt-0.5">{label}</p>
+                <p className="font-display text-lg font-bold leading-none text-ink">{value}</p>
+                <p className="text-[7px] font-bold uppercase tracking-wider text-ink/70 mt-0.5">{label}</p>
               </div>
             ))}
           </div>
           {/* Row 2 — activity stats */}
-          <div className="grid grid-cols-3 divide-x divide-paper/20 border-t border-paper/20">
+          <div className="grid grid-cols-3 divide-x divide-ink/20 border-t border-ink/20">
             <div className="flex flex-col items-center py-2 gap-0.5">
-              <Swords size={10} className="text-paper/60" />
+              <Swords size={10} className="text-ink/60" />
               <p className="font-display text-base font-black text-press leading-none">{debatePct}%</p>
-              <p className="text-[7px] font-bold text-paper/60 leading-none">{stats.debatesWon}W · {stats.debatesLost}L</p>
-              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/70">Debates</p>
+              <p className="text-[7px] font-bold text-ink/60 leading-none">{stats.debatesWon}W · {stats.debatesLost}L</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-ink/70">Debates</p>
             </div>
             <div className="flex flex-col items-center py-2 gap-0.5">
-              <Handshake size={10} className="text-paper/60" />
+              <Handshake size={10} className="text-ink/60" />
               <p className="font-display text-base font-black text-press leading-none">{betPct}%</p>
-              <p className="text-[7px] font-bold text-paper/60 leading-none">{stats.betsWon}W · {stats.betsLost}L</p>
-              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/70">Bets</p>
+              <p className="text-[7px] font-bold text-ink/60 leading-none">{stats.betsWon}W · {stats.betsLost}L</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-ink/70">Bets</p>
             </div>
             <div className="flex flex-col items-center py-2 gap-0.5">
               <Flame size={10} className="text-press" />
               <p className="font-display text-base font-black text-press leading-none">{stats.hotTakesPosted}</p>
-              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/70">Hot Takes</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-ink/70">Hot Takes</p>
             </div>
           </div>
         </div>
@@ -219,7 +219,7 @@ export default function UserProfilePage() {
       })()}
 
       {/* ── 2-COLUMN: NEIGHBORS + NEIGHBORHOODS ─────────────── */}
-      <div className="mx-4 mt-4 grid grid-cols-2 gap-0 border-2 border-ink">
+      <div className="mx-4 mt-4 grid grid-cols-2 gap-0 border border-rule">
         {/* LEFT: Neighbors */}
         <div className="col-rule p-3">
           <div className="section-header mb-3">
@@ -251,7 +251,7 @@ export default function UserProfilePage() {
           <div className="flex flex-col gap-2">
             {userNeighborhoods.slice(0, 4).map((chat) => (
               <Link key={chat.id} href={`/neighborhoods/${chat.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <div className="flex h-8 w-8 items-center justify-center bg-ink text-base shrink-0 rounded-sm">
+                <div className="flex h-8 w-8 items-center justify-center bg-nav-bg text-base shrink-0 rounded-sm">
                   {chat.emoji}
                 </div>
                 <div className="min-w-0">
@@ -268,9 +268,9 @@ export default function UserProfilePage() {
       </div>
 
       {/* ── FANDOM ─────────────────────────────────────────── */}
-      <div className="mx-4 mt-4 border-2 border-ink">
-        <div className="px-3 py-2 bg-ink">
-          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper">Fandom</p>
+      <div className="mx-4 mt-4 border border-rule">
+        <div className="px-3 py-2 bg-nav-bg">
+          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-masthead">Fandom</p>
         </div>
         <div className="divide-y divide-rule/60">
           {user.fanTeams.map((ft) => {
@@ -282,7 +282,7 @@ export default function UserProfilePage() {
                 className="flex items-center gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors"
               >
                 <span
-                  className="flex h-6 w-6 items-center justify-center text-[10px] font-black text-paper rounded-full shrink-0"
+                  className="flex h-6 w-6 items-center justify-center text-[10px] font-black text-ink rounded-full shrink-0"
                   style={{ backgroundColor: ft.team.color }}
                 >
                   {ft.rank}
@@ -327,9 +327,9 @@ export default function UserProfilePage() {
 
       {/* ── NEIGHBORHOOD ACTIVITY ──────────────────────────── */}
       {(userDebates.length > 0 || userBets.length > 0 || userHotTakes.length > 0) && (
-        <div className="mx-4 mt-4 border-2 border-ink">
-          <div className="flex items-center justify-between px-3 py-2 bg-ink">
-            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper">
+        <div className="mx-4 mt-4 border border-rule">
+          <div className="flex items-center justify-between px-3 py-2 bg-nav-bg">
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-masthead">
               {isMe ? 'My Neighborhood' : 'Their Neighborhood'}
             </p>
             <Link href="/neighborhoods" className="text-[10px] font-bold text-press hover:text-press/80">See all →</Link>
@@ -345,7 +345,7 @@ export default function UserProfilePage() {
                   className="flex gap-3 px-3 py-3 hover:bg-paper-dark transition-colors"
                 >
                   <div className="shrink-0 mt-0.5">
-                    <div className="h-8 w-8 flex items-center justify-center bg-navy text-paper text-base rounded-sm">⚔️</div>
+                    <div className="h-8 w-8 flex items-center justify-center bg-navy text-ink text-base rounded-sm">⚔️</div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[9px] font-bold uppercase tracking-widest text-navy mb-0.5">Debate · {debate.chatName}</p>
@@ -370,7 +370,7 @@ export default function UserProfilePage() {
                   className="flex gap-3 px-3 py-3 hover:bg-paper-dark transition-colors"
                 >
                   <div className="shrink-0 mt-0.5">
-                    <div className="h-8 w-8 flex items-center justify-center bg-field text-paper text-base rounded-sm">🤝</div>
+                    <div className="h-8 w-8 flex items-center justify-center bg-field text-ink text-base rounded-sm">🤝</div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -392,7 +392,7 @@ export default function UserProfilePage() {
                   className="flex gap-3 px-3 py-3 hover:bg-paper-dark transition-colors"
                 >
                   <div className="shrink-0 mt-0.5">
-                    <div className="h-8 w-8 flex items-center justify-center bg-press text-paper text-base rounded-sm">🔥</div>
+                    <div className="h-8 w-8 flex items-center justify-center bg-press text-ink text-base rounded-sm">🔥</div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[9px] font-bold uppercase tracking-widest text-press mb-0.5">Hot Take · {ht.chatName}</p>
@@ -408,11 +408,11 @@ export default function UserProfilePage() {
 
       {/* ── FROM THE STREETS ───────────────────────────────── */}
       {streetsFeed.length > 0 && (
-        <div className="mx-4 mt-4 border-2 border-ink">
-          <div className="flex items-center justify-between px-3 py-2 bg-ink">
+        <div className="mx-4 mt-4 border border-rule">
+          <div className="flex items-center justify-between px-3 py-2 bg-nav-bg">
             <div className="flex items-center gap-1.5">
-              <Newspaper size={11} className="text-paper/60" />
-              <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper">From The Streets</p>
+              <Newspaper size={11} className="text-ink/60" />
+              <p className="text-[9px] font-black uppercase tracking-[0.25em] text-masthead">From The Streets</p>
             </div>
             <Link href="/streets" className="text-[10px] font-bold text-press hover:text-press/80">The Streets →</Link>
           </div>
@@ -465,7 +465,7 @@ export default function UserProfilePage() {
               const author = getUserById(a.authorId);
               return (
                 <Link key={a.id} href={`/analyses/${a.id}`} className="flex gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors">
-                  <div className="h-7 w-7 flex items-center justify-center bg-ink/5 border border-ink/20 text-sm rounded-sm shrink-0 mt-0.5">📊</div>
+                  <div className="h-7 w-7 flex items-center justify-center bg-rule border border-rule-dark text-sm rounded-sm shrink-0 mt-0.5">📊</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[9px] font-bold uppercase tracking-widest text-ink-muted mb-0.5">Analysis · {a.chatName}</p>
                     <p className="text-xs font-bold text-ink leading-snug line-clamp-1">{a.title}</p>

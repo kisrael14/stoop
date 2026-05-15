@@ -19,8 +19,8 @@ type Period = 'weekly' | 'monthly' | 'yearly';
 const PERIOD_DAYS: Record<Period, number> = { weekly: 7, monthly: 30, yearly: 365 };
 
 const RANK_STYLES = [
-  'bg-ink text-paper',
-  'bg-rule-dark text-paper',
+  'bg-masthead text-[#12111a]',
+  'bg-rule-dark text-ink',
   'bg-paper-deeper border border-rule text-ink',
   'bg-paper-dark border border-rule/50 text-ink-muted',
   'bg-paper-dark border border-rule/50 text-ink-muted',
@@ -308,13 +308,13 @@ export default function TeamPage() {
       </div>
 
       {/* ── Tab bar ─────────────────────────────────────────────────────── */}
-      <div className="shrink-0 flex gap-1.5 px-3 py-2 bg-paper border-b-2 border-ink overflow-x-auto">
+      <div className="shrink-0 flex gap-1.5 px-3 py-2 bg-paper-dark border-b border-rule overflow-x-auto">
         {tabs.map(({ id: tabId, label, icon: Icon, count }) => (
           <button
             key={tabId}
             onClick={() => setActiveTab(tabId)}
             className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap rounded-full transition-colors ${
-              activeTab === tabId ? 'bg-ink text-paper' : 'text-ink-muted hover:text-ink hover:bg-paper-dark'
+              activeTab === tabId ? 'bg-masthead text-[#12111a]' : 'text-ink-muted hover:text-ink hover:bg-paper-deeper'
             }`}
           >
             <Icon size={11} />
@@ -338,13 +338,13 @@ export default function TeamPage() {
                 <h3 className="font-display font-bold text-ink text-lg">Top Fans</h3>
               </div>
               {/* Period switcher */}
-              <div className="flex border-2 border-ink overflow-hidden rounded-full">
+              <div className="flex border border-rule overflow-hidden rounded-full">
                 {(['weekly', 'monthly', 'yearly'] as Period[]).map((p) => (
                   <button
                     key={p}
                     onClick={() => setPeriod(p)}
                     className={`px-3 py-1 text-[9px] font-bold uppercase tracking-wider transition-colors ${
-                      period === p ? 'bg-ink text-paper' : 'bg-paper text-ink-muted hover:bg-paper-dark'
+                      period === p ? 'bg-masthead text-[#12111a]' : 'bg-paper-dark text-ink-muted hover:bg-paper-deeper'
                     }`}
                   >
                     {p === 'weekly' ? 'Wk' : p === 'monthly' ? 'Mo' : 'Yr'}
@@ -354,7 +354,7 @@ export default function TeamPage() {
             </div>
 
             {topFans.length > 0 ? (
-              <div className="border-2 border-ink overflow-hidden">
+              <div className="border border-rule overflow-hidden">
                 {topFans.map(({ user, score }, i) => (
                   <Link
                     key={user.id}
@@ -643,14 +643,14 @@ export default function TeamPage() {
             <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">Fan Analysis</p>
             <button
               onClick={() => setShowAnalysisForm(!showAnalysisForm)}
-              className="flex items-center gap-1.5 bg-ink text-paper px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-full hover:bg-ink/80 transition-colors"
+              className="flex items-center gap-1.5 bg-nav-bg text-ink px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-full hover:bg-nav-bg/80 transition-colors"
             >
               <PenLine size={11} /> Write Piece
             </button>
           </div>
 
           {showAnalysisForm && (
-            <div className="px-4 py-4 border-b-2 border-ink bg-paper-dark flex flex-col gap-3">
+            <div className="px-4 py-4 border-b border-rule bg-paper-dark flex flex-col gap-3">
               <input
                 value={analysisTitle}
                 onChange={(e) => setAnalysisTitle(e.target.value)}
@@ -674,7 +674,7 @@ export default function TeamPage() {
                 <button
                   onClick={submitAnalysis}
                   disabled={!analysisTitle.trim() || !analysisBody.trim()}
-                  className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider bg-ink text-paper rounded-full hover:bg-ink/80 disabled:opacity-40 transition-colors"
+                  className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider bg-nav-bg text-ink rounded-full hover:bg-nav-bg/80 disabled:opacity-40 transition-colors"
                 >
                   Publish
                 </button>
@@ -690,7 +690,7 @@ export default function TeamPage() {
               const showingComments = showAnalystCommentsFor === an.id;
               return (
                 <div key={an.id} className="border border-rule overflow-hidden">
-                  <div className="border-l-4 border-l-ink px-4 pt-4 pb-3 bg-paper">
+                  <div className="border-l-4 border-l-ink-muted px-4 pt-4 pb-3 bg-paper">
                     <div className="flex items-center gap-2 mb-3">
                       <Link href={`/users/${an.authorId}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-base hover:border-ink transition-all shrink-0">
                         {isMe ? ME.avatar : author?.avatar}
@@ -769,7 +769,7 @@ export default function TeamPage() {
                         <button
                           onClick={() => addAnalystComment(an.id)}
                           disabled={!analystCommentText.trim()}
-                          className="flex h-7 w-7 items-center justify-center bg-ink text-paper rounded-full hover:bg-ink/80 disabled:opacity-40 transition-colors shrink-0"
+                          className="flex h-7 w-7 items-center justify-center bg-nav-bg text-ink rounded-full hover:bg-nav-bg/80 disabled:opacity-40 transition-colors shrink-0"
                         >
                           <Send size={12} />
                         </button>
@@ -793,7 +793,7 @@ export default function TeamPage() {
       {/* ── + to Discussion FAB ────────────────────────────── */}
       <button
         onClick={() => setShowDiscussModal(true)}
-        className="fixed bottom-20 right-4 flex items-center gap-1.5 bg-ink text-paper px-4 py-2.5 rounded-full shadow-xl font-bold text-[11px] uppercase tracking-widest hover:bg-ink/80 transition-colors z-20"
+        className="fixed bottom-20 right-4 flex items-center gap-1.5 bg-nav-bg text-ink px-4 py-2.5 rounded-full shadow-xl font-bold text-[11px] uppercase tracking-widest hover:bg-nav-bg/80 transition-colors z-20 border border-rule"
         style={{ maxWidth: 'calc(100vw - 2rem)' }}
       >
         <Plus size={13} /> to Discussion
@@ -802,14 +802,14 @@ export default function TeamPage() {
       {/* ── Discuss Modal ───────────────────────────────── */}
       {showDiscussModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
-          <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={() => setShowDiscussModal(false)} />
-          <div className="relative w-full max-w-md bg-paper border-t-2 border-ink">
-            <div className="flex items-center justify-between px-5 py-4 bg-ink">
+          <div className="absolute inset-0 bg-nav-bg/80 backdrop-blur-sm" onClick={() => setShowDiscussModal(false)} />
+          <div className="relative w-full max-w-md bg-paper-dark border-t border-rule">
+            <div className="flex items-center justify-between px-5 py-4 bg-nav-bg">
               <div>
-                <p className="font-display font-bold text-paper">{team.emoji} {team.name}</p>
-                <p className="text-[10px] text-paper/50 uppercase tracking-widest">Post to The Streets</p>
+                <p className="font-display font-bold text-ink">{team.emoji} {team.name}</p>
+                <p className="text-[10px] text-ink/50 uppercase tracking-widest">Post to The Streets</p>
               </div>
-              <button onClick={() => setShowDiscussModal(false)} className="text-paper/60 hover:text-paper"><X size={18} /></button>
+              <button onClick={() => setShowDiscussModal(false)} className="text-ink/60 hover:text-ink"><X size={18} /></button>
             </div>
             <div className="px-5 py-5 flex flex-col gap-4">
               <div className="grid grid-cols-3 gap-2">
@@ -822,7 +822,7 @@ export default function TeamPage() {
                     key={id}
                     onClick={() => setDiscussType(id)}
                     className={`flex flex-col items-center gap-1 py-3 border-2 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
-                      discussType === id ? 'border-ink bg-ink text-paper' : 'border-rule text-ink-muted hover:border-ink-muted'
+                      discussType === id ? 'border-masthead bg-nav-bg text-ink' : 'border-rule text-ink-muted hover:border-ink-muted'
                     }`}
                   >
                     <span className="text-xl">{emoji}</span>{label}
@@ -841,14 +841,14 @@ export default function TeamPage() {
                 className="w-full border border-rule bg-paper-dark px-4 py-3 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors resize-none rounded-lg"
               />
             </div>
-            <div className="border-t-2 border-rule bg-paper px-5 py-4 flex gap-3">
-              <button onClick={() => setShowDiscussModal(false)} className="border border-rule px-5 py-3 text-xs font-bold uppercase tracking-wider text-ink-muted hover:bg-paper-dark transition-colors rounded-full">
+            <div className="border-t border-rule bg-paper-dark px-5 py-4 flex gap-3">
+              <button onClick={() => setShowDiscussModal(false)} className="border border-rule px-5 py-3 text-xs font-bold uppercase tracking-wider text-ink-muted hover:bg-paper-deeper transition-colors rounded-full">
                 Cancel
               </button>
               <button
                 onClick={submitDiscuss}
                 disabled={!discussText.trim()}
-                className="flex-1 flex items-center justify-center gap-2 bg-press text-paper py-3 text-xs font-bold uppercase tracking-widest disabled:opacity-40 rounded-full btn-3d hover:bg-press/80 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 bg-press text-ink py-3 text-xs font-bold uppercase tracking-widest disabled:opacity-40 rounded-full btn-3d hover:bg-press/80 transition-colors"
               >
                 <Send size={13} /> Post to Streets
               </button>

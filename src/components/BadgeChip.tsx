@@ -47,36 +47,36 @@ export default function BadgeChip({ badge, size = 'md' }: Props) {
       {/* Tooltip */}
       {open && (
         <div
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-ink text-paper rounded-xl shadow-2xl z-50 p-3 pointer-events-none"
+          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-[#0e0d18] text-[#f0ede8] rounded-xl shadow-2xl z-50 p-3 pointer-events-none"
           style={{ minWidth: 220 }}
         >
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-ink" />
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#0e0d18]" />
 
           <div className="flex items-center gap-3 mb-2">
             <TrophySvg type={badge.type} level={badge.level} size={52} />
             <div>
-              <p className="font-display font-bold text-paper text-sm leading-tight">{def.name}</p>
+              <p className="font-display font-bold text-[#f0ede8] text-sm leading-tight">{def.name}</p>
               <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: colors.hex }}>{colors.label} Tier</p>
               <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map((l) => (
                   <div
                     key={l}
-                    className={`h-1 w-4 rounded-full ${l <= badge.level ? colors.bar : 'bg-paper/20'}`}
+                    className={`h-1 w-4 rounded-full ${l <= badge.level ? colors.bar : 'bg-[#f0ede8]/20'}`}
                   />
                 ))}
               </div>
             </div>
           </div>
 
-          <p className="text-[11px] text-paper/70 leading-relaxed mb-2">{def.description}</p>
+          <p className="text-[11px] text-[#f0ede8]/70 leading-relaxed mb-2">{def.description}</p>
 
           {badge.nextLevelScore !== null ? (
             <div>
-              <div className="flex justify-between text-[9px] text-paper/50 mb-1">
+              <div className="flex justify-between text-[9px] text-[#f0ede8]/50 mb-1">
                 <span>{badge.score} pts</span>
                 <span>{badge.nextLevelScore} to next tier</span>
               </div>
-              <div className="h-1 bg-paper/20 rounded-full overflow-hidden">
+              <div className="h-1 bg-[#f0ede8]/20 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${colors.bar}`}
                   style={{ width: `${badge.progressPct}%` }}

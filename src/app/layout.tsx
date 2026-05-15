@@ -1,14 +1,36 @@
 import type { Metadata, Viewport } from 'next';
-import { Playfair_Display } from 'next/font/google';
+import { Bebas_Neue, Barlow_Condensed, DM_Sans, DM_Mono } from 'next/font/google';
 import './globals.css';
 import BottomNav from '@/components/BottomNav';
 import TopBar from '@/components/TopBar';
 import SwipeMain from '@/components/SwipeMain';
 import { AuthProvider } from '@/lib/auth-context';
 
-const playfair = Playfair_Display({
+const bebasNeue = Bebas_Neue({
   subsets: ['latin'],
-  variable: '--font-playfair',
+  weight: '400',
+  variable: '--font-bebas',
+  display: 'swap',
+});
+
+const barlowCondensed = Barlow_Condensed({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-barlow',
+  display: 'swap',
+});
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  variable: '--font-dm-sans',
+  display: 'swap',
+});
+
+const dmMono = DM_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-dm-mono',
   display: 'swap',
 });
 
@@ -25,7 +47,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`h-full ${playfair.variable}`}>
+    <html lang="en" className={`h-full ${bebasNeue.variable} ${barlowCondensed.variable} ${dmSans.variable} ${dmMono.variable}`}>
       <body className="h-full bg-paper text-ink">
         <AuthProvider>
           <div className="relative mx-auto flex h-full max-w-md flex-col overflow-hidden shadow-2xl">

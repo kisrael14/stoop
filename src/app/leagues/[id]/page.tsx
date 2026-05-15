@@ -127,13 +127,13 @@ export default function LeaguePage() {
       </div>
 
       {/* ── Tab bar ─────────────────────────────────────────────────────── */}
-      <div className="shrink-0 flex border-b-2 border-ink bg-paper">
+      <div className="shrink-0 flex border-b border-rule bg-paper-dark">
         {tabs.map(({ id: tabId, label, icon: Icon, count }) => (
           <button
             key={tabId}
             onClick={() => setActiveTab(tabId)}
             className={`flex flex-1 items-center justify-center gap-1.5 px-2 py-2.5 text-[10px] font-bold uppercase tracking-widest border-b-2 -mb-0.5 transition-colors ${
-              activeTab === tabId ? 'border-ink text-ink' : 'border-transparent text-ink-faint hover:text-ink-muted'
+              activeTab === tabId ? 'border-masthead text-masthead' : 'border-transparent text-ink-faint hover:text-ink-muted'
             }`}
           >
             <Icon size={11} />

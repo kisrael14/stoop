@@ -63,13 +63,13 @@ export default function AnalysisPage() {
     <div className="flex flex-col bg-paper min-h-full">
 
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b-2 border-ink bg-ink">
-        <button onClick={() => router.back()} className="text-paper/60 hover:text-paper p-1">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-rule bg-nav-bg">
+        <button onClick={() => router.back()} className="text-ink/60 hover:text-ink p-1">
           <ArrowLeft size={20} />
         </button>
         <div className="flex items-center gap-1.5">
-          <PenLine size={13} className="text-paper/60" />
-          <p className="font-bold text-paper text-sm">Analysis</p>
+          <PenLine size={13} className="text-ink/60" />
+          <p className="font-bold text-ink text-sm">Analysis</p>
         </div>
         <Link
           href={`/neighborhoods/${analysis.chatId}?tab=analysts`}
@@ -109,7 +109,7 @@ export default function AnalysisPage() {
             onClick={() => toggleReaction(r.emoji)}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border transition-colors ${
               r.userIds.includes('me')
-                ? 'bg-ink text-paper border-ink'
+                ? 'bg-masthead text-[#12111a] border-masthead'
                 : 'bg-paper-dark text-ink border-rule hover:border-ink'
             }`}
           >
@@ -160,7 +160,7 @@ export default function AnalysisPage() {
       </div>
 
       {/* Comment input */}
-      <div className="sticky bottom-0 border-t-2 border-ink bg-paper px-4 py-3 flex items-center gap-3">
+      <div className="sticky bottom-0 border-t border-rule bg-paper-dark px-4 py-3 flex items-center gap-3">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-base shrink-0">
           {ME.avatar}
         </div>
@@ -175,7 +175,7 @@ export default function AnalysisPage() {
         <button
           onClick={submitComment}
           disabled={!commentText.trim()}
-          className="shrink-0 flex items-center justify-center h-9 w-9 bg-ink text-paper rounded-full hover:bg-ink/80 disabled:opacity-40 transition-colors"
+          className="shrink-0 flex items-center justify-center h-9 w-9 bg-nav-bg text-ink rounded-full hover:bg-nav-bg/80 disabled:opacity-40 transition-colors"
         >
           <Send size={14} />
         </button>

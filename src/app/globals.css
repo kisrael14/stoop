@@ -1,44 +1,52 @@
 @import "tailwindcss";
 
 :root {
-  --paper: #f3ead6;
-  --paper-dark: #ead9be;
-  --paper-deeper: #ddc9a8;
-  --ink: #1a1208;
-  --ink-muted: #5c4a2e;
-  --ink-faint: #9c8a70;
-  --rule: #c4a97e;
-  --rule-dark: #a08a60;
-  --masthead: #8b1515;
-  --navy: #0c1f40;
-  --field: #1a4a22;
-  --press: #c84b0c;
-  --fire: #f97316;
-  --ice: #38bdf8;
+  /* ─── Dark sports theme ─── */
+  --paper:        #12111a;               /* page / container background */
+  --paper-dark:   #1a1928;              /* elevated card surface */
+  --paper-deeper: #201f30;             /* deep card / hover state */
+  --ink:          #f0ede8;             /* primary text (warm off-white) */
+  --ink-muted:    #c0c8d8;            /* secondary text (silver) */
+  --ink-faint:    #6b7090;           /* tertiary text (dim) */
+  --rule:         rgba(255,255,255,0.08);  /* subtle border */
+  --rule-dark:    rgba(255,255,255,0.15); /* slightly visible border */
+  --masthead:     #f5c518;            /* gold — primary accent */
+  --navy:         #3a5fd8;           /* debate / royal blue */
+  --field:        #3a7d44;          /* bet / forest green */
+  --press:        #e84040;         /* red accent */
+  --fire:         #ff7070;        /* fire / hot take */
+  --ice:          #7090f0;       /* ice / cool blue */
+  --nav-bg:       #0e0d18;      /* nav bars, section headers, sidebars */
+  --gold-dim:     rgba(245,197,24,0.12);
+  --gold-glow:    rgba(245,197,24,0.25);
 }
 
 @theme inline {
-  --color-paper: var(--paper);
-  --color-paper-dark: var(--paper-dark);
+  --color-paper:        var(--paper);
+  --color-paper-dark:   var(--paper-dark);
   --color-paper-deeper: var(--paper-deeper);
-  --color-ink: var(--ink);
-  --color-ink-muted: var(--ink-muted);
-  --color-ink-faint: var(--ink-faint);
-  --color-rule: var(--rule);
-  --color-rule-dark: var(--rule-dark);
-  --color-masthead: var(--masthead);
-  --color-navy: var(--navy);
-  --color-field: var(--field);
-  --color-press: var(--press);
-  --color-fire: var(--fire);
-  --color-ice: var(--ice);
-  --font-display: var(--font-playfair), ui-serif, Georgia, 'Times New Roman', serif;
+  --color-ink:          var(--ink);
+  --color-ink-muted:    var(--ink-muted);
+  --color-ink-faint:    var(--ink-faint);
+  --color-rule:         var(--rule);
+  --color-rule-dark:    var(--rule-dark);
+  --color-masthead:     var(--masthead);
+  --color-navy:         var(--navy);
+  --color-field:        var(--field);
+  --color-press:        var(--press);
+  --color-fire:         var(--fire);
+  --color-ice:          var(--ice);
+  --color-nav-bg:       var(--nav-bg);
+  --color-gold-dim:     var(--gold-dim);
+  --color-gold-glow:    var(--gold-glow);
+  --font-display: var(--font-bebas), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    var(--font-dm-mono), ui-monospace, 'Cascadia Code', monospace;
 }
 
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--font-dm-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -54,7 +62,7 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--rule);
+  background: rgba(255,255,255,0.15);
   border-radius: 2px;
 }
 
@@ -62,96 +70,96 @@ body {
 
 @keyframes fire-glow {
   0%, 100% {
-    border-color: #c84b0c;
-    box-shadow: 0 0 0 1px rgba(200, 75, 12, 0.3), 0 0 10px rgba(255, 100, 0, 0.3);
+    border-color: var(--press);
+    box-shadow: 0 0 0 1px rgba(232,64,64,0.3), 0 0 10px rgba(255,112,112,0.3);
   }
   50% {
-    border-color: #ff6b00;
-    box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.25), 0 0 18px rgba(255, 150, 0, 0.4);
+    border-color: var(--fire);
+    box-shadow: 0 0 0 3px rgba(255,112,112,0.25), 0 0 18px rgba(255,112,112,0.4);
   }
 }
 
 @keyframes debate-pulse {
   0%, 100% {
-    border-color: #0c1f40;
-    box-shadow: 0 0 0 1px rgba(12, 31, 64, 0.3), 0 0 10px rgba(30, 80, 200, 0.2);
+    border-color: var(--navy);
+    box-shadow: 0 0 0 1px rgba(58,95,216,0.3), 0 0 10px rgba(58,95,216,0.2);
   }
   50% {
-    border-color: #3b7ad4;
-    box-shadow: 0 0 0 3px rgba(59, 122, 212, 0.25), 0 0 18px rgba(59, 130, 246, 0.35);
+    border-color: #6080f8;
+    box-shadow: 0 0 0 3px rgba(96,128,248,0.25), 0 0 18px rgba(112,144,240,0.35);
   }
 }
 
 @keyframes bet-glow {
   0%, 100% {
-    border-color: #1a4a22;
-    box-shadow: 0 0 0 1px rgba(26, 74, 34, 0.3), 0 0 10px rgba(34, 120, 58, 0.2);
+    border-color: var(--field);
+    box-shadow: 0 0 0 1px rgba(58,125,68,0.3), 0 0 10px rgba(76,175,96,0.2);
   }
   50% {
-    border-color: #22c55e;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25), 0 0 18px rgba(34, 197, 94, 0.35);
+    border-color: #4caf60;
+    box-shadow: 0 0 0 3px rgba(76,175,96,0.25), 0 0 18px rgba(76,175,96,0.35);
   }
-}
-
-.msg-hot-take {
-  border: 2px solid #c84b0c !important;
-  animation: fire-glow 1.8s ease-in-out infinite;
-}
-
-.msg-debate {
-  border: 2px solid #0c1f40 !important;
-  animation: debate-pulse 1.8s ease-in-out infinite;
-}
-
-.msg-bet {
-  border: 2px solid #1a4a22 !important;
-  animation: bet-glow 1.8s ease-in-out infinite;
 }
 
 @keyframes analysis-pulse {
   0%, 100% {
-    border-color: #a08a60;
-    box-shadow: 0 0 0 1px rgba(160, 138, 96, 0.3), 0 0 10px rgba(160, 138, 96, 0.2);
+    border-color: rgba(255,255,255,0.15);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 0 10px rgba(245,197,24,0.08);
   }
   50% {
-    border-color: #c4a97e;
-    box-shadow: 0 0 0 3px rgba(196, 169, 126, 0.25), 0 0 18px rgba(196, 169, 126, 0.35);
+    border-color: var(--masthead);
+    box-shadow: 0 0 0 3px rgba(245,197,24,0.15), 0 0 18px rgba(245,197,24,0.2);
   }
 }
 
+.msg-hot-take {
+  border: 2px solid var(--press) !important;
+  animation: fire-glow 1.8s ease-in-out infinite;
+}
+
+.msg-debate {
+  border: 2px solid var(--navy) !important;
+  animation: debate-pulse 1.8s ease-in-out infinite;
+}
+
+.msg-bet {
+  border: 2px solid var(--field) !important;
+  animation: bet-glow 1.8s ease-in-out infinite;
+}
+
 .msg-analysis {
-  border: 2px solid #a08a60 !important;
+  border: 2px solid rgba(255,255,255,0.15) !important;
   animation: analysis-pulse 1.8s ease-in-out infinite;
 }
 
 /* ── 3D buttons ────────────────────────────────────────── */
 
 .btn-3d {
-  box-shadow: 0 4px 0 0 rgba(0, 0, 0, 0.28), 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 0 0 rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.4);
   transition: box-shadow 0.1s ease, transform 0.1s ease;
   position: relative;
   top: 0;
 }
 
 .btn-3d:hover {
-  box-shadow: 0 5px 0 0 rgba(0, 0, 0, 0.28), 0 3px 6px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 5px 0 0 rgba(0,0,0,0.55), 0 3px 10px rgba(0,0,0,0.45);
 }
 
 .btn-3d:active {
-  box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.28);
+  box-shadow: 0 1px 0 0 rgba(0,0,0,0.55);
   transform: translateY(3px);
 }
 
-/* ── Newspaper column rule ─────────────────────────────── */
+/* ── Section column rule ─────────────────────────────── */
 
 .col-rule {
   border-right: 1px solid var(--rule);
 }
 
-/* ── Newspaper section header ──────────────────────────── */
+/* ── Section header divider ──────────────────────────── */
 
 .section-header {
-  border-top: 3px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
-  padding: 3px 0;
+  border-top: 1px solid var(--rule-dark);
+  border-bottom: 1px solid var(--rule);
+  padding: 4px 0;
 }

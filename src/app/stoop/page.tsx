@@ -25,10 +25,10 @@ function mapFandomLevel(level: string | null): FandomLevel {
 }
 
 const FANDOM_STYLES: Record<FandomLevel, { label: string; bg: string; text: string; border: string }> = {
-  diehard:       { label: 'Diehard',      bg: 'bg-[#b8860b]', text: 'text-white',    border: 'border-[#b8860b]' },
-  supporter:     { label: 'Supporter',    bg: 'bg-ink-muted',  text: 'text-paper',   border: 'border-ink-muted' },
-  'fair-weather':{ label: 'Fair Weather', bg: 'bg-rule-dark',  text: 'text-paper',   border: 'border-rule-dark' },
-  casual:        { label: 'Casual',       bg: 'bg-ink-faint',  text: 'text-paper',   border: 'border-ink-faint' },
+  diehard:       { label: 'Diehard',      bg: 'bg-[#b8860b]', text: 'text-white',   border: 'border-[#b8860b]' },
+  supporter:     { label: 'Supporter',    bg: 'bg-ink-muted',  text: 'text-ink',    border: 'border-ink-muted' },
+  'fair-weather':{ label: 'Fair Weather', bg: 'bg-rule-dark',  text: 'text-ink',    border: 'border-rule-dark' },
+  casual:        { label: 'Casual',       bg: 'bg-ink-faint',  text: 'text-ink',    border: 'border-ink-faint' },
 };
 
 export default function StoopPage() {
@@ -153,14 +153,14 @@ export default function StoopPage() {
     <div className="flex flex-col bg-paper min-h-full pb-4">
 
       {/* ── MASTHEAD ──────────────────────────────────────── */}
-      <div className="bg-ink px-5 pt-12 pb-5">
+      <div className="bg-nav-bg px-5 pt-12 pb-5">
         {/* Top controls */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-2">
-            <Link href="/discover" className="h-8 w-8 flex items-center justify-center rounded-full bg-paper/10 text-paper/70 hover:bg-paper/20 transition-colors" title="Discover">
+            <Link href="/discover" className="h-8 w-8 flex items-center justify-center rounded-full bg-ink/10 text-ink/70 hover:bg-ink/20 transition-colors" title="Discover">
               <Compass size={16} />
             </Link>
-            <Link href="/onboarding" className="h-8 w-8 flex items-center justify-center rounded-full bg-paper/10 text-paper/70 hover:bg-paper/20 transition-colors" title="Edit profile">
+            <Link href="/onboarding" className="h-8 w-8 flex items-center justify-center rounded-full bg-ink/10 text-ink/70 hover:bg-ink/20 transition-colors" title="Edit profile">
               <Settings size={16} />
             </Link>
           </div>
@@ -171,56 +171,56 @@ export default function StoopPage() {
         {/* Profile row */}
         <div className="flex items-center gap-4 mb-4">
           <Link href="/users/me" className="relative shrink-0">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-paper/15 text-4xl ring-2 ring-press hover:ring-press/60 transition-all">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-ink/15 text-4xl ring-2 ring-masthead hover:ring-masthead/60 transition-all">
               {avatar}
             </div>
           </Link>
           <div className="flex-1">
-            <h1 className="font-display text-2xl font-black text-paper leading-tight">{displayName}</h1>
-            <p className="text-[11px] font-mono text-paper/50">@{username}</p>
-            {bio && <p className="text-xs text-paper/70 italic mt-0.5 line-clamp-2">{bio}</p>}
+            <h1 className="font-display text-2xl font-black text-ink leading-tight">{displayName}</h1>
+            <p className="text-[11px] font-mono text-ink/50">@{username}</p>
+            {bio && <p className="text-xs text-ink/70 italic mt-0.5 line-clamp-2">{bio}</p>}
           </div>
         </div>
 
         {/* Unified stats + bragging rights grid */}
-        <div className="mt-4 border border-paper/20">
+        <div className="mt-4 border border-ink/20">
           {/* Row 1 — social stats */}
-          <div className="grid grid-cols-4 divide-x divide-paper/20">
-            <Link href="/discover?filter=followers" className="flex flex-col items-center py-2 hover:bg-paper/10 transition-colors">
-              <p className="font-display text-lg font-bold leading-none text-paper">{followerCount}</p>
-              <p className="text-[7px] font-bold uppercase tracking-wider text-paper/70 mt-0.5">Neighbors</p>
+          <div className="grid grid-cols-4 divide-x divide-ink/20">
+            <Link href="/discover?filter=followers" className="flex flex-col items-center py-2 hover:bg-ink/10 transition-colors">
+              <p className="font-display text-lg font-bold leading-none text-ink">{followerCount}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-ink/70 mt-0.5">Neighbors</p>
             </Link>
-            <Link href="/discover?filter=following" className="flex flex-col items-center py-2 hover:bg-paper/10 transition-colors">
-              <p className="font-display text-lg font-bold leading-none text-paper">{followingCount}</p>
-              <p className="text-[7px] font-bold uppercase tracking-wider text-paper/70 mt-0.5">Following</p>
+            <Link href="/discover?filter=following" className="flex flex-col items-center py-2 hover:bg-ink/10 transition-colors">
+              <p className="font-display text-lg font-bold leading-none text-ink">{followingCount}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-ink/70 mt-0.5">Following</p>
             </Link>
-            <Link href="/neighborhoods" className="flex flex-col items-center py-2 hover:bg-paper/10 transition-colors">
-              <p className="font-display text-lg font-bold leading-none text-paper">{myNeighborhoods.length}</p>
-              <p className="text-[7px] font-bold uppercase tracking-wider text-paper/70 mt-0.5">Groups</p>
+            <Link href="/neighborhoods" className="flex flex-col items-center py-2 hover:bg-ink/10 transition-colors">
+              <p className="font-display text-lg font-bold leading-none text-ink">{myNeighborhoods.length}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-ink/70 mt-0.5">Groups</p>
             </Link>
             <div className="flex flex-col items-center py-2">
-              <p className="font-display text-lg font-bold leading-none text-paper">{stats.hotTakeReactions}</p>
-              <p className="text-[7px] font-bold uppercase tracking-wider text-paper/70 mt-0.5">Reactions</p>
+              <p className="font-display text-lg font-bold leading-none text-ink">{stats.hotTakeReactions}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-ink/70 mt-0.5">Reactions</p>
             </div>
           </div>
           {/* Row 2 — activity stats */}
-          <div className="grid grid-cols-3 divide-x divide-paper/20 border-t border-paper/20">
-            <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-paper/10 transition-colors">
-              <Swords size={10} className="text-paper/60" />
+          <div className="grid grid-cols-3 divide-x divide-ink/20 border-t border-ink/20">
+            <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-ink/10 transition-colors">
+              <Swords size={10} className="text-ink/60" />
               <p className="font-display text-base font-black text-press leading-none">{debatePct}%</p>
-              <p className="text-[7px] font-bold text-paper/60 leading-none">{stats.debatesWon}W · {stats.debatesLost}L</p>
-              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/70">Debates</p>
+              <p className="text-[7px] font-bold text-ink/60 leading-none">{stats.debatesWon}W · {stats.debatesLost}L</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-ink/70">Debates</p>
             </Link>
-            <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-paper/10 transition-colors">
-              <Handshake size={10} className="text-paper/60" />
+            <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-ink/10 transition-colors">
+              <Handshake size={10} className="text-ink/60" />
               <p className="font-display text-base font-black text-press leading-none">{betPct}%</p>
-              <p className="text-[7px] font-bold text-paper/60 leading-none">{stats.betsWon}W · {stats.betsLost}L</p>
-              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/70">Bets</p>
+              <p className="text-[7px] font-bold text-ink/60 leading-none">{stats.betsWon}W · {stats.betsLost}L</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-ink/70">Bets</p>
             </Link>
             <div className="flex flex-col items-center py-2 gap-0.5">
               <Flame size={10} className="text-press" />
               <p className="font-display text-base font-black text-press leading-none">{stats.hotTakesPosted}</p>
-              <p className="text-[7px] font-bold uppercase tracking-wide text-paper/70">Hot Takes</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-ink/70">Hot Takes</p>
             </div>
           </div>
         </div>
@@ -235,7 +235,7 @@ export default function StoopPage() {
             <p className="text-xs font-bold text-ink">Enable notifications</p>
             <p className="text-[10px] text-ink-muted">Never miss a debate or bet</p>
           </div>
-          <button onClick={enableNotifications} className="shrink-0 bg-ink text-paper rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide hover:bg-ink/80 transition-colors btn-3d">
+          <button onClick={enableNotifications} className="shrink-0 bg-nav-bg text-ink rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide hover:bg-paper-dark transition-colors btn-3d">
             Enable
           </button>
         </div>
@@ -267,7 +267,7 @@ export default function StoopPage() {
       </section>
 
       {/* ── 2-COLUMN: NEIGHBORS + NEIGHBORHOODS ─────────────── */}
-      <div className="mx-4 mt-4 grid grid-cols-2 gap-0 border-2 border-ink">
+      <div className="mx-4 mt-4 grid grid-cols-2 gap-0 border border-rule">
         {/* LEFT: Neighbors */}
         <div className="col-rule p-3">
           <div className="section-header mb-3">
@@ -299,7 +299,7 @@ export default function StoopPage() {
           <div className="flex flex-col gap-2">
             {myNeighborhoods.slice(0, 4).map((n) => (
               <Link key={n.id} href={`/neighborhoods/${n.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <div className="flex h-8 w-8 items-center justify-center bg-ink text-base shrink-0 rounded-sm">
+                <div className="flex h-8 w-8 items-center justify-center bg-nav-bg text-base shrink-0 rounded-sm">
                   {n.emoji}
                 </div>
                 <div className="min-w-0">
@@ -316,9 +316,9 @@ export default function StoopPage() {
       </div>
 
       {/* ── FANDOM ─────────────────────────────────────────── */}
-      <div className="mx-4 mt-4 border-2 border-ink">
-        <div className="flex items-center justify-between px-3 py-2 bg-ink">
-          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper">Fandom</p>
+      <div className="mx-4 mt-4 border border-rule">
+        <div className="flex items-center justify-between px-3 py-2 bg-nav-bg">
+          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-masthead">Fandom</p>
           <Link href="/discover?mode=teams" className="text-[10px] font-bold text-press hover:text-press/80">+ Add teams</Link>
         </div>
         <div className="divide-y divide-rule/60">
@@ -330,7 +330,7 @@ export default function StoopPage() {
                 href={`/teams/${ft.team.id}`}
                 className="flex items-center gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors"
               >
-                <span className="flex h-6 w-6 items-center justify-center text-[10px] font-black text-paper rounded-full shrink-0" style={{ backgroundColor: ft.team.color }}>
+                <span className="flex h-6 w-6 items-center justify-center text-[10px] font-black text-[#12111a] rounded-full shrink-0" style={{ backgroundColor: ft.team.color }}>
                   {ft.rank}
                 </span>
                 <TeamLogo team={ft.team} size={24} />
@@ -377,9 +377,9 @@ export default function StoopPage() {
       </div>
 
       {/* ── MY NEIGHBORHOOD ────────────────────────────────── */}
-      <div className="mx-4 mt-4 border-2 border-ink">
-        <div className="flex items-center justify-between px-3 py-2 bg-ink">
-          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper">My Neighborhood</p>
+      <div className="mx-4 mt-4 border border-rule">
+        <div className="flex items-center justify-between px-3 py-2 bg-nav-bg">
+          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-masthead">My Neighborhood</p>
           <Link href="/neighborhoods" className="text-[10px] font-bold text-press hover:text-press/80">See all →</Link>
         </div>
 
@@ -394,7 +394,7 @@ export default function StoopPage() {
                 className="flex gap-3 px-3 py-3 hover:bg-paper-dark transition-colors"
               >
                 <div className="shrink-0 mt-0.5">
-                  <div className="h-8 w-8 flex items-center justify-center bg-navy text-paper text-base rounded-sm">⚔️</div>
+                  <div className="h-8 w-8 flex items-center justify-center bg-navy text-ink text-base rounded-sm">⚔️</div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[9px] font-bold uppercase tracking-widest text-navy mb-0.5">Debate · {debate.chatName}</p>
@@ -420,7 +420,7 @@ export default function StoopPage() {
                 className="flex gap-3 px-3 py-3 hover:bg-paper-dark transition-colors"
               >
                 <div className="shrink-0 mt-0.5">
-                  <div className="h-8 w-8 flex items-center justify-center bg-field text-paper text-base rounded-sm">🤝</div>
+                  <div className="h-8 w-8 flex items-center justify-center bg-field text-ink text-base rounded-sm">🤝</div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -443,7 +443,7 @@ export default function StoopPage() {
                 className="flex gap-3 px-3 py-3 hover:bg-paper-dark transition-colors"
               >
                 <div className="shrink-0 mt-0.5">
-                  <div className="h-8 w-8 flex items-center justify-center bg-press text-paper text-base rounded-sm">🔥</div>
+                  <div className="h-8 w-8 flex items-center justify-center bg-press text-ink text-base rounded-sm">🔥</div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[9px] font-bold uppercase tracking-widest text-press mb-0.5">Hot Take · {ht.chatName}</p>
@@ -458,11 +458,11 @@ export default function StoopPage() {
 
       {/* ── FROM THE STREETS ───────────────────────────────── */}
       {streetsFeed.length > 0 && (
-        <div className="mx-4 mt-4 border-2 border-ink">
-          <div className="flex items-center justify-between px-3 py-2 bg-ink">
+        <div className="mx-4 mt-4 border border-rule">
+          <div className="flex items-center justify-between px-3 py-2 bg-nav-bg">
             <div className="flex items-center gap-1.5">
-              <Newspaper size={11} className="text-paper/60" />
-              <p className="text-[9px] font-black uppercase tracking-[0.25em] text-paper">From The Streets</p>
+              <Newspaper size={11} className="text-ink/60" />
+              <p className="text-[9px] font-black uppercase tracking-[0.25em] text-masthead">From The Streets</p>
             </div>
             <Link href="/streets" className="text-[10px] font-bold text-press hover:text-press/80">The Streets →</Link>
           </div>
@@ -514,7 +514,7 @@ export default function StoopPage() {
               const author = getUserById(a.authorId);
               return (
                 <Link key={a.id} href={`/analyses/${a.id}`} className="flex gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors">
-                  <div className="h-7 w-7 flex items-center justify-center bg-ink/5 border border-ink/20 text-sm rounded-sm shrink-0 mt-0.5">📊</div>
+                  <div className="h-7 w-7 flex items-center justify-center bg-rule border border-rule-dark text-sm rounded-sm shrink-0 mt-0.5">📊</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[9px] font-bold uppercase tracking-widest text-ink-muted mb-0.5">Analysis · {a.chatName}</p>
                     <p className="text-xs font-bold text-ink leading-snug line-clamp-1">{a.title}</p>

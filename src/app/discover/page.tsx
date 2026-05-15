@@ -139,12 +139,12 @@ export default function DiscoverPage() {
     <div className="flex flex-col bg-paper min-h-full">
 
       {/* ── Masthead ─────────────────────────────────────────── */}
-      <div className="sticky top-0 z-10 bg-paper/97 backdrop-blur-sm px-5 pt-10 pb-4 border-b-2 border-ink">
+      <div className="sticky top-0 z-10 bg-paper backdrop-blur-sm px-5 pt-10 pb-4 border-b border-rule">
         <h1 className="font-display text-2xl font-bold text-ink mb-1">Discover</h1>
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink-faint mb-4">Find Neighbors · Follow Teams</p>
 
         {/* Mode toggle */}
-        <div className="flex gap-0 border border-ink overflow-hidden mb-4">
+        <div className="flex gap-0 border border-rule overflow-hidden mb-4">
           {([
             { id: 'people', label: '👥 Neighbors' },
             { id: 'browse', label: '🏆 Teams & Leagues' },
@@ -152,8 +152,8 @@ export default function DiscoverPage() {
             <button
               key={m}
               onClick={() => { setMode(m); setQuery(''); setFandomPickerFor(null); }}
-              className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors border-r last:border-r-0 border-ink ${
-                mode === m ? 'bg-ink text-paper' : 'bg-paper text-ink-muted hover:bg-paper-dark'
+              className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors border-r last:border-r-0 border-rule ${
+                mode === m ? 'bg-masthead text-[#12111a]' : 'bg-paper text-ink-muted hover:bg-paper-dark'
               }`}
             >
               {label}
@@ -172,7 +172,7 @@ export default function DiscoverPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={mode === 'people' ? 'Name, @username, or phone…' : 'Search teams, leagues, cities…'}
-            className="w-full border border-rule bg-paper-dark py-2.5 pl-9 pr-10 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors"
+            className="w-full border border-rule bg-paper-dark py-2.5 pl-9 pr-10 text-sm text-ink placeholder-ink-faint outline-none focus:border-masthead transition-colors"
           />
           {query && (
             <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink">
@@ -224,7 +224,7 @@ export default function DiscoverPage() {
                   {user.fanTeams.slice(0, 3).map((ft) => (
                     <span
                       key={ft.team.id}
-                      className="px-2 py-0.5 text-[10px] font-bold text-paper uppercase tracking-wide"
+                      className="px-2 py-0.5 text-[10px] font-bold text-ink uppercase tracking-wide"
                       style={{ backgroundColor: ft.team.color + '90' }}
                     >
                       <TeamLogo team={ft.team} size={12} className="inline-block mr-0.5" />{ft.team.name}
@@ -236,8 +236,8 @@ export default function DiscoverPage() {
                 onClick={() => toggleFollow(user.id)}
                 className={`shrink-0 flex items-center justify-center h-9 w-9 rounded-full font-bold text-sm transition-all border-2 ${
                   following.includes(user.id)
-                    ? 'bg-paper-dark border-ink text-ink'
-                    : 'bg-ink border-transparent text-paper hover:bg-ink/80'
+                    ? 'bg-paper-dark border-rule text-ink'
+                    : 'bg-masthead border-transparent text-[#12111a] hover:bg-masthead/80'
                 }`}
                 title={following.includes(user.id) ? 'Unfollow' : 'Follow'}
               >
@@ -307,9 +307,9 @@ export default function DiscoverPage() {
                           else { setFandomPickerFor(showingPicker ? null : team.id); }
                         }}
                         className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full font-bold text-sm transition-all border-2 ${
-                          followed ? 'bg-paper border-ink text-ink'
-                          : showingPicker ? 'bg-ink border-ink text-paper'
-                          : 'text-paper border-transparent hover:opacity-80'
+                          followed ? 'bg-paper-dark border-rule text-ink'
+                          : showingPicker ? 'bg-nav-bg border-rule text-ink'
+                          : 'text-ink border-transparent hover:opacity-80'
                         }`}
                         style={followed || showingPicker ? {} : { backgroundColor: team.color }}
                         title={followed ? 'Unfollow' : 'Follow team'}
@@ -325,7 +325,7 @@ export default function DiscoverPage() {
                             <button
                               key={level}
                               onClick={() => addTeamWithFandom(team.id, level)}
-                              className="flex flex-col items-center gap-1 py-2.5 border-2 border-rule rounded-xl bg-paper hover:border-ink hover:bg-paper-dark transition-all"
+                              className="flex flex-col items-center gap-1 py-2.5 border border-rule rounded-xl bg-paper-dark hover:border-masthead hover:bg-paper-deeper transition-all"
                             >
                               <span className="text-lg">{emoji}</span>
                               <span className="text-[9px] font-bold uppercase tracking-wide text-ink leading-tight text-center px-0.5">{label}</span>
@@ -366,7 +366,7 @@ export default function DiscoverPage() {
                     <button
                       onClick={() => toggleLeague(league.id)}
                       className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full font-bold text-sm transition-all border-2 ${
-                        leagueFollowed ? 'bg-paper border-ink text-ink' : 'text-paper border-transparent hover:opacity-80'
+                        leagueFollowed ? 'bg-paper-dark border-rule text-ink' : 'text-ink border-transparent hover:opacity-80'
                       }`}
                       style={leagueFollowed ? {} : { backgroundColor: league.color }}
                       title={leagueFollowed ? 'Unfollow league' : 'Follow league'}

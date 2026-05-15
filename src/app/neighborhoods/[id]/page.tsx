@@ -111,7 +111,7 @@ export default function NeighborhoodPage() {
     'hot-take': { label: 'Hot Take', emoji: '🔥', bg: 'bg-press', border: 'border-press/40', surface: 'bg-press/10 border-press/30' },
     debate: { label: 'Debate', emoji: '⚔️', bg: 'bg-navy', border: 'border-navy/40', surface: 'bg-navy/10 border-navy/30' },
     bet: { label: 'Bet', emoji: '🤝', bg: 'bg-field', border: 'border-field/40', surface: 'bg-field/10 border-field/30' },
-    analysis: { label: 'Analysis', emoji: '📊', bg: 'bg-ink', border: 'border-ink/40', surface: 'bg-ink/5 border-ink/20' },
+    analysis: { label: 'Analysis', emoji: '📊', bg: 'bg-nav-bg', border: 'border-ink/40', surface: 'bg-ink/5 border-ink/20' },
   };
 
   // ─── Chat actions ────────────────────────────────────────
@@ -552,8 +552,8 @@ export default function NeighborhoodPage() {
   return (
     <div className="flex flex-col h-full bg-paper" onTouchStart={onTabSwipeStart} onTouchEnd={onTabSwipeEnd}>
       {/* Header */}
-      <div className="shrink-0 bg-ink px-4 py-3 flex items-center gap-2.5">
-        <button onClick={() => router.back()} className="text-paper/60 hover:text-paper p-1 shrink-0">
+      <div className="shrink-0 bg-nav-bg px-4 py-3 flex items-center gap-2.5">
+        <button onClick={() => router.back()} className="text-ink/60 hover:text-ink p-1 shrink-0">
           <ArrowLeft size={20} />
         </button>
         <button
@@ -564,20 +564,20 @@ export default function NeighborhoodPage() {
             {chatEmoji}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-display font-bold text-paper truncate leading-tight">{chatName}</p>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-paper/50">{members.length} members</p>
+            <p className="font-display font-bold text-ink truncate leading-tight">{chatName}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-ink/50">{members.length} members</p>
           </div>
         </button>
         <button
           onClick={() => setActiveTab('overview')}
-          className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full transition-all ${activeTab === 'overview' ? 'bg-paper text-ink' : 'bg-paper/10 hover:bg-paper/20 text-paper/70 hover:text-paper'}`}
+          className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full transition-all ${activeTab === 'overview' ? 'bg-masthead/20 text-masthead' : 'bg-ink/10 hover:bg-ink/20 text-ink/70 hover:text-ink'}`}
           aria-label="Overview"
         >
           <Home size={14} />
         </button>
         <button
           onClick={() => { setEditName(chatName); setEditEmoji(chatEmoji); setShowEditModal(true); }}
-          className="shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-paper/10 hover:bg-paper/20 text-paper/70 hover:text-paper transition-all"
+          className="shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-ink/10 hover:bg-ink/20 text-ink/70 hover:text-ink transition-all"
           aria-label="Edit neighborhood"
         >
           <Pencil size={14} />
@@ -587,11 +587,11 @@ export default function NeighborhoodPage() {
       {/* Edit Modal */}
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
-          <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
-          <div className="relative w-full max-w-md bg-paper rounded-t-2xl border-t-2 border-ink overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3.5 bg-ink">
-              <p className="font-display font-bold text-paper text-sm">Edit Neighborhood</p>
-              <button onClick={() => setShowEditModal(false)} className="text-paper/60 hover:text-paper"><X size={16} /></button>
+          <div className="absolute inset-0 bg-nav-bg/80 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
+          <div className="relative w-full max-w-md bg-paper-dark rounded-t-2xl border-t border-rule overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 bg-nav-bg">
+              <p className="font-display font-bold text-ink text-sm">Edit Neighborhood</p>
+              <button onClick={() => setShowEditModal(false)} className="text-ink/60 hover:text-ink"><X size={16} /></button>
             </div>
             <div className="px-5 py-4 flex flex-col gap-3">
               <div>
@@ -601,7 +601,7 @@ export default function NeighborhoodPage() {
                     <button
                       key={e}
                       onClick={() => setEditEmoji(e)}
-                      className={`w-9 h-9 text-lg flex items-center justify-center rounded-xl border-2 transition-all ${editEmoji === e ? 'border-ink bg-ink-muted/10' : 'border-rule hover:border-ink-muted'}`}
+                      className={`w-9 h-9 text-lg flex items-center justify-center rounded-xl border-2 transition-all ${editEmoji === e ? 'border-masthead bg-masthead/10' : 'border-rule hover:border-ink-muted'}`}
                     >
                       {e}
                     </button>
@@ -618,14 +618,14 @@ export default function NeighborhoodPage() {
                 />
               </div>
             </div>
-            <div className="border-t border-rule bg-paper px-5 py-3 flex gap-2">
-              <button onClick={() => setShowEditModal(false)} className="border border-rule px-4 py-2 text-xs font-bold uppercase tracking-wider text-ink-muted rounded-full hover:bg-paper-dark">
+            <div className="border-t border-rule bg-paper-dark px-5 py-3 flex gap-2">
+              <button onClick={() => setShowEditModal(false)} className="border border-rule px-4 py-2 text-xs font-bold uppercase tracking-wider text-ink-muted rounded-full hover:bg-paper-deeper">
                 Cancel
               </button>
               <button
                 onClick={() => { if (editName.trim()) setChatName(editName.trim()); if (editEmoji) setChatEmoji(editEmoji); setShowEditModal(false); }}
                 disabled={!editName.trim()}
-                className="flex-1 bg-ink text-paper py-2 text-xs font-bold uppercase tracking-widest rounded-full hover:bg-ink/80 disabled:opacity-40 flex items-center justify-center gap-1.5"
+                className="flex-1 bg-masthead text-[#12111a] py-2 text-xs font-bold uppercase tracking-widest rounded-full hover:bg-masthead/80 disabled:opacity-40 flex items-center justify-center gap-1.5"
               >
                 <Check size={12} /> Save
               </button>
@@ -635,15 +635,15 @@ export default function NeighborhoodPage() {
       )}
 
       {/* Tab bar — pill style */}
-      <div className="shrink-0 flex gap-1.5 px-3 py-2 bg-paper border-b-2 border-ink overflow-x-auto">
+      <div className="shrink-0 flex gap-1.5 px-3 py-2 bg-paper-dark border-b border-rule overflow-x-auto">
         {tabs.map(({ id: tabId, label, icon: Icon }) => (
           <button
             key={tabId}
             onClick={() => setActiveTab(tabId)}
             className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap rounded-full transition-colors ${
               activeTab === tabId
-                ? 'bg-ink text-paper'
-                : 'text-ink-muted hover:text-ink hover:bg-paper-dark'
+                ? 'bg-masthead text-[#12111a]'
+                : 'text-ink-muted hover:text-ink hover:bg-paper-deeper'
             }`}
           >
             <Icon size={11} />
@@ -655,26 +655,26 @@ export default function NeighborhoodPage() {
       {/* ── OVERVIEW TAB ─────────────────────────────────────── */}
       {activeTab === 'overview' && (
         <div className="flex-1 overflow-y-auto pb-4">
-          <div className="bg-ink px-5 pt-5 pb-6">
+          <div className="bg-nav-bg px-5 pt-5 pb-6">
             <div className="flex items-center gap-4 mb-4">
               <div className="flex h-16 w-16 items-center justify-center bg-ink-muted/30 text-3xl">
                 {chat.emoji}
               </div>
               <div>
-                <h2 className="font-display text-xl font-bold text-paper">{chat.name}</h2>
-                <p className="text-xs text-paper/60 uppercase tracking-wider font-semibold">{members.length} members · Neighborhood</p>
+                <h2 className="font-display text-xl font-bold text-ink">{chat.name}</h2>
+                <p className="text-xs text-ink/60 uppercase tracking-wider font-semibold">{members.length} members · Neighborhood</p>
               </div>
             </div>
-            <div className="flex gap-5 border-t border-paper/20 pt-4">
+            <div className="flex gap-5 border-t border-ink/20 pt-4">
               {[
-                { label: 'Debates', value: debates.length, color: 'text-paper' },
-                { label: 'Bets', value: bets.length, color: 'text-paper' },
+                { label: 'Debates', value: debates.length, color: 'text-ink' },
+                { label: 'Bets', value: bets.length, color: 'text-ink' },
                 { label: 'Hot Takes', value: hotTakes.length, color: 'text-press' },
-                { label: 'Analyses', value: analyses.length, color: 'text-paper' },
+                { label: 'Analyses', value: analyses.length, color: 'text-ink' },
               ].map(({ label, value, color }) => (
                 <div key={label} className="text-center">
                   <p className={`text-xl font-bold ${color}`}>{value}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-paper/50">{label}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-ink/50">{label}</p>
                 </div>
               ))}
             </div>
@@ -689,7 +689,7 @@ export default function NeighborhoodPage() {
                 <button
                   onClick={() => { setEditingMembers((v) => !v); setMemberSearchQuery(''); }}
                   className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 border transition-colors ${
-                    editingMembers ? 'bg-ink text-paper border-ink' : 'bg-paper text-ink-muted border-rule hover:border-ink'
+                    editingMembers ? 'bg-nav-bg text-ink border-rule' : 'bg-paper-dark text-ink-muted border-rule hover:border-ink'
                   }`}
                 >
                   {editingMembers ? 'Done' : 'Edit'}
@@ -705,7 +705,7 @@ export default function NeighborhoodPage() {
                   {editingMembers && m!.id !== 'me' && (
                     <button
                       onClick={() => setLocalMemberIds((prev) => prev.filter((mid) => mid !== m!.id))}
-                      className="shrink-0 flex items-center justify-center h-7 w-7 rounded-full bg-press/10 border border-press/40 text-press hover:bg-press hover:text-paper transition-all"
+                      className="shrink-0 flex items-center justify-center h-7 w-7 rounded-full bg-press/10 border border-press/40 text-press hover:bg-press hover:text-ink transition-all"
                     >
                       <X size={12} />
                     </button>
@@ -866,7 +866,7 @@ export default function NeighborhoodPage() {
                       </Link>
                     )}
                     {tag && (
-                      <div className={`mb-1 flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-bold text-paper self-start uppercase tracking-wider rounded-full ${tag.bg}`}>
+                      <div className={`mb-1 flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-bold text-ink self-start uppercase tracking-wider rounded-full ${tag.bg}`}>
                         <span>{tag.emoji}</span><span>{tag.label}</span>
                       </div>
                     )}
@@ -875,11 +875,11 @@ export default function NeighborhoodPage() {
                         isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'
                       } ${
                         isAI ? 'bg-paper-dark text-ink border border-rule'
-                          : isMe ? 'bg-ink text-paper'
+                          : isMe ? 'bg-nav-bg text-ink'
                           : msg.tag === 'hot-take' ? 'bg-press/10 text-ink msg-hot-take'
                           : msg.tag === 'debate' ? 'bg-navy/10 text-ink msg-debate'
                           : msg.tag === 'bet' ? 'bg-field/10 text-ink msg-bet'
-                          : msg.tag === 'analysis' ? 'bg-ink/5 text-ink msg-analysis'
+                          : msg.tag === 'analysis' ? 'bg-rule text-ink msg-analysis'
                           : 'bg-paper-dark text-ink'
                       }`}
                       onDoubleClick={() => setShowReactionsFor(showReactionsFor === msg.id ? null : msg.id)}
@@ -902,7 +902,7 @@ export default function NeighborhoodPage() {
                           <button
                             key={t}
                             onClick={() => tagExistingMessage(msg.id, t)}
-                            className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-paper uppercase tracking-wider rounded-full ${tagConfig[t].bg}`}
+                            className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-ink uppercase tracking-wider rounded-full ${tagConfig[t].bg}`}
                           >
                             {tagConfig[t].emoji} {tagConfig[t].label}
                           </button>
@@ -977,7 +977,7 @@ export default function NeighborhoodPage() {
                   autoFocus
                   className="flex-1 border border-rule bg-paper px-3 py-2 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors"
                 />
-                <button onClick={sendAIMessage} disabled={!aiQuery.trim()} className="bg-ink px-4 py-2 text-xs font-bold text-paper uppercase tracking-wider hover:bg-ink/80 disabled:opacity-40 transition-colors">
+                <button onClick={sendAIMessage} disabled={!aiQuery.trim()} className="bg-nav-bg px-4 py-2 text-xs font-bold text-ink uppercase tracking-wider hover:bg-nav-bg/80 disabled:opacity-40 transition-colors">
                   Ask
                 </button>
               </div>
@@ -987,7 +987,7 @@ export default function NeighborhoodPage() {
           {pendingTag && (
             <div className="shrink-0 px-4 py-2 flex items-center gap-2 bg-paper-dark border-t border-rule">
               <span className="text-[10px] font-bold uppercase tracking-wide text-ink-muted">Tagging as:</span>
-              <div className={`flex items-center gap-1 px-3 py-1 text-[10px] font-bold text-paper uppercase tracking-wider ${tagConfig[pendingTag].bg}`}>
+              <div className={`flex items-center gap-1 px-3 py-1 text-[10px] font-bold text-ink uppercase tracking-wider ${tagConfig[pendingTag].bg}`}>
                 {tagConfig[pendingTag].emoji} {tagConfig[pendingTag].label}
               </div>
               <button onClick={() => setPendingTag(null)} className="ml-auto text-ink-faint hover:text-ink"><X size={14} /></button>
@@ -995,7 +995,7 @@ export default function NeighborhoodPage() {
           )}
 
           {/* Input area */}
-          <div className="shrink-0 border-t-2 border-rule bg-paper px-3 py-3">
+          <div className="shrink-0 border-t border-rule bg-paper-dark px-3 py-3">
             <div className="flex items-center gap-1.5 mb-2.5 overflow-x-auto pb-0.5">
               {(['hot-take', 'debate', 'bet', 'analysis'] as MessageTag[]).map((tag) => {
                 const cfg = tagConfig[tag];
@@ -1005,7 +1005,7 @@ export default function NeighborhoodPage() {
                     key={tag}
                     onClick={() => setPendingTag(isActive ? null : tag)}
                     className={`flex items-center gap-1 border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-full shrink-0 ${
-                      isActive ? `${cfg.bg} text-paper border-transparent` : 'border-rule text-ink-muted hover:border-rule-dark hover:text-ink'
+                      isActive ? `${cfg.bg} text-ink border-transparent` : 'border-rule text-ink-muted hover:border-rule-dark hover:text-ink'
                     }`}
                   >
                     {cfg.emoji} {cfg.label}
@@ -1035,7 +1035,7 @@ export default function NeighborhoodPage() {
               <button
                 onClick={sendMessage}
                 disabled={!inputText.trim() || overLimit}
-                className="flex h-9 w-9 items-center justify-center bg-ink text-paper hover:bg-ink/80 disabled:opacity-40 transition-colors rounded-full btn-3d shrink-0"
+                className="flex h-9 w-9 items-center justify-center bg-nav-bg text-ink hover:bg-nav-bg/80 disabled:opacity-40 transition-colors rounded-full btn-3d shrink-0"
               >
                 <Send size={15} />
               </button>
@@ -1103,7 +1103,7 @@ export default function NeighborhoodPage() {
                             <span className="font-mono">{getVotePct(choice)}%</span>
                           </div>
                           <div className="h-2 bg-paper border border-rule/50">
-                            <div className="h-full bg-ink transition-all duration-500" style={{ width: `${getVotePct(choice)}%` }} />
+                            <div className="h-full bg-masthead transition-all duration-500" style={{ width: `${getVotePct(choice)}%` }} />
                           </div>
                         </div>
                       );
@@ -1115,7 +1115,7 @@ export default function NeighborhoodPage() {
                           { choice: 'side2' as VoteChoice, label: debate.side2Label ?? 'Side 2' },
                           { choice: 'draw' as VoteChoice, label: 'Draw' },
                         ]).map(({ choice, label }) => (
-                          <button key={choice} onClick={() => castVote(debate.id, choice)} className="flex-1 border border-ink bg-paper py-2 text-[10px] font-bold text-ink uppercase tracking-wider hover:bg-ink hover:text-paper transition-colors">{label}</button>
+                          <button key={choice} onClick={() => castVote(debate.id, choice)} className="flex-1 border border-rule bg-paper-dark py-2 text-[10px] font-bold text-ink uppercase tracking-wider hover:bg-nav-bg hover:border-masthead transition-colors">{label}</button>
                         ))}
                       </div>
                     ) : (
@@ -1239,16 +1239,16 @@ export default function NeighborhoodPage() {
                     <div className="flex flex-col gap-2">
                       {bet.side1Ids && bet.side2Ids ? (
                         <>
-                          <button onClick={() => proposeResolution(bet.id, bet.side1Ids![0])} className="w-full flex items-center justify-center gap-2 bg-navy px-4 py-3 text-sm font-bold text-paper hover:bg-navy/80 transition-colors rounded-lg">
+                          <button onClick={() => proposeResolution(bet.id, bet.side1Ids![0])} className="w-full flex items-center justify-center gap-2 bg-navy px-4 py-3 text-sm font-bold text-ink hover:bg-navy/80 transition-colors rounded-lg">
                             {bet.side1Label ?? 'Side 1'} Won
                           </button>
-                          <button onClick={() => proposeResolution(bet.id, bet.side2Ids![0])} className="w-full flex items-center justify-center gap-2 bg-field px-4 py-3 text-sm font-bold text-paper hover:bg-field/80 transition-colors rounded-lg">
+                          <button onClick={() => proposeResolution(bet.id, bet.side2Ids![0])} className="w-full flex items-center justify-center gap-2 bg-field px-4 py-3 text-sm font-bold text-ink hover:bg-field/80 transition-colors rounded-lg">
                             {bet.side2Label ?? 'Side 2'} Won
                           </button>
                         </>
                       ) : (
                         participants.map((p) => (
-                          <button key={p!.id} onClick={() => proposeResolution(bet.id, p!.id)} className="w-full flex items-center gap-2 bg-field px-4 py-3 text-sm font-bold text-paper hover:bg-field/80 transition-colors rounded-lg">
+                          <button key={p!.id} onClick={() => proposeResolution(bet.id, p!.id)} className="w-full flex items-center gap-2 bg-field px-4 py-3 text-sm font-bold text-ink hover:bg-field/80 transition-colors rounded-lg">
                             <span>{p!.avatar}</span><span>{p!.displayName} Won</span>
                           </button>
                         ))
@@ -1269,7 +1269,7 @@ export default function NeighborhoodPage() {
                   <div className="border-t border-rule bg-paper-dark px-4 py-4">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-3">Do you agree with this resolution?</p>
                     <div className="flex gap-2">
-                      <button onClick={() => agreeResolution(bet.id)} className="flex-1 bg-field py-2.5 text-sm font-bold text-paper hover:bg-field/80 transition-colors rounded-lg">✓ Agree</button>
+                      <button onClick={() => agreeResolution(bet.id)} className="flex-1 bg-field py-2.5 text-sm font-bold text-ink hover:bg-field/80 transition-colors rounded-lg">✓ Agree</button>
                       <button className="flex-1 border border-masthead/40 bg-masthead/10 py-2.5 text-sm font-bold text-masthead rounded-lg">✗ Dispute</button>
                     </div>
                   </div>
@@ -1433,7 +1433,7 @@ export default function NeighborhoodPage() {
                         <button
                           onClick={() => addComment(ht.id)}
                           disabled={!commentText.trim()}
-                          className="flex h-7 w-7 items-center justify-center bg-ink text-paper rounded-full hover:bg-ink/80 disabled:opacity-40 transition-colors shrink-0"
+                          className="flex h-7 w-7 items-center justify-center bg-nav-bg text-ink rounded-full hover:bg-nav-bg/80 disabled:opacity-40 transition-colors shrink-0"
                         >
                           <Send size={12} />
                         </button>
@@ -1462,7 +1462,7 @@ export default function NeighborhoodPage() {
             <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">Fan Analysis</p>
             <button
               onClick={() => setShowAnalysisForm(!showAnalysisForm)}
-              className="flex items-center gap-1.5 bg-ink text-paper px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-full hover:bg-ink/80 transition-colors"
+              className="flex items-center gap-1.5 bg-nav-bg text-ink px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-full hover:bg-nav-bg/80 transition-colors"
             >
               <PenLine size={11} /> Write Piece
             </button>
@@ -1470,7 +1470,7 @@ export default function NeighborhoodPage() {
 
           {/* Compose form */}
           {showAnalysisForm && (
-            <div className="px-4 py-4 border-b-2 border-ink bg-paper-dark flex flex-col gap-3">
+            <div className="px-4 py-4 border-b border-rule bg-paper-dark flex flex-col gap-3">
               <input
                 value={analysisTitle}
                 onChange={(e) => setAnalysisTitle(e.target.value)}
@@ -1494,7 +1494,7 @@ export default function NeighborhoodPage() {
                 <button
                   onClick={submitAnalysis}
                   disabled={!analysisTitle.trim() || !analysisBody.trim()}
-                  className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider bg-ink text-paper rounded-full hover:bg-ink/80 disabled:opacity-40 transition-colors"
+                  className="px-4 py-2 text-[11px] font-bold uppercase tracking-wider bg-nav-bg text-ink rounded-full hover:bg-nav-bg/80 disabled:opacity-40 transition-colors"
                 >
                   Publish
                 </button>
@@ -1512,7 +1512,7 @@ export default function NeighborhoodPage() {
 
               return (
                 <div key={an.id} className="border border-rule overflow-hidden">
-                  <div className="border-l-4 border-l-ink px-4 pt-4 pb-3 bg-paper">
+                  <div className="border-l-4 border-l-ink-muted px-4 pt-4 pb-3 bg-paper">
                     {/* Author row */}
                     <div className="flex items-center gap-2 mb-3">
                       <Link href={`/users/${an.authorId}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-base hover:border-ink transition-all shrink-0">
@@ -1609,7 +1609,7 @@ export default function NeighborhoodPage() {
                           <button
                             onClick={() => addAnalystComment(an.id)}
                             disabled={!analystCommentText.trim()}
-                            className="flex h-7 w-7 items-center justify-center bg-ink text-paper rounded-full hover:bg-ink/80 disabled:opacity-40 transition-colors shrink-0"
+                            className="flex h-7 w-7 items-center justify-center bg-nav-bg text-ink rounded-full hover:bg-nav-bg/80 disabled:opacity-40 transition-colors shrink-0"
                           >
                             <Send size={12} />
                           </button>
