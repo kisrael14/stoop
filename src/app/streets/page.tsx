@@ -628,7 +628,6 @@ export default function StreetsPage() {
       {betSetupClaim !== null && (
         <BetSetupModal
           claim={betSetupClaim}
-          members={USERS}
           onConfirm={confirmBet}
           onCancel={() => setBetSetupClaim(null)}
         />

@@ -860,7 +860,6 @@ export default function TeamPage() {
       {betSetupClaim !== null && (
         <BetSetupModal
           claim={betSetupClaim}
-          members={USERS}
           onConfirm={() => { setBetSetupClaim(null); setDiscussText(''); setShowDiscussModal(false); }}
           onCancel={() => setBetSetupClaim(null)}
         />
