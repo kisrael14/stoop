@@ -281,8 +281,7 @@ export default function NeighborhoodPage() {
       claim,
       side1Label: data.side1Label,
       side2Label: data.side2Label,
-      side1UserIds: data.side1Ids.length > 0 ? data.side1Ids : ['me'],
-      side2UserIds: data.side2Ids,
+      side1UserIds: [], side2UserIds: [],
       arguments: [],
       votes: [],
       status: 'active',
@@ -1815,7 +1814,6 @@ export default function NeighborhoodPage() {
       {debateSetupClaim !== null && (
         <DebateSetupModal
           initialClaim={debateSetupClaim}
-          members={members.filter(Boolean) as NonNullable<typeof members[0]>[]}
           onConfirm={confirmDebateSetup}
           onCancel={() => { setDebateSetupClaim(null); setDebateSetupMessageId(null); }}
         />

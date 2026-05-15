@@ -152,8 +152,7 @@ export default function StreetsPage() {
       id: `d-s-${Date.now()}`, chatId: 'streets', chatName: 'The Streets',
       claim: data.claim,
       side1Label: data.side1Label, side2Label: data.side2Label,
-      side1UserIds: data.side1Ids.length > 0 ? data.side1Ids : ['me'],
-      side2UserIds: data.side2Ids,
+      side1UserIds: [], side2UserIds: [],
       arguments: [], votes: [], status: 'active', teamIds: detectedTeams,
       createdAt: new Date().toISOString(), isPublic: true,
     };
@@ -586,7 +585,11 @@ export default function StreetsPage() {
                 ] as { id: PostType; emoji: string; label: string }[]).map(({ id, emoji, label }) => (
                   <button
                     key={id}
-                    onClick={() => setPostType(id)}
+                    onClick={() => {
+                      if (id === 'debate') { setShowAddModal(false); setPostText(''); setDebateSetupClaim(''); return; }
+                      if (id === 'bet')    { setShowAddModal(false); setPostText(''); setBetSetupClaim(''); return; }
+                      setPostType(id);
+                    }}
                     className={`flex flex-col items-center gap-0.5 py-2.5 border rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
                       postType === id ? 'border-masthead bg-nav-bg text-ink' : 'border-rule text-ink-muted hover:border-ink-muted'
                     }`}
