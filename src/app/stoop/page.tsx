@@ -232,7 +232,7 @@ export default function StoopPage() {
       {/* ── BADGES ─────────────────────────────────────────── */}
       <section className="mx-4 mt-4 border border-rule bg-paper px-4 py-4">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Badges</h2>
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Trophy Room</h2>
           <span className="text-[9px] text-ink-faint italic">Tap to learn more</span>
         </div>
         <div className="flex flex-wrap gap-2">

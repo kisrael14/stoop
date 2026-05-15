@@ -2,7 +2,7 @@ import { HOT_TAKES, DEBATES, BETS, ANALYSES, CHATS, getUserById } from './mock-d
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type BadgeType = 'debater' | 'analyst' | 'chatter' | 'gambler' | 'troll' | 'homer' | 'tailgater';
+export type BadgeType = 'debater' | 'analyst' | 'chatter' | 'gambler' | 'troll' | 'homer' | 'tailgater' | 'socialite';
 
 export interface BadgeLevelInfo {
   level: 1 | 2 | 3 | 4 | 5;
@@ -85,6 +85,13 @@ export const BADGE_DEFINITIONS: Record<BadgeType, BadgeDefinition> = {
     emoji: '🍺',
     name: 'Tailgater',
     description: 'Earned by reacting, voting, and engaging — even if you don\'t post much. You\'re always there, always hyped.',
+    levels: BADGE_LEVELS,
+  },
+  socialite: {
+    type: 'socialite',
+    emoji: '🥂',
+    name: 'Socialite',
+    description: 'Earned when friends sign up using your personal share link. The more people you bring to the stoop, the higher you climb.',
     levels: BADGE_LEVELS,
   },
 };
@@ -244,6 +251,13 @@ function resolveLevel(score: number): { level: 1 | 2 | 3 | 4 | 5; levelName: str
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
+function scoreSocialite(_userId: string): number {
+  // Score is based on referral signups via the user's personal share link.
+  // Placeholder: returns 0 until share link + referral tracking is wired up.
+  // Each referred signup will be worth 25 pts; milestones: 2→Recreational+, 10→Amateur, 40→Professional, 100→All-Star, 200→Hall of Famer
+  return 0;
+}
+
 const SCORERS: Record<BadgeType, (userId: string) => number> = {
   debater:   scoreDebater,
   analyst:   scoreAnalyst,
@@ -252,6 +266,7 @@ const SCORERS: Record<BadgeType, (userId: string) => number> = {
   troll:     scoreTroll,
   homer:     scoreHomer,
   tailgater: scoreTailgater,
+  socialite: scoreSocialite,
 };
 
 export function computeBadges(userId: string): UserBadge[] {

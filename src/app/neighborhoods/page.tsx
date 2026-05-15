@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Plus, Search, Swords, Handshake, Flame, X } from 'lucide-react';
-import { CHATS, DEBATES, BETS, HOT_TAKES, getUserById } from '@/lib/mock-data';
+import { CHATS, DEBATES, BETS, HOT_TAKES, USERS, getUserById } from '@/lib/mock-data';
 import { timeAgo } from '@/lib/utils';
 import type { Chat } from '@/lib/types';
 
@@ -16,6 +16,8 @@ export default function NeighborhoodsPage() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmoji, setNewEmoji] = useState('🏘️');
+  const [newMemberIds, setNewMemberIds] = useState<string[]>([]);
+  const [memberSearch, setMemberSearch] = useState('');
   const [localChats, setLocalChats] = useState<LocalChat[]>([]);
 
   const allChats = [...localChats, ...CHATS];
@@ -23,13 +25,23 @@ export default function NeighborhoodsPage() {
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const otherUsers = USERS.filter((u) => u.id !== 'me');
+  const memberSearchResults = memberSearch.length > 0
+    ? otherUsers.filter((u) =>
+        !newMemberIds.includes(u.id) && (
+          u.displayName.toLowerCase().includes(memberSearch.toLowerCase()) ||
+          u.username.toLowerCase().includes(memberSearch.toLowerCase())
+        )
+      ).slice(0, 5)
+    : otherUsers.filter((u) => !newMemberIds.includes(u.id)).slice(0, 4);
+
   const createNeighborhood = () => {
     if (!newName.trim()) return;
     const newChat: LocalChat = {
       id: `local-${Date.now()}`,
       name: newName.trim(),
       emoji: newEmoji,
-      memberIds: ['me'],
+      memberIds: ['me', ...newMemberIds],
       teamIds: [],
       messages: [],
       isLocal: true,
@@ -37,6 +49,8 @@ export default function NeighborhoodsPage() {
     setLocalChats((prev) => [newChat, ...prev]);
     setNewName('');
     setNewEmoji('🏘️');
+    setNewMemberIds([]);
+    setMemberSearch('');
     setShowNewModal(false);
   };
 
@@ -235,6 +249,59 @@ export default function NeighborhoodsPage() {
                   ))}
                 </div>
               </div>
+              {/* Member selection */}
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-faint block mb-1.5">
+                  Add Neighbors ({newMemberIds.length} added)
+                </label>
+                {/* Selected members chips */}
+                {newMemberIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {newMemberIds.map((uid) => {
+                      const u = getUserById(uid);
+                      if (!u) return null;
+                      return (
+                        <span key={uid} className="flex items-center gap-1 px-2 py-1 bg-paper-dark border border-rule text-xs font-bold text-ink">
+                          {u.avatar} {u.displayName.split(' ')[0]}
+                          <button onClick={() => setNewMemberIds((p) => p.filter((id) => id !== uid))} className="text-ink-faint hover:text-press ml-0.5">
+                            <X size={10} />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="relative mb-2">
+                  <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+                  <input
+                    type="text"
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    placeholder="Search neighbors to add…"
+                    className="w-full border border-rule bg-paper py-2 pl-8 pr-3 text-xs text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col border border-rule/50 max-h-36 overflow-y-auto">
+                  {memberSearchResults.map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => { setNewMemberIds((p) => [...p, u.id]); setMemberSearch(''); }}
+                      className="flex items-center gap-2 px-3 py-2 border-b border-rule/40 last:border-0 hover:bg-paper-dark transition-colors text-left"
+                    >
+                      <span className="text-base">{u.avatar}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-ink leading-none">{u.displayName}</p>
+                        <p className="text-[10px] text-ink-faint font-mono">@{u.username}</p>
+                      </div>
+                      <Plus size={12} className="text-ink-muted shrink-0" />
+                    </button>
+                  ))}
+                  {memberSearchResults.length === 0 && memberSearch.length > 0 && (
+                    <p className="text-[10px] text-ink-faint italic py-3 text-center">No neighbors found</p>
+                  )}
+                </div>
+              </div>
+
               <button
                 onClick={createNeighborhood}
                 disabled={!newName.trim()}
