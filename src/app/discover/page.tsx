@@ -76,6 +76,10 @@ export default function DiscoverPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser?.followingProfiles]);
 
+  useEffect(() => {
+    if (authUser?.leagues != null) setMyLeagueIds(authUser.leagues);
+  }, [authUser?.leagues]);
+
   const toggleFollow = async (userId: string) => {
     const isNowFollowing = !following.includes(userId);
     setFollowing((prev) =>
@@ -114,10 +118,21 @@ export default function DiscoverPage() {
     }
   };
 
-  const toggleLeague = (leagueId: string) => {
+  const toggleLeague = async (leagueId: string) => {
+    const isNowFollowing = !myLeagueIds.includes(leagueId);
     setMyLeagueIds((prev) =>
-      prev.includes(leagueId) ? prev.filter((id) => id !== leagueId) : [...prev, leagueId]
+      isNowFollowing ? [...prev, leagueId] : prev.filter((id) => id !== leagueId)
     );
+    if (authUser && isSupabaseConfigured()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient() as any;
+      if (isNowFollowing) {
+        await supabase.from('user_leagues').insert({ user_id: authUser.id, league_id: leagueId });
+      } else {
+        await supabase.from('user_leagues').delete().eq('user_id', authUser.id).eq('league_id', leagueId);
+      }
+      await refreshProfile();
+    }
   };
 
   return (

@@ -15,6 +15,7 @@ interface AuthUser {
   teams: UserTeam[];
   followerCount: number;
   followingCount: number;
+  leagues: string[];
   followingProfiles: Array<{ id: string; username: string; display_name: string; avatar: string }>;
   neighborhoodMemberships: Array<{ id: string; name: string; emoji: string }>;
 }
@@ -44,12 +45,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
-    const [{ data: profile }, { data: teams }, { count: followerCount }, { data: followingData }, { data: membershipData }] = await Promise.all([
+    const [{ data: profile }, { data: teams }, { count: followerCount }, { data: followingData }, { data: membershipData }, { data: leagueData }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', authUser.id).single(),
       supabase.from('user_teams').select('*').eq('user_id', authUser.id),
       supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', authUser.id),
       supabase.from('follows').select('following_id').eq('follower_id', authUser.id),
       sb.from('neighborhood_members').select('neighborhoods(id, name, emoji)').eq('user_id', authUser.id),
+      sb.from('user_leagues').select('league_id').eq('user_id', authUser.id),
     ]);
 
     const followingIds = ((followingData ?? []) as Array<{ following_id: string }>).map((f) => f.following_id);
@@ -64,6 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .map((m) => m.neighborhoods)
       .filter((n): n is { id: string; name: string; emoji: string } => n != null);
 
+    const leagues = ((leagueData ?? []) as Array<{ league_id: string }>).map((l) => l.league_id);
+
     setUser({
       id: authUser.id,
       email: authUser.email ?? null,
@@ -71,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       teams: teams ?? [],
       followerCount: followerCount ?? 0,
       followingCount: followingIds.length,
+      leagues,
       followingProfiles,
       neighborhoodMemberships,
     });

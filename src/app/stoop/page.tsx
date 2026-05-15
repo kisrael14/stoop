@@ -13,6 +13,7 @@ import BadgeChip from '@/components/BadgeChip';
 import TeamLogo from '@/components/TeamLogo';
 import { useAuth } from '@/lib/auth-context';
 import { ALL_TEAMS } from '@/lib/teams-data';
+import { ALL_LEAGUES } from '@/lib/leagues-data';
 
 function mapFandomLevel(level: string | null): FandomLevel {
   if (!level) return 'casual';
@@ -77,6 +78,10 @@ export default function StoopPage() {
     betsWon: 0, betsLost: 0, betsPending: 0,
     hotTakesPosted: 0, hotTakeReactions: 0,
   } : ME.stats;
+
+  const fanLeagues = isRealUser && authUser?.leagues
+    ? authUser.leagues.map((lid) => ALL_LEAGUES.find((l) => l.id === lid)).filter(Boolean)
+    : [];
 
   const myTeamIds = fanTeams.map((ft) => ft.team.id);
   const myDebates = DEBATES.filter((d) => d.side1UserIds.includes('me') || d.side2UserIds.includes('me')).slice(0, 3);
@@ -342,6 +347,32 @@ export default function StoopPage() {
               </Link>
             );
           })}
+          {fanLeagues.map((league) => (
+            <Link
+              key={league!.id}
+              href={`/leagues/${league!.id}`}
+              className="flex items-center gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors"
+            >
+              <div
+                className="flex h-6 w-6 items-center justify-center text-sm rounded-full shrink-0"
+                style={{ backgroundColor: league!.color + '30', border: `1.5px solid ${league!.color}60` }}
+              >
+                {league!.emoji}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-ink">{league!.name}</p>
+                <p className="text-[9px] font-bold uppercase tracking-wide text-ink-faint">{league!.sport} · {league!.country}</p>
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ backgroundColor: league!.color + '20', color: league!.color }}>
+                League
+              </span>
+            </Link>
+          ))}
+          {fanTeams.length === 0 && fanLeagues.length === 0 && (
+            <Link href="/discover?mode=teams" className="flex items-center justify-center px-3 py-4 text-[10px] text-ink-faint italic hover:bg-paper-dark transition-colors">
+              Follow teams and leagues to fill your fandom →
+            </Link>
+          )}
         </div>
       </div>
 

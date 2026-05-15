@@ -53,6 +53,10 @@ export default function TopBar() {
   }, [authUser?.teams]);
 
   useEffect(() => {
+    if (authUser?.leagues != null) setMyLeagueIds(authUser.leagues);
+  }, [authUser?.leagues]);
+
+  useEffect(() => {
     if (searchOpen) setTimeout(() => inputRef.current?.focus(), 50);
   }, [searchOpen]);
 
@@ -77,10 +81,21 @@ export default function TopBar() {
     }
   };
 
-  const toggleLeague = (leagueId: string) => {
+  const toggleLeague = async (leagueId: string) => {
+    const isNowFollowing = !myLeagueIds.includes(leagueId);
     setMyLeagueIds((prev) =>
-      prev.includes(leagueId) ? prev.filter((id) => id !== leagueId) : [...prev, leagueId]
+      isNowFollowing ? [...prev, leagueId] : prev.filter((id) => id !== leagueId)
     );
+    if (authUser && isSupabaseConfigured()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient() as any;
+      if (isNowFollowing) {
+        await supabase.from('user_leagues').insert({ user_id: authUser.id, league_id: leagueId });
+      } else {
+        await supabase.from('user_leagues').delete().eq('user_id', authUser.id).eq('league_id', leagueId);
+      }
+      await refreshProfile();
+    }
   };
 
   if (HIDDEN_ON.some((p) => pathname.startsWith(p))) return null;

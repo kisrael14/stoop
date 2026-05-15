@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, Check, Flame, Swords, Handshake, Trophy, Star, Newspap
 import { getUserById, DEBATES, BETS, HOT_TAKES, ANALYSES, CHATS, ME } from '@/lib/mock-data';
 import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { FandomLevel } from '@/lib/types';
+import { ALL_LEAGUES } from '@/lib/leagues-data';
 import { computeBadges } from '@/lib/badges';
 import TeamLogo from '@/components/TeamLogo';
 import BadgeChip from '@/components/BadgeChip';
@@ -39,6 +40,11 @@ export default function UserProfilePage() {
   const isMe = user.id === 'me';
   const { stats } = user;
   const badges = computeBadges(user.id);
+
+  // For own profile: show real league follows from auth context
+  const fanLeagues = isMe && authUser?.leagues
+    ? authUser.leagues.map((lid) => ALL_LEAGUES.find((l) => l.id === lid)).filter(Boolean)
+    : [];
 
   const debatePct = (stats.debatesWon + stats.debatesLost) > 0
     ? Math.round((stats.debatesWon / (stats.debatesWon + stats.debatesLost)) * 100)
@@ -295,6 +301,27 @@ export default function UserProfilePage() {
               </Link>
             );
           })}
+          {fanLeagues.map((league) => (
+            <Link
+              key={league!.id}
+              href={`/leagues/${league!.id}`}
+              className="flex items-center gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors"
+            >
+              <div
+                className="flex h-6 w-6 items-center justify-center text-sm rounded-full shrink-0"
+                style={{ backgroundColor: league!.color + '30', border: `1.5px solid ${league!.color}60` }}
+              >
+                {league!.emoji}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-ink">{league!.name}</p>
+                <p className="text-[9px] font-bold uppercase tracking-wide text-ink-faint">{league!.sport} · {league!.country}</p>
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ backgroundColor: league!.color + '20', color: league!.color }}>
+                League
+              </span>
+            </Link>
+          ))}
         </div>
       </div>
 
