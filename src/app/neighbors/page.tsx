@@ -1,33 +1,86 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, UserPlus } from 'lucide-react';
 import { ME, getUserById, USERS } from '@/lib/mock-data';
 import { useAuth } from '@/lib/auth-context';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
+
+type Person = { id: string; displayName: string; username: string; avatar: string };
+
+function Avatar({ src, name }: { src: string; name: string }) {
+  if (src.startsWith('http')) {
+    return <img src={src} alt={name} className="h-full w-full object-cover rounded-full" />;
+  }
+  return <span>{src || '👤'}</span>;
+}
 
 export default function NeighborsPage() {
   const router = useRouter();
   const { user: authUser } = useAuth();
-  const isRealUser = !!authUser?.profile;
+  const [neighbors, setNeighbors] = useState<Person[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
-  type Person = { id: string; displayName: string; username: string; avatar: string };
-
-  const neighbors: Person[] = isRealUser && authUser?.followingProfiles != null
-    ? authUser.followingProfiles.map((fp) => ({
-        id: fp.id,
-        displayName: fp.display_name,
-        username: fp.username,
-        avatar: fp.avatar,
-      }))
-    : ME.followingIds
+  useEffect(() => {
+    if (authUser && isSupabaseConfigured()) {
+      // Use followingProfiles from auth context if available, otherwise query directly
+      if (authUser.followingProfiles && authUser.followingProfiles.length > 0) {
+        setNeighbors(
+          authUser.followingProfiles.map((fp) => ({
+            id: fp.id,
+            displayName: fp.display_name || fp.username || 'Unknown',
+            username: fp.username || '',
+            avatar: fp.avatar || '👤',
+          }))
+        );
+        setLoaded(true);
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const supabase = createClient() as any;
+        const run = async () => {
+          try {
+            const { data: followRows } = await supabase
+              .from('follows')
+              .select('following_id')
+              .eq('follower_id', authUser.id);
+            const ids: string[] = (followRows ?? []).map((f: any) => f.following_id);
+            if (ids.length > 0) {
+              const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, username, display_name, avatar')
+                .in('id', ids);
+              setNeighbors(
+                (profiles ?? []).map((p: any) => ({
+                  id: p.id,
+                  displayName: p.display_name || p.username || 'Unknown',
+                  username: p.username || '',
+                  avatar: p.avatar || '👤',
+                }))
+              );
+            }
+          } catch (e) {
+            console.error('Neighbors fetch error:', e);
+          } finally {
+            setLoaded(true);
+          }
+        };
+        run();
+      }
+    } else {
+      // Mock fallback
+      const mock: Person[] = ME.followingIds
         .map((id) => getUserById(id))
         .filter((u): u is NonNullable<ReturnType<typeof getUserById>> => u != null)
-        .map((u) => ({ id: u.id, displayName: u.displayName, username: u.username, avatar: u.avatar }));
+        .map((u) => ({ id: u.id, displayName: u.displayName, username: u.username, avatar: u.avatar as string }));
+      setNeighbors(mock);
+      setLoaded(true);
+    }
+  }, [authUser?.id, authUser?.followingProfiles]);
 
   return (
     <div className="flex flex-col min-h-full pb-20">
-      {/* Header */}
       <div className="sticky top-14 z-30 bg-nav-bg border-b border-rule flex items-center gap-3 px-4 py-3">
         <button onClick={() => router.back()} className="text-ink/60 hover:text-ink transition-colors">
           <ArrowLeft size={20} />
@@ -45,7 +98,11 @@ export default function NeighborsPage() {
         </Link>
       </div>
 
-      {neighbors.length === 0 ? (
+      {!loaded ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="h-6 w-6 rounded-full border-2 border-masthead border-t-transparent animate-spin" />
+        </div>
+      ) : neighbors.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 px-8 py-16 text-center">
           <p className="text-4xl mb-3">🏘</p>
           <p className="font-bold text-ink mb-1">No neighbors yet</p>
@@ -70,8 +127,8 @@ export default function NeighborsPage() {
                 href={`/users/${person.id}`}
                 className="flex items-center gap-3 px-4 py-3.5 hover:bg-paper-dark transition-colors"
               >
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-paper-dark border border-rule text-2xl shrink-0">
-                  {person.avatar}
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-paper-dark border border-rule text-2xl shrink-0 overflow-hidden">
+                  <Avatar src={person.avatar} name={person.displayName} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-ink text-sm">{person.displayName}</p>
