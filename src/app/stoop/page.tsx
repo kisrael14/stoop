@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Settings, Flame, Swords, Handshake, Trophy, Bell, BellOff, Compass, PenLine, Newspaper } from 'lucide-react';
+import { Settings, Flame, Swords, Handshake, Bell, BellOff, PenLine, Newspaper } from 'lucide-react';
 import { ME, DEBATES, BETS, HOT_TAKES, ANALYSES, getUserById, CHATS } from '@/lib/mock-data';
 import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { FandomLevel, FanTeam } from '@/lib/types';
@@ -116,14 +116,9 @@ export default function StoopPage() {
       <div className="bg-nav-bg px-5 pt-12 pb-5">
         {/* Top controls */}
         <div className="flex items-center justify-between mb-4">
-          <div className="flex gap-2">
-            <Link href="/discover" className="h-8 w-8 flex items-center justify-center rounded-full bg-white/10 text-white/70 hover:bg-white/20 transition-colors" title="Discover">
-              <Compass size={16} />
-            </Link>
-            <Link href="/onboarding" className="h-8 w-8 flex items-center justify-center rounded-full bg-white/10 text-white/70 hover:bg-white/20 transition-colors" title="Edit profile">
-              <Settings size={16} />
-            </Link>
-          </div>
+          <Link href="/onboarding" className="h-8 w-8 flex items-center justify-center rounded-full bg-white/10 text-white/70 hover:bg-white/20 transition-colors" title="Edit profile">
+            <Settings size={16} />
+          </Link>
           {/* Spacer for TopChatButton (top-right area) */}
           <div className="w-10" />
         </div>
@@ -135,10 +130,18 @@ export default function StoopPage() {
               {avatar}
             </div>
           </Link>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <h1 className="font-display text-2xl font-black text-white leading-tight">{displayName}</h1>
             <p className="text-[11px] font-mono text-white/55">@{username}</p>
             {bio && <p className="text-xs text-white/70 italic mt-0.5 line-clamp-2">{bio}</p>}
+            {/* Trophy Room — inline, small */}
+            {badges.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {badges.map((badge) => (
+                  <BadgeChip key={badge.type} badge={badge} size="xs" />
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -212,19 +215,6 @@ export default function StoopPage() {
           <p className="text-[10px] text-ink-faint">Notifications blocked — enable in browser settings</p>
         </div>
       )}
-
-      {/* ── BADGES ─────────────────────────────────────────── */}
-      <section className="mx-4 mt-4 border border-rule bg-paper px-4 py-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">Trophy Room</h2>
-          <span className="text-[9px] text-ink-faint italic">Tap to learn more</span>
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          {badges.map((badge) => (
-            <BadgeChip key={badge.type} badge={badge} />
-          ))}
-        </div>
-      </section>
 
       {/* ── MY NEIGHBORHOOD ────────────────────────────────── */}
       <div className="mx-4 mt-4 border border-rule">
