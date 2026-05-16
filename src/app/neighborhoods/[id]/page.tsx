@@ -196,6 +196,9 @@ export default function NeighborhoodPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isRealId, dbLoading]);
 
+  const swipeStartX = useRef(0);
+  const swipeStartY = useRef(0);
+
   if (dbLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -713,8 +716,6 @@ export default function NeighborhoodPage() {
   ];
 
   const TAB_ORDER: Tab[] = ['overview', 'chat', 'debates', 'bets', 'hot-takes', 'analysis'];
-  const swipeStartX = useRef(0);
-  const swipeStartY = useRef(0);
 
   const onTabSwipeStart = (e: React.TouchEvent) => {
     swipeStartX.current = e.touches[0].clientX;
