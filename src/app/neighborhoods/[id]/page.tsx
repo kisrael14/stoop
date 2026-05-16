@@ -107,37 +107,53 @@ export default function NeighborhoodPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createClient() as any;
     const load = async () => {
-      const { data: hood } = await supabase.from('neighborhoods').select('id, name, emoji').eq('id', id).single();
-      if (!hood) { setDbLoading(false); return; }
-      setDbNeighborhood(hood);
-      setChatName(hood.name);
-      setChatEmoji(hood.emoji);
+      try {
+        const { data: hood, error: hoodErr } = await supabase.from('neighborhoods').select('id, name, emoji').eq('id', id).single();
+        if (hoodErr || !hood) { console.error('Neighborhood fetch error:', hoodErr); return; }
+        setDbNeighborhood(hood);
+        setChatName(hood.name);
+        setChatEmoji(hood.emoji);
 
-      const { data: memberships } = await supabase
-        .from('neighborhood_members')
-        .select('user_id, profiles(id, username, display_name, avatar)')
-        .eq('neighborhood_id', id);
-      const profiles: DbProfile[] = (memberships ?? []).map((m: any) => m.profiles).filter(Boolean);
-      setDbMemberProfiles(profiles);
-      setLocalMemberIds(profiles.map((p) => p.id));
+        // Two-step: get member user_ids, then fetch their profiles
+        const { data: memberRows, error: memberErr } = await supabase
+          .from('neighborhood_members')
+          .select('user_id')
+          .eq('neighborhood_id', id);
+        if (memberErr) console.error('Member fetch error:', memberErr);
+        const userIds: string[] = (memberRows ?? []).map((m: any) => m.user_id);
+        let profiles: DbProfile[] = [];
+        if (userIds.length > 0) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('id, username, display_name, avatar')
+            .in('id', userIds);
+          profiles = profileData ?? [];
+        }
+        setDbMemberProfiles(profiles);
+        setLocalMemberIds(userIds);
 
-      const { data: msgs } = await supabase
-        .from('messages')
-        .select('id, user_id, content, tag, created_at')
-        .eq('neighborhood_id', id)
-        .order('created_at', { ascending: true })
-        .limit(200);
-      const converted: Message[] = (msgs ?? []).map((m: any) => ({
-        id: m.id,
-        chatId: id,
-        userId: m.user_id,
-        content: m.content,
-        tag: m.tag ?? undefined,
-        timestamp: m.created_at,
-        reactions: [],
-      }));
-      setMessages(converted);
-      setDbLoading(false);
+        const { data: msgs, error: msgsErr } = await supabase
+          .from('messages')
+          .select('id, user_id, content, tag, created_at')
+          .eq('neighborhood_id', id)
+          .order('created_at', { ascending: true })
+          .limit(200);
+        if (msgsErr) console.error('Messages fetch error:', msgsErr);
+        const converted: Message[] = (msgs ?? []).map((m: any) => ({
+          id: m.id,
+          chatId: id,
+          userId: m.user_id,
+          content: m.content,
+          tag: m.tag ?? undefined,
+          timestamp: m.created_at,
+          reactions: [],
+        }));
+        setMessages(converted);
+      } catch (e) {
+        console.error('Neighborhood load exception:', e);
+      } finally {
+        setDbLoading(false);
+      }
     };
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps

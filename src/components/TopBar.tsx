@@ -179,19 +179,25 @@ export default function TopBar() {
     if (authUser && isSupabaseConfigured()) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const supabase = createClient() as any;
-      const { data: hood } = await supabase
-        .from('neighborhoods')
-        .insert({ name: newHoodName.trim(), emoji: newHoodEmoji || '🏘️', created_by: authUser.id })
-        .select()
-        .single();
-      if (hood) {
-        const memberInserts = [
-          { neighborhood_id: hood.id, user_id: authUser.id },
-          ...newHoodMemberIds.map((uid) => ({ neighborhood_id: hood.id, user_id: uid })),
-        ];
-        await supabase.from('neighborhood_members').insert(memberInserts);
-        closeAll();
-        router.push(`/neighborhoods/${hood.id}`);
+      try {
+        const { data: hood, error: hoodErr } = await supabase
+          .from('neighborhoods')
+          .insert({ name: newHoodName.trim(), emoji: newHoodEmoji || '🏘️' })
+          .select()
+          .single();
+        if (hoodErr) { console.error('Neighborhood insert error:', hoodErr); return; }
+        if (hood) {
+          const memberInserts = [
+            { neighborhood_id: hood.id, user_id: authUser.id },
+            ...newHoodMemberIds.map((uid) => ({ neighborhood_id: hood.id, user_id: uid })),
+          ];
+          const { error: memberErr } = await supabase.from('neighborhood_members').insert(memberInserts);
+          if (memberErr) console.error('Member insert error:', memberErr);
+          closeAll();
+          router.push(`/neighborhoods/${hood.id}`);
+        }
+      } catch (e) {
+        console.error('Create neighborhood exception:', e);
       }
     } else {
       closeAll();

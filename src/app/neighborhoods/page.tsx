@@ -34,23 +34,35 @@ export default function NeighborhoodsPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createClient() as any;
     const load = async () => {
-      const { data: memberships } = await supabase
-        .from('neighborhood_members')
-        .select('neighborhood_id, neighborhoods(id, name, emoji)')
-        .eq('user_id', authUser.id);
-      if (!memberships) return;
-      const hoods = await Promise.all(
-        memberships.map(async (m: any) => {
-          const hood = m.neighborhoods;
-          if (!hood) return null;
-          const { count } = await supabase
-            .from('neighborhood_members')
-            .select('*', { count: 'exact', head: true })
-            .eq('neighborhood_id', hood.id);
-          return { id: hood.id, name: hood.name, emoji: hood.emoji, memberCount: count ?? 0 } as DbNeighborhood;
-        })
-      );
-      setDbNeighborhoods(hoods.filter(Boolean) as DbNeighborhood[]);
+      try {
+        // Two-step: get neighborhood_ids, then fetch neighborhood details
+        const { data: memberRows, error: memberErr } = await supabase
+          .from('neighborhood_members')
+          .select('neighborhood_id')
+          .eq('user_id', authUser.id);
+        if (memberErr) { console.error('Memberships fetch error:', memberErr); return; }
+        if (!memberRows?.length) return;
+
+        const hoodIds = memberRows.map((m: any) => m.neighborhood_id);
+        const { data: hoodData, error: hoodErr } = await supabase
+          .from('neighborhoods')
+          .select('id, name, emoji')
+          .in('id', hoodIds);
+        if (hoodErr) { console.error('Neighborhoods fetch error:', hoodErr); return; }
+
+        const hoods = await Promise.all(
+          (hoodData ?? []).map(async (hood: any) => {
+            const { count } = await supabase
+              .from('neighborhood_members')
+              .select('*', { count: 'exact', head: true })
+              .eq('neighborhood_id', hood.id);
+            return { id: hood.id, name: hood.name, emoji: hood.emoji, memberCount: count ?? 0 } as DbNeighborhood;
+          })
+        );
+        setDbNeighborhoods(hoods);
+      } catch (e) {
+        console.error('Neighborhoods load exception:', e);
+      }
     };
     load();
   }, [authUser?.id]);
@@ -98,17 +110,19 @@ export default function NeighborhoodsPage() {
     if (isAuthenticated) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const supabase = createClient() as any;
-      const { data: hood } = await supabase
+      const { data: hood, error: hoodErr } = await supabase
         .from('neighborhoods')
-        .insert({ name: newName.trim(), emoji: newEmoji, created_by: authUser!.id })
+        .insert({ name: newName.trim(), emoji: newEmoji })
         .select()
         .single();
+      if (hoodErr) { console.error('Create neighborhood error:', hoodErr); return; }
       if (hood) {
         const memberInserts = [
           { neighborhood_id: hood.id, user_id: authUser!.id },
           ...newMemberIds.map((uid) => ({ neighborhood_id: hood.id, user_id: uid })),
         ];
-        await supabase.from('neighborhood_members').insert(memberInserts);
+        const { error: memberErr } = await supabase.from('neighborhood_members').insert(memberInserts);
+        if (memberErr) console.error('Member insert error:', memberErr);
         setDbNeighborhoods((prev) => [
           { id: hood.id, name: hood.name, emoji: hood.emoji, memberCount: 1 + newMemberIds.length },
           ...prev,
