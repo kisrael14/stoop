@@ -18,7 +18,7 @@ export default function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-1/2 w-full max-w-md -translate-x-1/2 border-t-2 border-ink bg-paper z-30">
+    <nav className="fixed bottom-0 left-1/2 w-full max-w-md -translate-x-1/2 border-t border-rule bg-nav-bg z-30">
       <div className="flex items-stretch">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/');

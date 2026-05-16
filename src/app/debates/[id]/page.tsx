@@ -73,13 +73,13 @@ export default function DebateFaceOffPage() {
   return (
     <div className="flex flex-col h-full bg-paper">
       {/* Header */}
-      <div className="shrink-0 bg-ink px-4 py-3 flex items-center gap-3">
-        <button onClick={() => router.back()} className="text-paper/60 hover:text-paper p-1">
+      <div className="shrink-0 bg-nav-bg px-4 py-3 flex items-center gap-3">
+        <button onClick={() => router.back()} className="text-ink/60 hover:text-ink p-1">
           <ArrowLeft size={20} />
         </button>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-paper/50">Face-Off · {debate.chatName}</p>
-          <p className="font-display font-bold text-paper text-sm leading-snug truncate">&ldquo;{debate.claim}&rdquo;</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-ink/50">Face-Off · {debate.chatName}</p>
+          <p className="font-display font-bold text-ink text-sm leading-snug truncate">&ldquo;{debate.claim}&rdquo;</p>
         </div>
         {debate.status === 'resolved' && (
           <div className="flex items-center gap-1 text-rule-dark shrink-0">
@@ -90,7 +90,7 @@ export default function DebateFaceOffPage() {
       </div>
 
       {/* Side labels + vote bar */}
-      <div className="shrink-0 bg-ink-muted/10 border-b-2 border-ink">
+      <div className="shrink-0 bg-paper-dark border-b border-rule">
         <div className="grid grid-cols-2">
           {/* Side 1 */}
           <div className="px-4 py-3 border-r border-rule">
@@ -133,13 +133,13 @@ export default function DebateFaceOffPage() {
           {/* Vote buttons */}
           {!myVote && debate.status === 'active' && (
             <div className="flex gap-2 mt-2">
-              <button onClick={() => castVote('side1')} className="flex-1 py-2 text-[10px] font-bold uppercase tracking-widest bg-navy text-paper hover:bg-navy/80 transition-colors">
+              <button onClick={() => castVote('side1')} className="flex-1 py-2 text-[10px] font-bold uppercase tracking-widest bg-navy text-ink hover:bg-navy/80 transition-colors">
                 Vote {debate.side1Label ?? 'Side 1'}
               </button>
               <button onClick={() => castVote('draw')} className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest border border-rule text-ink-muted hover:bg-paper-dark transition-colors">
                 Draw
               </button>
-              <button onClick={() => castVote('side2')} className="flex-1 py-2 text-[10px] font-bold uppercase tracking-widest bg-field text-paper hover:bg-field/80 transition-colors">
+              <button onClick={() => castVote('side2')} className="flex-1 py-2 text-[10px] font-bold uppercase tracking-widest bg-field text-ink hover:bg-field/80 transition-colors">
                 Vote {debate.side2Label ?? 'Side 2'}
               </button>
             </div>
@@ -266,13 +266,13 @@ export default function DebateFaceOffPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setNewArgSide('side1')}
-                className="flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest bg-navy text-paper hover:bg-navy/80 transition-colors"
+                className="flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest bg-navy text-ink hover:bg-navy/80 transition-colors"
               >
                 + Argue for {debate.side1Label ?? 'Side 1'}
               </button>
               <button
                 onClick={() => setNewArgSide('side2')}
-                className="flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest bg-field text-paper hover:bg-field/80 transition-colors"
+                className="flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest bg-field text-ink hover:bg-field/80 transition-colors"
               >
                 + Argue for {debate.side2Label ?? 'Side 2'}
               </button>
@@ -296,7 +296,7 @@ export default function DebateFaceOffPage() {
                 <button
                   onClick={submitArg}
                   disabled={!argText.trim()}
-                  className="flex h-full items-center justify-center px-4 bg-ink text-paper hover:bg-ink/80 disabled:opacity-40 transition-colors"
+                  className="flex h-full items-center justify-center px-4 bg-nav-bg text-ink hover:bg-nav-bg/80 disabled:opacity-40 transition-colors"
                 >
                   <Send size={15} />
                 </button>

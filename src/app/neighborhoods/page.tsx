@@ -57,24 +57,24 @@ export default function NeighborhoodsPage() {
   return (
     <div className="flex flex-col bg-paper min-h-full">
       {/* Masthead */}
-      <div className="bg-ink px-5 pt-10 pb-5">
-        <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-paper/40 mb-1">Stoop Sports</p>
-        <h1 className="font-display text-3xl font-black text-paper leading-none">My Neighborhoods</h1>
-        <div className="h-px bg-paper/20 my-3" />
+      <div className="bg-nav-bg px-5 pt-10 pb-5">
+        <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-ink/40 mb-1">Stoop Sports</p>
+        <h1 className="font-display text-3xl font-black text-ink leading-none">My Neighborhoods</h1>
+        <div className="h-px bg-ink/20 my-3" />
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-paper/40" />
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/40" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search neighborhoods..."
-              className="w-full bg-paper/10 border border-paper/20 py-2 pl-9 pr-4 text-sm text-paper placeholder-paper/40 outline-none focus:border-paper/50 transition-colors rounded-full"
+              className="w-full bg-ink/10 border border-ink/20 py-2 pl-9 pr-4 text-sm text-ink placeholder-ink/40 outline-none focus:border-ink/50 transition-colors rounded-full"
             />
           </div>
           <button
             onClick={() => setShowNewModal(true)}
-            className="flex items-center gap-1.5 bg-paper text-ink px-4 py-2 text-xs font-bold uppercase tracking-wider btn-3d rounded-full shrink-0"
+            className="flex items-center gap-1.5 bg-masthead text-[#12111a] px-4 py-2 text-xs font-bold uppercase tracking-wider btn-3d rounded-full shrink-0"
           >
             <Plus size={14} />
             New
@@ -88,8 +88,8 @@ export default function NeighborhoodsPage() {
         <span className="text-[10px] text-ink-faint font-mono">{filtered.length} neighborhood{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
-      {/* Newspaper grid */}
-      <div className="grid grid-cols-2 border-l-2 border-t-2 border-ink">
+      {/* Grid */}
+      <div className="grid grid-cols-2 border-l border-t border-rule">
         {filtered.map((chat) => {
           const lastMessage = chat.messages[chat.messages.length - 1];
           const lastSender = lastMessage ? getUserById(lastMessage.userId) : null;
@@ -102,15 +102,15 @@ export default function NeighborhoodsPage() {
             <Link
               key={chat.id}
               href={`/neighborhoods/${chat.id}`}
-              className="border-r-2 border-b-2 border-ink block bg-paper hover:bg-paper-dark transition-colors"
+              className="border-r border-b border-rule block bg-paper-dark hover:bg-paper-deeper transition-colors"
             >
-              {/* Card header — dark ink */}
-              <div className="bg-ink px-3 py-3">
+              {/* Card header */}
+              <div className="bg-nav-bg px-3 py-3">
                 <div className="flex items-start gap-2">
                   <span className="text-2xl leading-none mt-0.5 shrink-0">{chat.emoji}</span>
                   <div className="min-w-0">
-                    <p className="font-display font-bold text-paper text-sm leading-tight">{chat.name}</p>
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-paper/50 mt-0.5">{members.length} members</p>
+                    <p className="font-display font-bold text-ink text-sm leading-tight">{chat.name}</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-ink/50 mt-0.5">{members.length} members</p>
                   </div>
                 </div>
               </div>
@@ -212,11 +212,11 @@ export default function NeighborhoodsPage() {
       {/* ── New Neighborhood Modal ──────────────────────── */}
       {showNewModal && (
         <>
-          <div className="fixed inset-0 z-50 bg-ink/60 backdrop-blur-sm" onClick={() => setShowNewModal(false)} />
-          <div className="fixed inset-x-4 top-1/4 z-50 bg-paper border-2 border-ink shadow-2xl max-w-sm mx-auto">
-            <div className="flex items-center justify-between px-5 py-4 bg-ink">
-              <p className="font-display font-bold text-paper text-base">New Neighborhood</p>
-              <button onClick={() => setShowNewModal(false)} className="text-paper/60 hover:text-paper">
+          <div className="fixed inset-0 z-50 bg-nav-bg/80 backdrop-blur-sm" onClick={() => setShowNewModal(false)} />
+          <div className="fixed inset-x-4 top-1/4 z-50 bg-paper-dark border border-rule shadow-2xl max-w-sm mx-auto">
+            <div className="flex items-center justify-between px-5 py-4 bg-nav-bg">
+              <p className="font-display font-bold text-ink text-base">New Neighborhood</p>
+              <button onClick={() => setShowNewModal(false)} className="text-ink/60 hover:text-ink">
                 <X size={18} />
               </button>
             </div>
@@ -230,7 +230,7 @@ export default function NeighborhoodsPage() {
                   onKeyDown={(e) => e.key === 'Enter' && createNeighborhood()}
                   placeholder="e.g. Sunday Crew"
                   autoFocus
-                  className="w-full border-2 border-rule focus:border-ink bg-paper py-2.5 px-3 text-sm text-ink placeholder-ink-faint outline-none transition-colors"
+                  className="w-full border border-rule focus:border-masthead bg-paper py-2.5 px-3 text-sm text-ink placeholder-ink-faint outline-none transition-colors"
                 />
               </div>
               <div>
@@ -240,8 +240,8 @@ export default function NeighborhoodsPage() {
                     <button
                       key={e}
                       onClick={() => setNewEmoji(e)}
-                      className={`flex items-center justify-center h-9 w-9 text-xl rounded-lg border-2 transition-all ${
-                        newEmoji === e ? 'border-ink bg-paper-dark' : 'border-rule hover:border-ink-muted'
+                      className={`flex items-center justify-center h-9 w-9 text-xl rounded-lg border transition-all ${
+                        newEmoji === e ? 'border-masthead bg-paper-dark' : 'border-rule hover:border-ink-muted'
                       }`}
                     >
                       {e}
@@ -278,7 +278,7 @@ export default function NeighborhoodsPage() {
                     value={memberSearch}
                     onChange={(e) => setMemberSearch(e.target.value)}
                     placeholder="Search neighbors to add…"
-                    className="w-full border border-rule bg-paper py-2 pl-8 pr-3 text-xs text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors"
+                    className="w-full border border-rule bg-paper-dark py-2 pl-8 pr-3 text-xs text-ink placeholder-ink-faint outline-none focus:border-masthead transition-colors"
                   />
                 </div>
                 <div className="flex flex-col border border-rule/50 max-h-36 overflow-y-auto">
@@ -305,7 +305,7 @@ export default function NeighborhoodsPage() {
               <button
                 onClick={createNeighborhood}
                 disabled={!newName.trim()}
-                className="w-full bg-ink text-paper py-3 font-bold uppercase tracking-widest text-xs btn-3d disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full bg-masthead text-[#12111a] py-3 font-bold uppercase tracking-widest text-xs btn-3d disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Create Neighborhood
               </button>

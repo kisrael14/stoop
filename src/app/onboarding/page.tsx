@@ -107,9 +107,9 @@ export default function OnboardingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-paper">
       {/* Masthead */}
-      <div className="px-6 pt-12 pb-6 bg-ink">
-        <h1 className="font-display text-3xl font-black text-paper mb-1">Stoop Sports</h1>
-        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-paper/50 mb-5">Setup Your Stoop</p>
+      <div className="px-6 pt-12 pb-6 bg-nav-bg">
+        <h1 className="font-display text-3xl font-black text-ink mb-1">Stoop Sports</h1>
+        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-ink/50 mb-5">Setup Your Stoop</p>
 
         <div className="flex items-center gap-3">
           {([1, 2, 3] as Step[]).map((s) => (
@@ -117,10 +117,10 @@ export default function OnboardingPage() {
               <div
                 className={`flex h-7 w-7 items-center justify-center text-xs font-bold transition-colors ${
                   step > s
-                    ? 'bg-field text-paper'
+                    ? 'bg-field text-ink'
                     : step === s
-                    ? 'bg-press text-paper'
-                    : 'bg-ink-muted/30 text-paper/40'
+                    ? 'bg-press text-ink'
+                    : 'bg-ink-muted/30 text-ink/40'
                 }`}
               >
                 {step > s ? <Check size={13} /> : s}
@@ -130,7 +130,7 @@ export default function OnboardingPage() {
               )}
             </div>
           ))}
-          <span className="ml-1 text-[11px] font-bold uppercase tracking-widest text-paper/60">
+          <span className="ml-1 text-[11px] font-bold uppercase tracking-widest text-ink/60">
             {stepLabels[step - 1]}
           </span>
         </div>
@@ -158,7 +158,7 @@ export default function OnboardingPage() {
                   <span className="text-4xl">{avatar}</span>
                 )}
                 <div className="absolute inset-0 flex items-center justify-center bg-ink/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Camera size={20} className="text-paper" />
+                  <Camera size={20} className="text-ink" />
                 </div>
               </button>
               <div>
@@ -266,7 +266,7 @@ export default function OnboardingPage() {
                     <div className="flex items-center gap-3 px-4 pt-3 pb-2">
                       <GripVertical size={15} className="text-ink-faint cursor-grab shrink-0" />
                       <span
-                        className="flex h-6 w-6 items-center justify-center text-xs font-bold text-paper shrink-0"
+                        className="flex h-6 w-6 items-center justify-center text-xs font-bold text-ink shrink-0"
                         style={{ backgroundColor: ft.team.color }}
                       >
                         {index + 1}
@@ -290,8 +290,8 @@ export default function OnboardingPage() {
                           onClick={() => setTeamFandomLevel(ft.team.id, fl.value)}
                           className={`flex-1 py-1.5 text-[8px] font-bold uppercase tracking-wide transition-colors border leading-tight ${
                             ft.fandomLevel === fl.value
-                              ? 'bg-ink text-paper border-ink'
-                              : 'bg-paper text-ink-muted border-rule hover:bg-paper-dark'
+                              ? 'bg-masthead text-[#12111a] border-masthead'
+                              : 'bg-paper-dark text-ink-muted border-rule hover:bg-paper-deeper'
                           }`}
                         >
                           {fl.emoji}<br />{fl.label}
@@ -336,7 +336,7 @@ export default function OnboardingPage() {
                       {user.fanTeams.slice(0, 2).map((ft) => (
                         <span
                           key={ft.team.id}
-                          className="px-2 py-0.5 text-[10px] font-bold text-paper uppercase tracking-wide"
+                          className="px-2 py-0.5 text-[10px] font-bold text-ink uppercase tracking-wide"
                           style={{ backgroundColor: ft.team.color + '80' }}
                         >
                           {ft.team.emoji} {ft.team.name}
@@ -349,7 +349,7 @@ export default function OnboardingPage() {
                     className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors shrink-0 ${
                       following.includes(user.id)
                         ? 'border border-rule bg-paper-dark text-ink-muted'
-                        : 'bg-ink text-paper hover:bg-ink/80'
+                        : 'bg-masthead text-[#12111a] hover:bg-masthead/80'
                     }`}
                   >
                     {following.includes(user.id) ? 'Following' : 'Follow'}
@@ -362,7 +362,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Footer CTA */}
-      <div className="sticky bottom-0 border-t-2 border-rule bg-paper px-6 py-4">
+      <div className="sticky bottom-0 border-t border-rule bg-paper-dark px-6 py-4">
         <div className="flex gap-3">
           {step > 1 && (
             <button
@@ -377,7 +377,7 @@ export default function OnboardingPage() {
             <button
               onClick={() => setStep((prev) => (prev + 1) as Step)}
               disabled={step === 1 ? !canAdvanceStep1 : !canAdvanceStep2}
-              className="flex flex-1 items-center justify-center gap-2 bg-ink py-3 text-xs font-bold text-paper uppercase tracking-widest hover:bg-ink/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="flex flex-1 items-center justify-center gap-2 bg-masthead py-3 text-xs font-bold text-[#12111a] uppercase tracking-widest hover:bg-masthead/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Continue
               <ChevronRight size={15} />
@@ -427,7 +427,7 @@ export default function OnboardingPage() {
                 router.push('/stoop');
               }}
               disabled={saving}
-              className="flex flex-1 items-center justify-center gap-2 bg-ink py-3 text-xs font-bold text-paper uppercase tracking-widest hover:bg-ink/80 disabled:opacity-60 transition-colors"
+              className="flex flex-1 items-center justify-center gap-2 bg-masthead py-3 text-xs font-bold text-[#12111a] uppercase tracking-widest hover:bg-masthead/80 disabled:opacity-60 transition-colors"
             >
               {saving ? '…' : 'Enter the Stoop 🏟️'}
             </button>

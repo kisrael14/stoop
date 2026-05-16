@@ -104,7 +104,7 @@ export default function LoginPage() {
   if (emailConfirmSent) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-paper px-8 text-center gap-6">
-        <div className="border-b-2 border-t-2 border-ink py-2 px-8 w-full text-center">
+        <div className="border-b border-t border-rule py-2 px-8 w-full text-center">
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-ink-muted">Est. 2024 · Sports Edition</p>
         </div>
         <h1 className="font-display text-4xl font-black text-ink tracking-tight leading-tight">
@@ -139,13 +139,13 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col bg-paper">
       {/* Masthead */}
       <div className="flex flex-col items-center pt-14 pb-8 px-6">
-        <div className="border-b-2 border-t-2 border-ink py-2 px-8 mb-4 w-full text-center">
+        <div className="border-b border-t border-rule py-2 px-8 mb-4 w-full text-center">
           <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-ink-muted">Est. 2024 · Sports Edition</p>
         </div>
         <h1 className="font-display text-5xl font-black text-ink tracking-tight text-center leading-tight">
           Stoop<br />Sports
         </h1>
-        <div className="border-b border-ink w-full mt-3 mb-2" />
+        <div className="border-b border-rule w-full mt-3 mb-2" />
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ink-muted text-center">
           Your Neighborhood Sports Desk
         </p>
@@ -153,13 +153,13 @@ export default function LoginPage() {
 
       {/* Tab switcher */}
       <div className="px-6 mb-5">
-        <div className="flex gap-0 border border-ink overflow-hidden">
+        <div className="flex gap-0 border border-rule overflow-hidden">
           {(['signin', 'signup'] as Mode[]).map((m) => (
             <button
               key={m}
               onClick={() => { setMode(m); setError(''); }}
-              className={`flex-1 py-2.5 text-sm font-bold uppercase tracking-wider transition-colors border-r last:border-r-0 border-ink ${
-                mode === m ? 'bg-ink text-paper' : 'bg-paper text-ink-muted hover:bg-paper-dark'
+              className={`flex-1 py-2.5 text-sm font-bold uppercase tracking-wider transition-colors border-r last:border-r-0 border-rule ${
+                mode === m ? 'bg-masthead text-[#12111a]' : 'bg-paper-dark text-ink-muted hover:bg-paper-deeper'
               }`}
             >
               {m === 'signin' ? 'Sign In' : 'Sign Up'}
@@ -174,7 +174,7 @@ export default function LoginPage() {
           <button
             onClick={() => signInWithOAuth('google')}
             disabled={oauthLoading !== null}
-            className="flex items-center justify-center gap-3 border-2 border-ink py-3 font-bold text-sm text-ink hover:bg-paper-dark transition-colors disabled:opacity-50"
+            className="flex items-center justify-center gap-3 border border-rule py-3 font-bold text-sm text-ink hover:bg-paper-dark transition-colors disabled:opacity-50"
           >
             {oauthLoading === 'google' ? <Spinner /> : (
               <svg width="18" height="18" viewBox="0 0 24 24">
@@ -189,7 +189,7 @@ export default function LoginPage() {
           <button
             onClick={() => signInWithOAuth('apple')}
             disabled={oauthLoading !== null}
-            className="flex items-center justify-center gap-3 border-2 border-ink py-3 font-bold text-sm text-ink hover:bg-paper-dark transition-colors disabled:opacity-50"
+            className="flex items-center justify-center gap-3 border border-rule py-3 font-bold text-sm text-ink hover:bg-paper-dark transition-colors disabled:opacity-50"
           >
             {oauthLoading === 'apple' ? <Spinner /> : (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -262,7 +262,7 @@ export default function LoginPage() {
         )}
 
         <button onClick={handleSubmit} disabled={loading}
-          className="flex items-center justify-center gap-2 bg-ink py-4 font-bold text-paper hover:bg-ink/80 disabled:opacity-60 transition-colors mt-1 uppercase tracking-widest text-sm">
+          className="flex items-center justify-center gap-2 bg-masthead py-4 font-bold text-[#12111a] hover:bg-masthead/80 disabled:opacity-60 transition-colors mt-1 uppercase tracking-widest text-sm">
           {loading ? <Spinner light /> : <>{mode === 'signin' ? 'Enter the Stoop' : 'Join the Stoop'}<ChevronRight size={18} /></>}
         </button>
 

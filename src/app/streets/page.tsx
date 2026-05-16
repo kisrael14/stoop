@@ -3,17 +3,17 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import {
-  Flame, Snowflake, Swords, Handshake, Plus, X, Send, Trophy,
+  Flame, Snowflake, Swords, Plus, X, Send, Trophy,
   MessageCircle, ChevronDown, ChevronUp, PenLine, Megaphone,
 } from 'lucide-react';
-import { HOT_TAKES, DEBATES, BETS, ANALYSES, getUserById, USERS, ME } from '@/lib/mock-data';
+import { HOT_TAKES, DEBATES, ANALYSES, getUserById, USERS, ME } from '@/lib/mock-data';
 import { timeAgo } from '@/lib/utils';
-import type { HotTake, HotTakeComment, Debate, Bet, Analysis, DebateVote } from '@/lib/types';
-import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
+import type { HotTake, HotTakeComment, Debate, Analysis, DebateVote } from '@/lib/types';
+import DebateSetupModal, { type DebateSetupResult } from '@/components/DebateSetupModal';
 import { detectTeamIds } from '@/lib/players-data';
 
-type Filter = 'all' | 'takes' | 'debates' | 'bets' | 'analysis';
-type PostType = 'take' | 'debate' | 'bet' | 'analysis';
+type Filter = 'all' | 'takes' | 'debates' | 'analysis';
+type PostType = 'take' | 'debate' | 'analysis';
 
 const INITIAL_LIMIT = 5;
 
@@ -30,7 +30,6 @@ export default function StreetsPage() {
     HOT_TAKES.filter((ht) => ht.isPublic).map((ht) => ({ ...ht, comments: ht.comments ?? [] }))
   );
   const [localDebates, setLocalDebates] = useState<Debate[]>(() => DEBATES.filter((d) => d.isPublic));
-  const [localBets] = useState<Bet[]>(() => BETS.filter((b) => b.isPublic));
   const [localAnalyses, setLocalAnalyses] = useState<Analysis[]>(() =>
     ANALYSES.filter((a) => a.isPublic).map((a) => ({ ...a, comments: a.comments ?? [] }))
   );
@@ -38,7 +37,7 @@ export default function StreetsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [postType, setPostType] = useState<PostType>('take');
   const [postText, setPostText] = useState('');
-  const [betSetupClaim, setBetSetupClaim] = useState<string | null>(null);
+  const [debateSetupClaim, setDebateSetupClaim] = useState<string | null>(null);
 
   const [showCommentsFor, setShowCommentsFor] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
@@ -116,7 +115,7 @@ export default function StreetsPage() {
 
   const submitPost = () => {
     if (!postText.trim()) return;
-    if (postType === 'bet') { setBetSetupClaim(postText.trim()); return; }
+    if (postType === 'debate') { setDebateSetupClaim(postText.trim()); return; }
     const detectedTeams = detectTeamIds(postText.trim());
     if (postType === 'take') {
       setLocalHotTakes((prev) => [{
@@ -137,11 +136,18 @@ export default function StreetsPage() {
     setShowAddModal(false);
   };
 
-  const confirmBet = (_data: BetSetupResult) => {
-    // Bet object creation for streets is handled by the neighborhood flow;
-    // here we just close the modal. teamIds detection happens if this page
-    // is extended to create a full Bet record.
-    setBetSetupClaim(null);
+  const confirmDebate = (data: DebateSetupResult) => {
+    const detectedTeams = detectTeamIds(data.claim);
+    const newDebate: Debate = {
+      id: `d-s-${Date.now()}`, chatId: 'streets', chatName: 'The Streets',
+      claim: data.claim,
+      side1Label: data.side1Label, side2Label: data.side2Label,
+      side1UserIds: [], side2UserIds: [],
+      arguments: [], votes: [], status: 'active', teamIds: detectedTeams,
+      createdAt: new Date().toISOString(), isPublic: true,
+    };
+    setLocalDebates((prev) => [newDebate, ...prev]);
+    setDebateSetupClaim(null);
     setPostText('');
     setShowAddModal(false);
   };
@@ -149,14 +155,12 @@ export default function StreetsPage() {
   const feedItems = [
     ...localHotTakes.map((ht) => ({ type: 'take' as const, time: ht.createdAt, ht })),
     ...localDebates.map((d) => ({ type: 'debate' as const, time: d.createdAt, d })),
-    ...localBets.map((b) => ({ type: 'bet' as const, time: b.createdAt, b })),
     ...localAnalyses.map((a) => ({ type: 'analysis' as const, time: a.createdAt, a })),
   ]
     .filter((item) =>
       filter === 'all' ||
       (filter === 'takes' && item.type === 'take') ||
       (filter === 'debates' && item.type === 'debate') ||
-      (filter === 'bets' && item.type === 'bet') ||
       (filter === 'analysis' && item.type === 'analysis')
     )
     .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
@@ -165,7 +169,6 @@ export default function StreetsPage() {
     { id: 'all', label: 'All' },
     { id: 'takes', label: '🔥 Takes' },
     { id: 'debates', label: '⚔️ Debates' },
-    { id: 'bets', label: '🤝 Bets' },
     { id: 'analysis', label: '📊 Analysis' },
   ];
 
@@ -176,14 +179,14 @@ export default function StreetsPage() {
     <div className="flex flex-col min-h-full bg-paper">
 
       {/* ── Header — sticky ────────────────────────────────── */}
-      <div className="sticky top-0 z-20 bg-ink px-4 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-20 bg-nav-bg px-4 py-3 flex items-center justify-between">
         <div>
-          <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-paper/40">Live · Public Feed</p>
-          <h1 className="font-display text-2xl font-black text-paper leading-none">The Streets</h1>
+          <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-ink/40">Live · Public Feed</p>
+          <h1 className="font-display text-2xl font-black text-ink leading-none">The Streets</h1>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1.5 bg-press text-paper px-3.5 py-2 rounded-full font-bold text-[11px] uppercase tracking-widest btn-3d hover:bg-press/80 transition-colors shrink-0"
+          className="flex items-center gap-1.5 bg-masthead text-[#12111a] px-3.5 py-2 rounded-full font-bold text-[11px] uppercase tracking-widest btn-3d hover:bg-masthead/80 transition-colors shrink-0"
         >
           <Plus size={12} /> Post
         </button>
@@ -197,7 +200,7 @@ export default function StreetsPage() {
             onClick={() => handleFilterChange(id)}
             className={`shrink-0 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-full transition-colors whitespace-nowrap ${
               filter === id
-                ? 'bg-ink text-paper'
+                ? 'bg-masthead/20 text-masthead border border-masthead/50'
                 : 'bg-paper border border-rule text-ink-muted hover:border-ink-muted hover:text-ink'
             }`}
           >
@@ -234,7 +237,7 @@ export default function StreetsPage() {
             const showingComments = showCommentsFor === ht.id;
 
             return (
-              <div key={ht.id} className="border-2 border-ink overflow-hidden">
+              <div key={ht.id} className="border border-rule overflow-hidden">
                 {/* Author row */}
                 <div className="flex items-center gap-2.5 px-4 pt-3 pb-2 border-b border-rule/50">
                   <Link href={`/users/${ht.authorId}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-base hover:border-ink transition-all shrink-0">
@@ -334,7 +337,7 @@ export default function StreetsPage() {
                           placeholder="Reply… @ to mention"
                           className="flex-1 bg-paper border border-rule px-3 py-1.5 text-xs text-ink placeholder-ink-faint outline-none focus:border-ink rounded-full"
                         />
-                        <button onClick={() => addComment(ht.id)} disabled={!commentText.trim()} className="h-7 w-7 flex items-center justify-center bg-ink text-paper rounded-full disabled:opacity-40 shrink-0">
+                        <button onClick={() => addComment(ht.id)} disabled={!commentText.trim()} className="h-7 w-7 flex items-center justify-center bg-nav-bg text-ink rounded-full disabled:opacity-40 shrink-0">
                           <Send size={11} />
                         </button>
                       </div>
@@ -357,7 +360,7 @@ export default function StreetsPage() {
             const s2Pct = total > 0 ? Math.round((s2Count / total) * 100) : 0;
             const myVote = d.votes.find((v) => v.userId === 'me')?.choice;
             return (
-              <div key={d.id} className="border-2 border-ink overflow-hidden">
+              <div key={d.id} className="border border-rule overflow-hidden">
                 <div className="flex items-center gap-2 px-4 pt-3 pb-2 border-b border-rule/50">
                   <div className="flex items-center gap-1 bg-navy/10 border border-navy/30 px-2 py-0.5 rounded-full">
                     <Swords size={10} className="text-navy" />
@@ -406,7 +409,7 @@ export default function StreetsPage() {
                     onClick={() => voteDebate(d.id, 'side1')}
                     className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-colors border ${
                       myVote === 'side1'
-                        ? 'bg-navy text-paper border-navy'
+                        ? 'bg-navy text-ink border-navy'
                         : 'bg-paper border-rule text-ink-muted hover:border-navy hover:text-navy'
                     }`}
                   >
@@ -416,7 +419,7 @@ export default function StreetsPage() {
                     onClick={() => voteDebate(d.id, 'side2')}
                     className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-colors border ${
                       myVote === 'side2'
-                        ? 'bg-field text-paper border-field'
+                        ? 'bg-field text-ink border-field'
                         : 'bg-paper border-rule text-ink-muted hover:border-field hover:text-field'
                     }`}
                   >
@@ -439,7 +442,7 @@ export default function StreetsPage() {
             const author = getUserById(a.authorId);
             const isMe = a.authorId === 'me';
             return (
-              <Link key={a.id} href={`/analyses/${a.id}`} className="block border-2 border-ink overflow-hidden hover:bg-paper-dark/30 transition-colors">
+              <Link key={a.id} href={`/analyses/${a.id}`} className="block border border-rule overflow-hidden hover:bg-paper-dark/30 transition-colors">
                 <div className="flex items-center gap-2 px-4 pt-3 pb-2 border-b border-rule/50">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-paper-dark border border-rule text-sm shrink-0">
                     {isMe ? ME.avatar : author?.avatar}
@@ -448,12 +451,12 @@ export default function StreetsPage() {
                     <span className="text-[10px] font-bold text-ink">{isMe ? 'You' : author?.displayName}</span>
                     <span className="text-[9px] text-ink-faint font-mono ml-2">{timeAgo(a.createdAt)}</span>
                   </div>
-                  <div className="flex items-center gap-1 bg-ink/5 border border-ink/20 px-2 py-0.5 rounded-full shrink-0">
+                  <div className="flex items-center gap-1 bg-rule border border-rule-dark px-2 py-0.5 rounded-full shrink-0">
                     <PenLine size={10} className="text-ink-muted" />
                     <span className="text-[9px] font-bold text-ink-muted uppercase tracking-wider">Analysis</span>
                   </div>
                 </div>
-                <div className="px-4 py-3 border-l-4 border-l-ink">
+                <div className="px-4 py-3 border-l-4 border-l-ink-muted">
                   <h3 className="font-display text-sm font-bold text-ink leading-snug mb-1">{a.title}</h3>
                   <p className="text-xs text-ink-muted leading-relaxed line-clamp-2">{a.content}</p>
                 </div>
@@ -465,82 +468,12 @@ export default function StreetsPage() {
             );
           }
 
-          // ── Bet ───────────────────────────────────────────
-          const b = entry.b;
-          const side1Users = (b.side1Ids ?? []).map((id) => getUserById(id)).filter(Boolean);
-          const side2Users = (b.side2Ids ?? []).map((id) => getUserById(id)).filter(Boolean);
-          const participants = b.participantIds.map((pid) => getUserById(pid)).filter(Boolean);
-          const winner = b.winnerId ? getUserById(b.winnerId) : null;
-          return (
-            <Link key={b.id} href={`/neighborhoods/${b.chatId}?tab=bets`} className="block border-2 border-ink overflow-hidden hover:bg-paper-dark/30 transition-colors">
-              <div className="flex items-center gap-2 px-4 pt-3 pb-2 border-b border-rule/50">
-                <div className="flex items-center gap-1 bg-field/10 border border-field/30 px-2 py-0.5 rounded-full">
-                  <Handshake size={10} className="text-field" />
-                  <span className="text-[9px] font-bold text-field uppercase tracking-wider">Bet</span>
-                </div>
-                <span className="text-[9px] text-ink-faint font-mono ml-auto">{timeAgo(b.createdAt)}</span>
-              </div>
-              <div className="px-4 py-3 border-l-4 border-l-field">
-                <p className="font-display text-sm font-bold text-ink italic leading-snug mb-2.5">&ldquo;{b.claim}&rdquo;</p>
-                {b.side1Ids && b.side2Ids ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-navy mb-1">{b.side1Label ?? 'Side 1'}</p>
-                      <div className="flex flex-wrap gap-1">
-                        {side1Users.map((u) => (
-                          <span key={u!.id} className="flex items-center gap-1 bg-paper-dark border border-rule px-1.5 py-0.5 text-[10px] text-ink-muted">
-                            {u!.avatar} {u!.displayName.split(' ')[0]}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-field mb-1">{b.side2Label ?? 'Side 2'}</p>
-                      <div className="flex flex-wrap gap-1 justify-end">
-                        {side2Users.map((u) => (
-                          <span key={u!.id} className="flex items-center gap-1 bg-paper-dark border border-rule px-1.5 py-0.5 text-[10px] text-ink-muted">
-                            {u!.avatar} {u!.displayName.split(' ')[0]}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex gap-2 flex-wrap">
-                    {participants.map((p, i) => (
-                      <span key={p!.id} className="flex items-center gap-1">
-                        {i > 0 && <span className="text-ink-faint text-xs font-bold">vs</span>}
-                        <span className="flex items-center gap-1 bg-paper-dark border border-rule px-1.5 py-0.5 text-[10px] text-ink-muted">
-                          {p!.avatar} {p!.displayName.split(' ')[0]}
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {b.stakes && (
-                  <p className="text-[9px] text-ink-muted italic mt-2 pt-1.5 border-t border-rule/40">
-                    Stakes: <span className="font-bold text-ink">{b.stakes}</span>
-                  </p>
-                )}
-                {b.status === 'resolved' && (
-                  <div className="flex items-center gap-1 mt-2 pt-1.5 border-t border-rule/40">
-                    <Trophy size={10} className="text-rule-dark" />
-                    <span className="text-[10px] font-bold text-ink">{b.isPush ? 'Push' : `${winner?.displayName} won`}</span>
-                  </div>
-                )}
-              </div>
-              <div className="border-t border-rule/50 px-4 py-2 bg-paper-dark flex items-center">
-                <span className="text-[9px] text-ink-faint font-mono">{b.chatName}</span>
-                <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-field">{b.status}</span>
-              </div>
-            </Link>
-          );
         })}
 
         {hasMore && (
           <button
             onClick={() => setShowAll(true)}
-            className="w-full py-3 border-2 border-ink text-ink font-bold text-xs uppercase tracking-widest hover:bg-paper-dark transition-colors"
+            className="w-full py-3 border border-rule text-ink font-bold text-xs uppercase tracking-widest hover:bg-paper-dark transition-colors"
           >
             See More ({feedItems.length - INITIAL_LIMIT} more)
           </button>
@@ -550,28 +483,30 @@ export default function StreetsPage() {
       {/* ── Post Modal ─────────────────────────────────────── */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
-          <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
-          <div className="relative w-full max-w-md bg-paper rounded-t-2xl overflow-hidden border-t-2 border-ink">
-            <div className="flex items-center justify-between px-5 py-3.5 bg-ink">
+          <div className="absolute inset-0 bg-nav-bg/80 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
+          <div className="relative w-full max-w-md bg-paper-dark rounded-t-2xl overflow-hidden border-t border-rule">
+            <div className="flex items-center justify-between px-5 py-3.5 bg-nav-bg">
               <div className="flex items-center gap-2">
-                <Megaphone size={14} className="text-paper" />
-                <p className="font-display font-bold text-paper text-sm">Post to The Streets</p>
+                <Megaphone size={14} className="text-masthead" />
+                <p className="font-display font-bold text-ink text-sm">Post to The Streets</p>
               </div>
-              <button onClick={() => { setShowAddModal(false); setPostText(''); }} className="text-paper/60 hover:text-paper"><X size={16} /></button>
+              <button onClick={() => { setShowAddModal(false); setPostText(''); }} className="text-ink/60 hover:text-ink"><X size={16} /></button>
             </div>
             <div className="px-5 py-4 flex flex-col gap-3">
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5">
                 {([
                   { id: 'take', emoji: '🔥', label: 'Take' },
                   { id: 'debate', emoji: '⚔️', label: 'Debate' },
-                  { id: 'bet', emoji: '🤝', label: 'Bet' },
                   { id: 'analysis', emoji: '📊', label: 'Analysis' },
                 ] as { id: PostType; emoji: string; label: string }[]).map(({ id, emoji, label }) => (
                   <button
                     key={id}
-                    onClick={() => setPostType(id)}
+                    onClick={() => {
+                      if (id === 'debate') { setShowAddModal(false); setPostText(''); setDebateSetupClaim(''); return; }
+                      setPostType(id);
+                    }}
                     className={`flex flex-col items-center gap-0.5 py-2.5 border rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
-                      postType === id ? 'border-ink bg-ink text-paper' : 'border-rule text-ink-muted hover:border-ink-muted'
+                      postType === id ? 'border-masthead bg-nav-bg text-ink' : 'border-rule text-ink-muted hover:border-ink-muted'
                     }`}
                   >
                     <span className="text-lg">{emoji}</span>{label}
@@ -599,7 +534,7 @@ export default function StreetsPage() {
               <button
                 onClick={submitPost}
                 disabled={!postText.trim()}
-                className="flex-1 bg-press text-paper py-2.5 text-xs font-bold uppercase tracking-widest disabled:opacity-40 rounded-full btn-3d hover:bg-press/80"
+                className="flex-1 bg-masthead text-[#12111a] py-2.5 text-xs font-bold uppercase tracking-widest disabled:opacity-40 rounded-full btn-3d hover:bg-masthead/80"
               >
                 Post to The Streets
               </button>
@@ -608,12 +543,12 @@ export default function StreetsPage() {
         </div>
       )}
 
-      {betSetupClaim !== null && (
-        <BetSetupModal
-          claim={betSetupClaim}
-          members={USERS}
-          onConfirm={confirmBet}
-          onCancel={() => setBetSetupClaim(null)}
+
+      {debateSetupClaim !== null && (
+        <DebateSetupModal
+          initialClaim={debateSetupClaim}
+          onConfirm={confirmDebate}
+          onCancel={() => setDebateSetupClaim(null)}
         />
       )}
     </div>
