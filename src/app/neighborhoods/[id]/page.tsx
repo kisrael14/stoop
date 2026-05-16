@@ -172,27 +172,29 @@ export default function NeighborhoodPage() {
     }
   }, [messages, activeTab]);
 
-  // Poll for new messages every 5 seconds on real neighborhoods
+  // Realtime subscription — appends new messages as they arrive without overwriting state
   useEffect(() => {
     if (!isRealId || !isSupabaseConfigured() || dbLoading) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createClient() as any;
-    const interval = setInterval(async () => {
-      const { data: msgs } = await supabase
-        .from('messages')
-        .select('id, user_id, content, tag, created_at')
-        .eq('neighborhood_id', id)
-        .order('created_at', { ascending: true })
-        .limit(200);
-      if (msgs) {
-        const converted: Message[] = msgs.map((m: any) => ({
-          id: m.id, chatId: id, userId: m.user_id, content: m.content,
-          tag: m.tag ?? undefined, timestamp: m.created_at, reactions: [],
-        }));
-        setMessages(converted);
-      }
-    }, 5000);
-    return () => clearInterval(interval);
+    const channel = supabase
+      .channel(`hood-msgs-${id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `neighborhood_id=eq.${id}` },
+        (payload: any) => {
+          const m = payload.new;
+          setMessages((prev) => {
+            if (prev.some((msg) => msg.id === m.id)) return prev;
+            return [...prev, {
+              id: m.id, chatId: id, userId: m.user_id, content: m.content,
+              tag: m.tag ?? undefined, timestamp: m.created_at, reactions: [],
+            }];
+          });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isRealId, dbLoading]);
 
@@ -260,7 +262,7 @@ export default function NeighborhoodPage() {
   };
 
   // ─── Chat actions ────────────────────────────────────────
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!inputText.trim() && !pendingMediaUrl) return;
     if (pendingTag === 'hot-take' && inputText.length > HOT_TAKE_MAX) return;
 
@@ -301,12 +303,16 @@ export default function NeighborhoodPage() {
     if (isRealId && authUser && isSupabaseConfigured()) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const supabase = createClient() as any;
-      supabase.from('messages').insert({
+      const { error: sendErr } = await supabase.from('messages').insert({
         neighborhood_id: id,
         user_id: authUser.id,
         content: inputText.trim(),
         tag: pendingTag ?? null,
       });
+      if (sendErr) {
+        console.error('Message send failed:', sendErr);
+        setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+      }
     } else {
       triggerTypingReply();
     }
