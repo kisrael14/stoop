@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Plus, Search, Swords, Handshake, Flame, X } from 'lucide-react';
 import { CHATS, DEBATES, BETS, HOT_TAKES, getUserById } from '@/lib/mock-data';
 import { timeAgo } from '@/lib/utils';
@@ -16,6 +17,7 @@ type DbNeighborhood = { id: string; name: string; emoji: string; memberCount: nu
 type DbProfile = { id: string; username: string; display_name: string; avatar: string };
 
 export default function NeighborhoodsPage() {
+  const router = useRouter();
   const { user: authUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewModal, setShowNewModal] = useState(false);
@@ -274,32 +276,29 @@ export default function NeighborhoodsPage() {
                 </div>
               </div>
 
-              {/* Stats grid */}
+              {/* Stats grid — buttons not Links to avoid <a> inside <a> */}
               <div className="grid grid-cols-3 border-b border-rule/60 divide-x divide-rule/60">
-                <Link
-                  href={`/neighborhoods/${chat.id}?tab=debates`}
-                  onClick={(e) => e.stopPropagation()}
+                <button
+                  onClick={(e) => { e.preventDefault(); router.push(`/neighborhoods/${chat.id}?tab=debates`); }}
                   className="py-2.5 text-center hover:bg-paper-deeper transition-colors"
                 >
                   <p className="text-base font-bold text-navy font-mono">{activeDebates}</p>
                   <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint">Debates</p>
-                </Link>
-                <Link
-                  href={`/neighborhoods/${chat.id}?tab=bets`}
-                  onClick={(e) => e.stopPropagation()}
+                </button>
+                <button
+                  onClick={(e) => { e.preventDefault(); router.push(`/neighborhoods/${chat.id}?tab=bets`); }}
                   className="py-2.5 text-center hover:bg-paper-deeper transition-colors"
                 >
                   <p className="text-base font-bold text-field font-mono">{activeBets}</p>
                   <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint">Bets</p>
-                </Link>
-                <Link
-                  href={`/neighborhoods/${chat.id}?tab=hot-takes`}
-                  onClick={(e) => e.stopPropagation()}
+                </button>
+                <button
+                  onClick={(e) => { e.preventDefault(); router.push(`/neighborhoods/${chat.id}?tab=hot-takes`); }}
                   className="py-2.5 text-center hover:bg-paper-deeper transition-colors"
                 >
                   <p className="text-base font-bold text-press font-mono">{recentTakes}</p>
                   <p className="text-[8px] font-bold uppercase tracking-wide text-ink-faint">Takes</p>
-                </Link>
+                </button>
               </div>
 
               {/* Last message preview */}
