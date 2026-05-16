@@ -15,6 +15,8 @@ import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 
 const HIDDEN_ON = ['/login', '/onboarding'];
 
+const HOOD_EMOJIS = ['🏘️','🏟️','🏈','🏀','⚾','⚽','🏒','🔥','⚡','🎯','🏆','🎪','🌆','🌃'];
+
 const LEAGUE_COLORS: Record<string, string> = {
   NFL: 'bg-masthead text-ink',
   NBA: 'bg-navy text-ink',
@@ -55,7 +57,11 @@ export default function TopBar() {
   const [fandomPickerFor, setFandomPickerFor] = useState<string | null>(null);
   const [addingHood, setAddingHood] = useState(false);
   const [newHoodName, setNewHoodName] = useState('');
-  const [newHoodEmoji, setNewHoodEmoji] = useState('');
+  const [newHoodEmoji, setNewHoodEmoji] = useState('🏘️');
+  const [newHoodMemberIds, setNewHoodMemberIds] = useState<string[]>([]);
+  const [hoodMemberSearch, setHoodMemberSearch] = useState('');
+  const [hoodDbMembers, setHoodDbMembers] = useState<{ id: string; display_name: string; username: string; avatar: string }[]>([]);
+  const [selectedHoodMemberDetails, setSelectedHoodMemberDetails] = useState<Record<string, { displayName: string; username: string; avatar: string }>>({});
   const inputRef   = useRef<HTMLInputElement>(null);
   const hoodRef    = useRef<HTMLInputElement>(null);
 
@@ -74,6 +80,20 @@ export default function TopBar() {
   useEffect(() => {
     if (addingHood) setTimeout(() => hoodRef.current?.focus(), 50);
   }, [addingHood]);
+
+  useEffect(() => {
+    if (!addingHood || !authUser || !isSupabaseConfigured()) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createClient() as any;
+    const run = async () => {
+      let q = supabase.from('profiles').select('id, username, display_name, avatar').neq('id', authUser.id);
+      if (newHoodMemberIds.length > 0) q = q.not('id', 'in', `(${newHoodMemberIds.join(',')})`);
+      if (hoodMemberSearch.trim().length > 0) q = q.or(`username.ilike.%${hoodMemberSearch}%,display_name.ilike.%${hoodMemberSearch}%`);
+      const { data } = await q.limit(6);
+      setHoodDbMembers(data ?? []);
+    };
+    run();
+  }, [addingHood, hoodMemberSearch, newHoodMemberIds, authUser?.id]);
 
   const addTeamWithFandom = async (teamId: string, level: FandomLevel) => {
     setMyTeamIds((prev) => (prev.includes(teamId) ? prev : [...prev, teamId]));
@@ -148,13 +168,41 @@ export default function TopBar() {
     setFandomPickerFor(null);
     setAddingHood(false);
     setNewHoodName('');
-    setNewHoodEmoji('');
+    setNewHoodEmoji('🏘️');
+    setNewHoodMemberIds([]);
+    setHoodMemberSearch('');
+    setSelectedHoodMemberDetails({});
+  };
+
+  const createNeighborhood = async () => {
+    if (!newHoodName.trim()) return;
+    if (authUser && isSupabaseConfigured()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient() as any;
+      const { data: hood } = await supabase
+        .from('neighborhoods')
+        .insert({ name: newHoodName.trim(), emoji: newHoodEmoji || '🏘️', created_by: authUser.id })
+        .select()
+        .single();
+      if (hood) {
+        const memberInserts = [
+          { neighborhood_id: hood.id, user_id: authUser.id },
+          ...newHoodMemberIds.map((uid) => ({ neighborhood_id: hood.id, user_id: uid })),
+        ];
+        await supabase.from('neighborhood_members').insert(memberInserts);
+        closeAll();
+        router.push(`/neighborhoods/${hood.id}`);
+      }
+    } else {
+      closeAll();
+      router.push('/neighborhoods');
+    }
   };
 
   return (
     <>
-      {/* Tap-away backdrop */}
-      {(chatOpen || searchOpen || fandomOpen) && (
+      {/* Tap-away backdrop for dropdowns */}
+      {(chatOpen || searchOpen || fandomOpen) && !addingHood && (
         <div className="fixed inset-0 z-40" onClick={closeAll} />
       )}
 
@@ -499,47 +547,149 @@ export default function TopBar() {
               All Neighborhoods →
             </button>
             <button
-              onClick={() => setAddingHood((a) => !a)}
+              onClick={() => { setChatOpen(false); setAddingHood(true); }}
               className="flex items-center justify-center h-6 w-6 rounded-full bg-masthead text-[#12111a] hover:bg-masthead/80 transition-all active:scale-90 shrink-0"
               title="Create neighborhood"
             >
               <Plus size={13} />
             </button>
           </div>
-
-          {/* Inline neighborhood creation form */}
-          {addingHood && (
-            <div className="border-t border-rule px-4 py-3 bg-paper flex flex-col gap-2.5">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">New Neighborhood</p>
-              <div className="flex gap-2">
-                <input
-                  value={newHoodEmoji}
-                  onChange={(e) => setNewHoodEmoji(e.target.value)}
-                  placeholder="🏘"
-                  maxLength={2}
-                  className="w-12 border border-rule bg-paper-dark px-2 py-2 text-center text-lg outline-none focus:border-masthead transition-colors rounded-lg"
-                />
-                <input
-                  ref={hoodRef}
-                  value={newHoodName}
-                  onChange={(e) => setNewHoodName(e.target.value)}
-                  placeholder="Neighborhood name…"
-                  className="flex-1 border border-rule bg-paper-dark px-3 py-2 text-sm text-ink placeholder-ink-faint outline-none focus:border-masthead transition-colors rounded-lg"
-                />
-              </div>
-              <button
-                disabled={!newHoodName.trim()}
-                onClick={() => {
-                  closeAll();
-                  router.push('/neighborhoods');
-                }}
-                className="w-full py-2 bg-masthead text-[#12111a] text-xs font-bold uppercase tracking-widest rounded-full disabled:opacity-40 disabled:cursor-not-allowed hover:bg-masthead/80 transition-colors"
-              >
-                Create
+        </div>
+      )}
+      {/* ── New Neighborhood Modal ─────────────────────── */}
+      {addingHood && (
+        <>
+          <div className="fixed inset-0 z-60 bg-nav-bg/80 backdrop-blur-sm" onClick={closeAll} />
+          <div className="fixed inset-x-4 top-[10%] z-60 bg-paper-dark border border-rule shadow-2xl max-w-sm mx-auto max-h-[80vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 bg-nav-bg shrink-0">
+              <p className="font-display font-bold text-ink text-base">New Neighborhood</p>
+              <button onClick={closeAll} className="text-ink/60 hover:text-ink">
+                <X size={18} />
               </button>
             </div>
-          )}
-        </div>
+
+            {/* Scrollable body */}
+            <div className="overflow-y-auto flex-1 px-5 py-5 flex flex-col gap-4">
+              {/* Name */}
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-faint block mb-1.5">Name</label>
+                <input
+                  ref={hoodRef}
+                  type="text"
+                  value={newHoodName}
+                  onChange={(e) => setNewHoodName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && createNeighborhood()}
+                  placeholder="e.g. Sunday Crew"
+                  className="w-full border border-rule focus:border-masthead bg-paper py-2.5 px-3 text-sm text-ink placeholder-ink-faint outline-none transition-colors"
+                />
+              </div>
+
+              {/* Emoji picker */}
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-faint block mb-1.5">Emoji</label>
+                <div className="flex flex-wrap gap-2">
+                  {HOOD_EMOJIS.map((e) => (
+                    <button
+                      key={e}
+                      onClick={() => setNewHoodEmoji(e)}
+                      className={`flex items-center justify-center h-9 w-9 text-xl rounded-lg border transition-all ${
+                        newHoodEmoji === e ? 'border-masthead bg-paper-dark' : 'border-rule hover:border-ink-muted'
+                      }`}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Member picker */}
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-faint block mb-1.5">
+                  Add Neighbors ({newHoodMemberIds.length} added)
+                </label>
+
+                {/* Selected chips */}
+                {newHoodMemberIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {newHoodMemberIds.map((uid) => {
+                      const det = selectedHoodMemberDetails[uid];
+                      if (!det) return null;
+                      return (
+                        <span key={uid} className="flex items-center gap-1 px-2 py-1 bg-paper-dark border border-rule text-xs font-bold text-ink">
+                          {det.avatar} {det.displayName.split(' ')[0]}
+                          <button
+                            onClick={() => {
+                              setNewHoodMemberIds((p) => p.filter((id) => id !== uid));
+                              setSelectedHoodMemberDetails((p) => { const n = { ...p }; delete n[uid]; return n; });
+                            }}
+                            className="text-ink-faint hover:text-press ml-0.5"
+                          >
+                            <X size={10} />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Search input */}
+                <div className="relative mb-2">
+                  <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+                  <input
+                    type="text"
+                    value={hoodMemberSearch}
+                    onChange={(e) => setHoodMemberSearch(e.target.value)}
+                    placeholder={authUser && isSupabaseConfigured() ? 'Search neighbors to add…' : 'Sign in to add members'}
+                    disabled={!authUser || !isSupabaseConfigured()}
+                    className="w-full border border-rule bg-paper-dark py-2 pl-8 pr-3 text-xs text-ink placeholder-ink-faint outline-none focus:border-masthead transition-colors disabled:opacity-50"
+                  />
+                </div>
+
+                {/* Results list */}
+                {(authUser && isSupabaseConfigured()) && (
+                  <div className="flex flex-col border border-rule/50 max-h-36 overflow-y-auto">
+                    {hoodDbMembers.map((u) => (
+                      <button
+                        key={u.id}
+                        onClick={() => {
+                          setNewHoodMemberIds((p) => [...p, u.id]);
+                          setSelectedHoodMemberDetails((p) => ({ ...p, [u.id]: { displayName: u.display_name, username: u.username, avatar: u.avatar || '👤' } }));
+                          setHoodMemberSearch('');
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 border-b border-rule/40 last:border-0 hover:bg-paper-dark transition-colors text-left"
+                      >
+                        <span className="text-base">{u.avatar || '👤'}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-ink leading-none">{u.display_name}</p>
+                          <p className="text-[10px] text-ink-faint font-mono">@{u.username}</p>
+                        </div>
+                        <Plus size={12} className="text-ink-muted shrink-0" />
+                      </button>
+                    ))}
+                    {hoodDbMembers.length === 0 && hoodMemberSearch.length > 0 && (
+                      <p className="text-[10px] text-ink-faint italic py-3 text-center">No neighbors found</p>
+                    )}
+                    {hoodDbMembers.length === 0 && hoodMemberSearch.length === 0 && (
+                      <p className="text-[10px] text-ink-faint italic py-3 text-center">Type a name to search</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sticky footer */}
+            <div className="shrink-0 px-5 pb-5 pt-2">
+              <button
+                onClick={createNeighborhood}
+                disabled={!newHoodName.trim()}
+                className="w-full bg-masthead text-[#12111a] py-3 font-bold uppercase tracking-widest text-xs btn-3d disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Create Neighborhood
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </>
   );
