@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Swords, Handshake, Flame, X } from 'lucide-react';
+import { Plus, Search, Swords, Handshake, Flame, X, Trash2 } from 'lucide-react';
 import { CHATS, DEBATES, BETS, HOT_TAKES, getUserById } from '@/lib/mock-data';
 import { timeAgo } from '@/lib/utils';
 import type { Chat } from '@/lib/types';
@@ -13,7 +13,7 @@ import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 const EMOJI_OPTIONS = ['🏘️','🏟️','🏈','🏀','⚾','⚽','🏒','🔥','⚡','🎯','🏆','🎪','🌆','🌃'];
 
 type LocalChat = Chat & { isLocal?: boolean };
-type DbNeighborhood = { id: string; name: string; emoji: string; memberCount: number };
+type DbNeighborhood = { id: string; name: string; emoji: string; memberCount: number; created_by: string | null };
 type DbProfile = { id: string; username: string; display_name: string; avatar: string };
 
 export default function NeighborhoodsPage() {
@@ -39,31 +39,35 @@ export default function NeighborhoodsPage() {
     const supabase = createClient() as any;
     const load = async () => {
       try {
-        // Two-step: get neighborhood_ids, then fetch neighborhood details
+        // Get neighborhood_ids this user belongs to
         const { data: memberRows, error: memberErr } = await supabase
           .from('neighborhood_members')
           .select('neighborhood_id')
           .eq('user_id', authUser.id);
         if (memberErr) { console.error('Memberships fetch error:', memberErr); return; }
-        if (!memberRows?.length) return;
+        if (!memberRows?.length) { setDbNeighborhoods([]); return; }
 
         const hoodIds = memberRows.map((m: any) => m.neighborhood_id);
-        const { data: hoodData, error: hoodErr } = await supabase
-          .from('neighborhoods')
-          .select('id, name, emoji')
-          .in('id', hoodIds);
+
+        // Fetch hood details + all memberships in one go
+        const [{ data: hoodData, error: hoodErr }, { data: allMembers }] = await Promise.all([
+          supabase.from('neighborhoods').select('id, name, emoji, created_by').in('id', hoodIds),
+          supabase.from('neighborhood_members').select('neighborhood_id').in('neighborhood_id', hoodIds),
+        ]);
         if (hoodErr) { console.error('Neighborhoods fetch error:', hoodErr); return; }
 
-        const hoods = await Promise.all(
-          (hoodData ?? []).map(async (hood: any) => {
-            const { count } = await supabase
-              .from('neighborhood_members')
-              .select('*', { count: 'exact', head: true })
-              .eq('neighborhood_id', hood.id);
-            return { id: hood.id, name: hood.name, emoji: hood.emoji, memberCount: count ?? 0 } as DbNeighborhood;
-          })
+        const countMap: Record<string, number> = {};
+        (allMembers ?? []).forEach((m: any) => {
+          countMap[m.neighborhood_id] = (countMap[m.neighborhood_id] ?? 0) + 1;
+        });
+
+        setDbNeighborhoods(
+          (hoodData ?? []).map((h: any) => ({
+            id: h.id, name: h.name, emoji: h.emoji,
+            memberCount: countMap[h.id] ?? 0,
+            created_by: h.created_by ?? null,
+          }))
         );
-        setDbNeighborhoods(hoods);
       } catch (e) {
         console.error('Neighborhoods load exception:', e);
       }
@@ -141,7 +145,7 @@ export default function NeighborhoodsPage() {
             return;
           }
           setDbNeighborhoods((prev) => [
-            { id: hood.id, name: hood.name, emoji: hood.emoji, memberCount: 1 + newMemberIds.length },
+            { id: hood.id, name: hood.name, emoji: hood.emoji, memberCount: 1 + newMemberIds.length, created_by: authUser!.id },
             ...prev,
           ]);
         }
@@ -172,6 +176,16 @@ export default function NeighborhoodsPage() {
     setMemberSearch('');
     setSelectedMemberDetails({});
     setShowNewModal(false);
+  };
+
+  const deleteNeighborhood = async (hoodId: string) => {
+    if (!authUser || !isSupabaseConfigured()) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createClient() as any;
+    await supabase.from('messages').delete().eq('neighborhood_id', hoodId);
+    await supabase.from('neighborhood_members').delete().eq('neighborhood_id', hoodId);
+    const { error } = await supabase.from('neighborhoods').delete().eq('id', hoodId);
+    if (!error) setDbNeighborhoods((prev) => prev.filter((n) => n.id !== hoodId));
   };
 
   const memberSearchResults = isAuthenticated
@@ -216,27 +230,43 @@ export default function NeighborhoodsPage() {
       {isAuthenticated && (
         <div className="grid grid-cols-2 border-l border-t border-rule">
           {filteredDb.map((hood) => (
-            <Link
-              key={hood.id}
-              href={`/neighborhoods/${hood.id}`}
-              className="border-r border-b border-rule block bg-paper-dark hover:bg-paper-deeper transition-colors"
-            >
-              <div className="bg-nav-bg px-3 py-3">
-                <div className="flex items-start gap-2">
-                  <span className="text-2xl leading-none mt-0.5 shrink-0">{hood.emoji}</span>
-                  <div className="min-w-0">
-                    <p className="font-display font-bold text-ink text-sm leading-tight">{hood.name}</p>
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-ink/50 mt-0.5">{hood.memberCount} member{hood.memberCount !== 1 ? 's' : ''}</p>
+            <div key={hood.id} className="relative border-r border-b border-rule bg-paper-dark">
+              <Link
+                href={`/neighborhoods/${hood.id}`}
+                className="block hover:bg-paper-deeper transition-colors"
+              >
+                <div className="bg-nav-bg px-3 py-3">
+                  <div className="flex items-start gap-2 pr-6">
+                    <span className="text-2xl leading-none mt-0.5 shrink-0">{hood.emoji}</span>
+                    <div className="min-w-0">
+                      <p className="font-display font-bold text-ink text-sm leading-tight">{hood.name}</p>
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-ink/50 mt-0.5">{hood.memberCount} member{hood.memberCount !== 1 ? 's' : ''}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="px-3 py-3 min-h-[52px]">
-                <p className="text-[10px] text-ink-faint italic">Open to chat →</p>
-              </div>
-              <div className="border-t border-rule/60 px-3 py-2">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-masthead">Open Chat →</span>
-              </div>
-            </Link>
+                <div className="px-3 py-3 min-h-[52px]">
+                  <p className="text-[10px] text-ink-faint italic">Open to chat →</p>
+                </div>
+                <div className="border-t border-rule/60 px-3 py-2">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-masthead">Open Chat →</span>
+                </div>
+              </Link>
+              {/* Delete button — only for creator */}
+              {hood.created_by === authUser?.id && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (confirm(`Delete "${hood.name}"? This removes all messages and members.`)) {
+                      deleteNeighborhood(hood.id);
+                    }
+                  }}
+                  className="absolute top-2.5 right-2.5 flex items-center justify-center h-6 w-6 rounded-full bg-paper-dark border border-rule text-ink-faint hover:text-press hover:border-press transition-colors"
+                  title="Delete neighborhood"
+                >
+                  <Trash2 size={11} />
+                </button>
+              )}
+            </div>
           ))}
           {filteredDb.length === 0 && (
             <div className="col-span-2 flex flex-col items-center justify-center py-16 text-center px-5">
