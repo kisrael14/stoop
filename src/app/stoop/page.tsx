@@ -112,14 +112,15 @@ export default function StoopPage() {
     <div className="flex flex-col bg-paper min-h-full pb-4">
 
       {/* ── MASTHEAD ──────────────────────────────────────── */}
+      {/* nav-bg stays dark in both themes — all text explicitly white-based for legibility */}
       <div className="bg-nav-bg px-5 pt-12 pb-5">
         {/* Top controls */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex gap-2">
-            <Link href="/discover" className="h-8 w-8 flex items-center justify-center rounded-full bg-ink/10 text-ink/70 hover:bg-ink/20 transition-colors" title="Discover">
+            <Link href="/discover" className="h-8 w-8 flex items-center justify-center rounded-full bg-white/10 text-white/70 hover:bg-white/20 transition-colors" title="Discover">
               <Compass size={16} />
             </Link>
-            <Link href="/onboarding" className="h-8 w-8 flex items-center justify-center rounded-full bg-ink/10 text-ink/70 hover:bg-ink/20 transition-colors" title="Edit profile">
+            <Link href="/onboarding" className="h-8 w-8 flex items-center justify-center rounded-full bg-white/10 text-white/70 hover:bg-white/20 transition-colors" title="Edit profile">
               <Settings size={16} />
             </Link>
           </div>
@@ -130,56 +131,56 @@ export default function StoopPage() {
         {/* Profile row */}
         <div className="flex items-center gap-4 mb-4">
           <Link href="/users/me" className="relative shrink-0">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-ink/15 text-4xl ring-2 ring-masthead hover:ring-masthead/60 transition-all">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/15 text-4xl ring-2 ring-masthead hover:ring-masthead/60 transition-all">
               {avatar}
             </div>
           </Link>
           <div className="flex-1">
-            <h1 className="font-display text-2xl font-black text-ink leading-tight">{displayName}</h1>
-            <p className="text-[11px] font-mono text-ink/50">@{username}</p>
-            {bio && <p className="text-xs text-ink/70 italic mt-0.5 line-clamp-2">{bio}</p>}
+            <h1 className="font-display text-2xl font-black text-white leading-tight">{displayName}</h1>
+            <p className="text-[11px] font-mono text-white/55">@{username}</p>
+            {bio && <p className="text-xs text-white/70 italic mt-0.5 line-clamp-2">{bio}</p>}
           </div>
         </div>
 
         {/* Unified stats + bragging rights grid */}
-        <div className="mt-4 border border-ink/20">
+        <div className="mt-4 border border-white/20">
           {/* Row 1 — social stats */}
-          <div className="grid grid-cols-4 divide-x divide-ink/20">
-            <Link href="/neighbors" className="flex flex-col items-center py-2 hover:bg-ink/10 transition-colors">
-              <p className="font-display text-lg font-bold leading-none text-ink">{followingCount}</p>
-              <p className="text-[7px] font-bold uppercase tracking-wider text-ink/70 mt-0.5">Neighbors</p>
+          <div className="grid grid-cols-4 divide-x divide-white/20">
+            <Link href="/neighbors" className="flex flex-col items-center py-2 hover:bg-white/10 transition-colors">
+              <p className="font-display text-lg font-bold leading-none text-white">{followingCount}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-white/60 mt-0.5">Neighbors</p>
             </Link>
-            <Link href="/followers" className="flex flex-col items-center py-2 hover:bg-ink/10 transition-colors">
-              <p className="font-display text-lg font-bold leading-none text-ink">{followerCount}</p>
-              <p className="text-[7px] font-bold uppercase tracking-wider text-ink/70 mt-0.5">Following</p>
+            <Link href="/followers" className="flex flex-col items-center py-2 hover:bg-white/10 transition-colors">
+              <p className="font-display text-lg font-bold leading-none text-white">{followerCount}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-white/60 mt-0.5">Following</p>
             </Link>
-            <Link href="/neighborhoods" className="flex flex-col items-center py-2 hover:bg-ink/10 transition-colors">
-              <p className="font-display text-lg font-bold leading-none text-ink">{myNeighborhoods.length}</p>
-              <p className="text-[7px] font-bold uppercase tracking-wider text-ink/70 mt-0.5">Neighborhoods</p>
+            <Link href="/neighborhoods" className="flex flex-col items-center py-2 hover:bg-white/10 transition-colors">
+              <p className="font-display text-lg font-bold leading-none text-white">{myNeighborhoods.length}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-white/60 mt-0.5">Neighborhoods</p>
             </Link>
             <div className="flex flex-col items-center py-2">
-              <p className="font-display text-lg font-bold leading-none text-ink">{stats.hotTakeReactions}</p>
-              <p className="text-[7px] font-bold uppercase tracking-wider text-ink/70 mt-0.5">Reactions</p>
+              <p className="font-display text-lg font-bold leading-none text-white">{stats.hotTakeReactions}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-white/60 mt-0.5">Reactions</p>
             </div>
           </div>
           {/* Row 2 — activity stats */}
-          <div className="grid grid-cols-3 divide-x divide-ink/20 border-t border-ink/20">
-            <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-ink/10 transition-colors">
-              <Swords size={10} className="text-ink/60" />
-              <p className="font-display text-base font-black text-press leading-none">{debatePct}%</p>
-              <p className="text-[7px] font-bold text-ink/60 leading-none">{stats.debatesWon}W · {stats.debatesLost}L</p>
-              <p className="text-[7px] font-bold uppercase tracking-wide text-ink/70">Debates</p>
+          <div className="grid grid-cols-3 divide-x divide-white/20 border-t border-white/20">
+            <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-white/10 transition-colors">
+              <Swords size={10} className="text-white/60" />
+              <p className="font-display text-base font-black text-masthead leading-none">{debatePct}%</p>
+              <p className="text-[7px] font-bold text-white/60 leading-none">{stats.debatesWon}W · {stats.debatesLost}L</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-white/70">Debates</p>
             </Link>
-            <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-ink/10 transition-colors">
-              <Handshake size={10} className="text-ink/60" />
-              <p className="font-display text-base font-black text-press leading-none">{betPct}%</p>
-              <p className="text-[7px] font-bold text-ink/60 leading-none">{stats.betsWon}W · {stats.betsLost}L</p>
-              <p className="text-[7px] font-bold uppercase tracking-wide text-ink/70">Bets</p>
+            <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-white/10 transition-colors">
+              <Handshake size={10} className="text-white/60" />
+              <p className="font-display text-base font-black text-masthead leading-none">{betPct}%</p>
+              <p className="text-[7px] font-bold text-white/60 leading-none">{stats.betsWon}W · {stats.betsLost}L</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-white/70">Bets</p>
             </Link>
             <div className="flex flex-col items-center py-2 gap-0.5">
-              <Flame size={10} className="text-press" />
-              <p className="font-display text-base font-black text-press leading-none">{stats.hotTakesPosted}</p>
-              <p className="text-[7px] font-bold uppercase tracking-wide text-ink/70">Hot Takes</p>
+              <Flame size={10} className="text-masthead" />
+              <p className="font-display text-base font-black text-masthead leading-none">{stats.hotTakesPosted}</p>
+              <p className="text-[7px] font-bold uppercase tracking-wide text-white/70">Hot Takes</p>
             </div>
           </div>
         </div>
