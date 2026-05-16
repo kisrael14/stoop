@@ -27,6 +27,8 @@ export default function NeighborhoodsPage() {
   const [dbNeighborhoods, setDbNeighborhoods] = useState<DbNeighborhood[]>([]);
   const [dbMemberResults, setDbMemberResults] = useState<DbProfile[]>([]);
   const [selectedMemberDetails, setSelectedMemberDetails] = useState<Record<string, { displayName: string; avatar: string; username: string }>>({});
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   // Load real neighborhoods from Supabase
   useEffect(() => {
@@ -106,28 +108,49 @@ export default function NeighborhoodsPage() {
 
   const createNeighborhood = async () => {
     if (!newName.trim()) return;
+    setCreateError(null);
 
     if (isAuthenticated) {
+      setCreating(true);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const supabase = createClient() as any;
-      const { data: hood, error: hoodErr } = await supabase
-        .from('neighborhoods')
-        .insert({ name: newName.trim(), emoji: newEmoji, created_by: authUser!.id })
-        .select()
-        .single();
-      if (hoodErr) { console.error('Create neighborhood error:', hoodErr); return; }
-      if (hood) {
-        const memberInserts = [
-          { neighborhood_id: hood.id, user_id: authUser!.id },
-          ...newMemberIds.map((uid) => ({ neighborhood_id: hood.id, user_id: uid })),
-        ];
-        const { error: memberErr } = await supabase.from('neighborhood_members').insert(memberInserts);
-        if (memberErr) console.error('Member insert error:', memberErr);
-        setDbNeighborhoods((prev) => [
-          { id: hood.id, name: hood.name, emoji: hood.emoji, memberCount: 1 + newMemberIds.length },
-          ...prev,
-        ]);
+      try {
+        const { data: hood, error: hoodErr } = await supabase
+          .from('neighborhoods')
+          .insert({ name: newName.trim(), emoji: newEmoji, created_by: authUser!.id })
+          .select()
+          .single();
+        if (hoodErr) {
+          console.error('Create neighborhood error:', hoodErr);
+          setCreateError(hoodErr.message ?? 'Could not create neighborhood');
+          setCreating(false);
+          return;
+        }
+        if (hood) {
+          const memberInserts = [
+            { neighborhood_id: hood.id, user_id: authUser!.id },
+            ...newMemberIds.map((uid) => ({ neighborhood_id: hood.id, user_id: uid })),
+          ];
+          const { error: memberErr } = await supabase.from('neighborhood_members').insert(memberInserts);
+          if (memberErr) {
+            console.error('Member insert error:', memberErr);
+            setCreateError(memberErr.message ?? 'Neighborhood created but could not add members');
+            setCreating(false);
+            return;
+          }
+          setDbNeighborhoods((prev) => [
+            { id: hood.id, name: hood.name, emoji: hood.emoji, memberCount: 1 + newMemberIds.length },
+            ...prev,
+          ]);
+        }
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Unexpected error';
+        console.error('Create neighborhood exception:', e);
+        setCreateError(msg);
+        setCreating(false);
+        return;
       }
+      setCreating(false);
     } else {
       const newChat: LocalChat = {
         id: `local-${Date.now()}`,
@@ -439,12 +462,15 @@ export default function NeighborhoodsPage() {
                 </div>
               </div>
 
+              {createError && (
+                <p className="text-xs text-red-400 text-center px-2 py-1.5 bg-red-400/10 border border-red-400/30 rounded">{createError}</p>
+              )}
               <button
                 onClick={createNeighborhood}
-                disabled={!newName.trim()}
+                disabled={!newName.trim() || creating}
                 className="w-full bg-masthead text-[#12111a] py-3 font-bold uppercase tracking-widest text-xs btn-3d disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Create Neighborhood
+                {creating ? 'Creating…' : 'Create Neighborhood'}
               </button>
             </div>
           </div>

@@ -62,6 +62,8 @@ export default function TopBar() {
   const [hoodMemberSearch, setHoodMemberSearch] = useState('');
   const [hoodDbMembers, setHoodDbMembers] = useState<{ id: string; display_name: string; username: string; avatar: string }[]>([]);
   const [selectedHoodMemberDetails, setSelectedHoodMemberDetails] = useState<Record<string, { displayName: string; username: string; avatar: string }>>({});
+  const [hoodCreating, setHoodCreating] = useState(false);
+  const [hoodError, setHoodError] = useState<string | null>(null);
   const inputRef   = useRef<HTMLInputElement>(null);
   const hoodRef    = useRef<HTMLInputElement>(null);
 
@@ -172,11 +174,15 @@ export default function TopBar() {
     setNewHoodMemberIds([]);
     setHoodMemberSearch('');
     setSelectedHoodMemberDetails({});
+    setHoodCreating(false);
+    setHoodError(null);
   };
 
   const createNeighborhood = async () => {
     if (!newHoodName.trim()) return;
     if (authUser && isSupabaseConfigured()) {
+      setHoodCreating(true);
+      setHoodError(null);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const supabase = createClient() as any;
       try {
@@ -185,19 +191,32 @@ export default function TopBar() {
           .insert({ name: newHoodName.trim(), emoji: newHoodEmoji || '🏘️', created_by: authUser.id })
           .select()
           .single();
-        if (hoodErr) { console.error('Neighborhood insert error:', hoodErr); return; }
+        if (hoodErr) {
+          console.error('Neighborhood insert error:', hoodErr);
+          setHoodError(hoodErr.message ?? 'Could not create neighborhood');
+          setHoodCreating(false);
+          return;
+        }
         if (hood) {
           const memberInserts = [
             { neighborhood_id: hood.id, user_id: authUser.id },
             ...newHoodMemberIds.map((uid) => ({ neighborhood_id: hood.id, user_id: uid })),
           ];
           const { error: memberErr } = await supabase.from('neighborhood_members').insert(memberInserts);
-          if (memberErr) console.error('Member insert error:', memberErr);
+          if (memberErr) {
+            console.error('Member insert error:', memberErr);
+            setHoodError(memberErr.message ?? 'Neighborhood created but could not add members');
+            setHoodCreating(false);
+            return;
+          }
           closeAll();
           router.push(`/neighborhoods/${hood.id}`);
         }
-      } catch (e) {
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Unexpected error';
         console.error('Create neighborhood exception:', e);
+        setHoodError(msg);
+        setHoodCreating(false);
       }
     } else {
       closeAll();
@@ -684,13 +703,16 @@ export default function TopBar() {
             </div>
 
             {/* Sticky footer */}
-            <div className="shrink-0 px-5 pb-5 pt-2">
+            <div className="shrink-0 px-5 pb-5 pt-2 flex flex-col gap-2">
+              {hoodError && (
+                <p className="text-xs text-red-400 text-center px-2 py-1.5 bg-red-400/10 border border-red-400/30 rounded">{hoodError}</p>
+              )}
               <button
                 onClick={createNeighborhood}
-                disabled={!newHoodName.trim()}
+                disabled={!newHoodName.trim() || hoodCreating}
                 className="w-full bg-masthead text-[#12111a] py-3 font-bold uppercase tracking-widest text-xs btn-3d disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Create Neighborhood
+                {hoodCreating ? 'Creating…' : 'Create Neighborhood'}
               </button>
             </div>
           </div>
