@@ -37,6 +37,7 @@ export default function NeighborhoodPage() {
 
   const [messages, setMessages] = useState<Message[]>(chat?.messages ?? []);
   const [inputText, setInputText] = useState('');
+  const [sendError, setSendError] = useState<string | null>(null);
   const [pendingTag, setPendingTag] = useState<MessageTag | null>(null);
   const [showReactionsFor, setShowReactionsFor] = useState<string | null>(null);
   const [tagPickerFor, setTagPickerFor] = useState<string | null>(null);
@@ -113,42 +114,80 @@ export default function NeighborhoodPage() {
         setDbNeighborhood(hood);
         setChatName(hood.name);
         setChatEmoji(hood.emoji);
+        const hoodName = hood.name;
 
-        // Two-step: get member user_ids, then fetch their profiles
+        // Members
         const { data: memberRows, error: memberErr } = await supabase
-          .from('neighborhood_members')
-          .select('user_id')
-          .eq('neighborhood_id', id);
+          .from('neighborhood_members').select('user_id').eq('neighborhood_id', id);
         if (memberErr) console.error('Member fetch error:', memberErr);
         const userIds: string[] = (memberRows ?? []).map((m: any) => m.user_id);
         let profiles: DbProfile[] = [];
         if (userIds.length > 0) {
           const { data: profileData } = await supabase
-            .from('profiles')
-            .select('id, username, display_name, avatar')
-            .in('id', userIds);
+            .from('profiles').select('id, username, display_name, avatar').in('id', userIds);
           profiles = profileData ?? [];
         }
         setDbMemberProfiles(profiles);
         setLocalMemberIds(userIds);
 
-        const { data: msgs, error: msgsErr } = await supabase
-          .from('messages')
-          .select('id, user_id, content, tag, created_at')
-          .eq('neighborhood_id', id)
-          .order('created_at', { ascending: true })
-          .limit(200);
+        // Fetch messages + debates + bets + hot_takes in parallel
+        const [
+          { data: msgs, error: msgsErr },
+          { data: dbDebates },
+          { data: dbBets },
+          { data: dbHotTakes },
+        ] = await Promise.all([
+          supabase.from('messages').select('id, user_id, content, tag, created_at').eq('neighborhood_id', id).order('created_at', { ascending: true }).limit(200),
+          supabase.from('debates').select('*').eq('neighborhood_id', id).order('created_at', { ascending: false }),
+          supabase.from('bets').select('*').eq('neighborhood_id', id).order('created_at', { ascending: false }),
+          supabase.from('hot_takes').select('*').eq('neighborhood_id', id).order('created_at', { ascending: false }),
+        ]);
+
         if (msgsErr) console.error('Messages fetch error:', msgsErr);
-        const converted: Message[] = (msgs ?? []).map((m: any) => ({
-          id: m.id,
-          chatId: id,
-          userId: m.user_id,
-          content: m.content,
-          tag: m.tag ?? undefined,
-          timestamp: m.created_at,
-          reactions: [],
+        setMessages((msgs ?? []).map((m: any) => ({
+          id: m.id, chatId: id, userId: m.user_id, content: m.content,
+          tag: m.tag ?? undefined, timestamp: m.created_at, reactions: [],
+        })));
+
+        // Debate sides (two-step)
+        const debateIds = (dbDebates ?? []).map((d: any) => d.id);
+        const { data: dbDebateSides } = debateIds.length > 0
+          ? await supabase.from('debate_sides').select('debate_id, user_id, side').in('debate_id', debateIds)
+          : { data: [] };
+        setDebates((dbDebates ?? []).map((d: any) => ({
+          id: d.id, chatId: id, chatName: hoodName, claim: d.claim,
+          side1Label: d.side1_label ?? undefined, side2Label: d.side2_label ?? undefined,
+          side1UserIds: (dbDebateSides ?? []).filter((s: any) => s.debate_id === d.id && s.side === '1').map((s: any) => s.user_id),
+          side2UserIds: (dbDebateSides ?? []).filter((s: any) => s.debate_id === d.id && s.side === '2').map((s: any) => s.user_id),
+          arguments: [], votes: [], status: d.status, resolution: d.resolution ?? undefined,
+          teamIds: d.team_ids ?? [], createdAt: d.created_at, isPublic: d.is_public,
+        })));
+
+        // Bet participants (two-step)
+        const betIds = (dbBets ?? []).map((b: any) => b.id);
+        const { data: dbBetParts } = betIds.length > 0
+          ? await supabase.from('bet_participants').select('bet_id, user_id, side').in('bet_id', betIds)
+          : { data: [] };
+        setBets((dbBets ?? []).map((b: any) => {
+          const parts = (dbBetParts ?? []).filter((p: any) => p.bet_id === b.id);
+          return {
+            id: b.id, chatId: id, chatName: hoodName, claim: b.claim,
+            participantIds: parts.map((p: any) => p.user_id),
+            side1Ids: parts.filter((p: any) => p.side === '1').map((p: any) => p.user_id),
+            side2Ids: parts.filter((p: any) => p.side === '2').map((p: any) => p.user_id),
+            side1Label: b.side1_label ?? undefined, side2Label: b.side2_label ?? undefined,
+            stakes: b.stakes ?? undefined, status: b.status,
+            winnerId: b.winner_id ?? undefined, isPush: b.is_push,
+            teamIds: b.team_ids ?? [], createdAt: b.created_at, isPublic: b.is_public,
+          };
         }));
-        setMessages(converted);
+
+        setHotTakes((dbHotTakes ?? []).map((h: any) => ({
+          id: h.id, chatId: id, chatName: hoodName, content: h.content,
+          authorId: h.author_id, reactions: [], teamIds: h.team_ids ?? [],
+          createdAt: h.created_at, isPublic: h.is_public,
+        })));
+
       } catch (e) {
         console.error('Neighborhood load exception:', e);
       } finally {
@@ -299,46 +338,65 @@ export default function NeighborhoodPage() {
     setPendingLinkUrl('');
     setAttachMenuOpen(false);
 
+    setSendError(null);
+
     // Persist to Supabase for real neighborhoods
     if (isRealId && authUser && isSupabaseConfigured()) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const supabase = createClient() as any;
+      const msgContent = inputText.trim();
+      const msgTag = pendingTag;
+
       const { error: sendErr } = await supabase.from('messages').insert({
         neighborhood_id: id,
         user_id: authUser.id,
-        content: inputText.trim(),
-        tag: pendingTag ?? null,
+        content: msgContent,
+        tag: msgTag ?? null,
       });
       if (sendErr) {
         console.error('Message send failed:', sendErr);
+        setSendError(sendErr.message ?? 'Message failed to send');
         setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+      }
+
+      if (msgTag === 'hot-take') {
+        const detectedTeams = detectTeamIds(msgContent);
+        const mergedTeamIds = Array.from(new Set([...(chat?.teamIds ?? []), ...detectedTeams]));
+        const newHT: HotTake = {
+          id: `ht-new-${Date.now()}`, chatId: effectiveChatId, chatName: effectiveChatName,
+          content: msgContent, authorId: senderId, reactions: [], teamIds: mergedTeamIds,
+          createdAt: new Date().toISOString(),
+        };
+        setHotTakes((prev) => [newHT, ...prev]);
+        sendNotification(`🔥 Hot Take — ${effectiveChatName}`, msgContent);
+        await supabase.from('hot_takes').insert({
+          content: msgContent, author_id: authUser.id, neighborhood_id: id,
+          neighborhood_name: effectiveChatName, is_public: false, team_ids: mergedTeamIds,
+        });
       }
     } else {
       triggerTypingReply();
+
+      if (pendingTag === 'hot-take') {
+        const detectedTeams = detectTeamIds(inputText.trim());
+        const mergedTeamIds = Array.from(new Set([...(chat?.teamIds ?? []), ...detectedTeams]));
+        const newHT: HotTake = {
+          id: `ht-new-${Date.now()}`, chatId: effectiveChatId, chatName: effectiveChatName,
+          content: inputText.trim(), authorId: senderId, reactions: [], teamIds: mergedTeamIds,
+          createdAt: new Date().toISOString(),
+        };
+        setHotTakes((prev) => [newHT, ...prev]);
+        sendNotification(`🔥 Hot Take — ${effectiveChatName}`, inputText.trim());
+      }
     }
 
-    if (pendingTag === 'hot-take') {
-      const detectedTeams = detectTeamIds(inputText.trim());
-      const mergedTeamIds = Array.from(new Set([...(chat?.teamIds ?? []), ...detectedTeams]));
-      const newHT: HotTake = {
-        id: `ht-new-${Date.now()}`,
-        chatId: effectiveChatId,
-        chatName: effectiveChatName,
-        content: inputText.trim(),
-        authorId: senderId,
-        reactions: [],
-        teamIds: mergedTeamIds,
-        createdAt: new Date().toISOString(),
-      };
-      setHotTakes((prev) => [newHT, ...prev]);
-      sendNotification(`🔥 Hot Take — ${effectiveChatName}`, inputText.trim());
-    }
     setInputText('');
     setPendingTag(null);
   };
 
-  const confirmBetSetup = (data: BetSetupResult) => {
+  const confirmBetSetup = async (data: BetSetupResult) => {
     const claim = betSetupClaim!;
+    const senderId = (isRealId && authUser?.id) ? authUser.id : 'me';
 
     if (betSetupMessageId) {
       setMessages((prev) =>
@@ -347,15 +405,7 @@ export default function NeighborhoodPage() {
     } else {
       setMessages((prev) => [
         ...prev,
-        {
-          id: `new-${Date.now()}`,
-          chatId: effectiveChat.id,
-          userId: 'me',
-          content: claim,
-          timestamp: new Date().toISOString(),
-          tag: 'bet' as const,
-          reactions: [],
-        },
+        { id: `new-${Date.now()}`, chatId: effectiveChat.id, userId: senderId, content: claim, timestamp: new Date().toISOString(), tag: 'bet' as const, reactions: [] },
       ]);
       setInputText('');
       setPendingTag(null);
@@ -363,30 +413,46 @@ export default function NeighborhoodPage() {
 
     const detectedTeams = detectTeamIds(claim);
     const mergedBetTeamIds = Array.from(new Set([...effectiveChat.teamIds, ...detectedTeams]));
+    const tempId = `b-new-${Date.now()}`;
     const newBet: Bet = {
-      id: `b-new-${Date.now()}`,
-      chatId: effectiveChat.id,
-      chatName: effectiveChat.name,
-      claim,
+      id: tempId, chatId: effectiveChat.id, chatName: effectiveChat.name, claim,
       participantIds: [...data.side1Ids, ...data.side2Ids],
-      side1Ids: data.side1Ids,
-      side2Ids: data.side2Ids,
-      side1Label: data.side1Label,
-      side2Label: data.side2Label,
-      stakes: data.stakes,
-      status: 'active',
-      teamIds: mergedBetTeamIds,
+      side1Ids: data.side1Ids, side2Ids: data.side2Ids,
+      side1Label: data.side1Label, side2Label: data.side2Label,
+      stakes: data.stakes, status: 'active', teamIds: mergedBetTeamIds,
       createdAt: new Date().toISOString(),
     };
     setBets((prev) => [newBet, ...prev]);
     sendNotification(`🤝 New Bet — ${effectiveChat.name}`, claim);
 
+    if (isRealId && authUser && isSupabaseConfigured()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient() as any;
+      const { data: savedBet, error: betErr } = await supabase
+        .from('bets')
+        .insert({ claim, author_id: authUser.id, neighborhood_id: id, neighborhood_name: chatName, stakes: data.stakes || null, status: 'active', side1_label: data.side1Label || null, side2_label: data.side2Label || null, team_ids: mergedBetTeamIds })
+        .select().single();
+      if (betErr) {
+        console.error('Bet save error:', betErr);
+      } else if (savedBet) {
+        setBets((prev) => prev.map((b) => b.id === tempId ? { ...b, id: savedBet.id } : b));
+        const parts = [
+          ...data.side1Ids.map((uid) => ({ bet_id: savedBet.id, user_id: uid, side: '1' })),
+          ...data.side2Ids.map((uid) => ({ bet_id: savedBet.id, user_id: uid, side: '2' })),
+        ];
+        if (parts.length > 0) await supabase.from('bet_participants').insert(parts);
+        await supabase.from('messages').insert({ neighborhood_id: id, user_id: authUser.id, content: claim, tag: 'bet' });
+      }
+    }
+
     setBetSetupClaim(null);
     setBetSetupMessageId(null);
   };
 
-  const confirmDebateSetup = (data: DebateSetupResult) => {
+  const confirmDebateSetup = async (data: DebateSetupResult) => {
     const claim = debateSetupClaim!;
+    const senderId = (isRealId && authUser?.id) ? authUser.id : 'me';
+
     if (debateSetupMessageId) {
       setMessages((prev) =>
         prev.map((m) => m.id === debateSetupMessageId ? { ...m, tag: 'debate' as const } : m)
@@ -394,37 +460,38 @@ export default function NeighborhoodPage() {
     } else {
       setMessages((prev) => [
         ...prev,
-        {
-          id: `new-${Date.now()}`,
-          chatId: effectiveChat.id,
-          userId: 'me',
-          content: claim,
-          timestamp: new Date().toISOString(),
-          tag: 'debate' as const,
-          reactions: [],
-        },
+        { id: `new-${Date.now()}`, chatId: effectiveChat.id, userId: senderId, content: claim, timestamp: new Date().toISOString(), tag: 'debate' as const, reactions: [] },
       ]);
       setInputText('');
       setPendingTag(null);
     }
     const detectedTeams = detectTeamIds(claim);
     const mergedTeamIds = Array.from(new Set([...effectiveChat.teamIds, ...detectedTeams]));
+    const tempId = `d-new-${Date.now()}`;
     const newDebate: Debate = {
-      id: `d-new-${Date.now()}`,
-      chatId: effectiveChat.id,
-      chatName: effectiveChat.name,
-      claim,
-      side1Label: data.side1Label,
-      side2Label: data.side2Label,
-      side1UserIds: [], side2UserIds: [],
-      arguments: [],
-      votes: [],
-      status: 'active',
-      teamIds: mergedTeamIds,
-      createdAt: new Date().toISOString(),
+      id: tempId, chatId: effectiveChat.id, chatName: effectiveChat.name, claim,
+      side1Label: data.side1Label, side2Label: data.side2Label,
+      side1UserIds: [], side2UserIds: [], arguments: [], votes: [],
+      status: 'active', teamIds: mergedTeamIds, createdAt: new Date().toISOString(),
     };
     setDebates((prev) => [newDebate, ...prev]);
     sendNotification(`⚔️ New Debate — ${effectiveChat.name}`, claim);
+
+    if (isRealId && authUser && isSupabaseConfigured()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient() as any;
+      const { data: savedDebate, error: debateErr } = await supabase
+        .from('debates')
+        .insert({ claim, side1_label: data.side1Label || null, side2_label: data.side2Label || null, author_id: authUser.id, neighborhood_id: id, neighborhood_name: chatName, status: 'active', team_ids: mergedTeamIds })
+        .select().single();
+      if (debateErr) {
+        console.error('Debate save error:', debateErr);
+      } else if (savedDebate) {
+        setDebates((prev) => prev.map((d) => d.id === tempId ? { ...d, id: savedDebate.id } : d));
+        await supabase.from('messages').insert({ neighborhood_id: id, user_id: authUser.id, content: claim, tag: 'debate' });
+      }
+    }
+
     setDebateSetupClaim(null);
     setDebateSetupMessageId(null);
   };
@@ -1351,6 +1418,9 @@ export default function NeighborhoodPage() {
               <div className={`mt-1.5 text-right text-[10px] font-mono ${charsLeft < 0 ? 'text-masthead font-bold' : charsLeft < 30 ? 'text-rule-dark' : 'text-ink-faint'}`}>
                 {charsLeft}/{HOT_TAKE_MAX}
               </div>
+            )}
+            {sendError && (
+              <p className="mt-1.5 text-[10px] text-red-400 text-center">{sendError}</p>
             )}
           </div>
         </div>
