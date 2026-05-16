@@ -14,6 +14,8 @@ import DebateSetupModal, { type DebateSetupResult } from '@/components/DebateSet
 import {
   getChatById, getUserById, ME, DEBATES, BETS, HOT_TAKES, TEAMS, ANALYSES, USERS,
 } from '@/lib/mock-data';
+import { useAuth } from '@/lib/auth-context';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { timeAgo, voteLeader, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { Message, MessageTag, Debate, Bet, HotTake, HotTakeComment, VoteChoice, Analysis } from '@/lib/types';
 import { sendNotification } from '@/lib/notifications';
@@ -92,13 +94,77 @@ export default function NeighborhoodPage() {
   const [editingMembers, setEditingMembers] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
 
+  // ── Supabase / real neighborhood support ─────────────────
+  const { user: authUser } = useAuth();
+  const isRealId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  type DbProfile = { id: string; username: string; display_name: string; avatar: string };
+  const [dbNeighborhood, setDbNeighborhood] = useState<{ id: string; name: string; emoji: string } | null>(null);
+  const [dbMemberProfiles, setDbMemberProfiles] = useState<DbProfile[]>([]);
+  const [dbLoading, setDbLoading] = useState(isRealId);
+
+  useEffect(() => {
+    if (!isRealId || !isSupabaseConfigured()) { setDbLoading(false); return; }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createClient() as any;
+    const load = async () => {
+      const { data: hood } = await supabase.from('neighborhoods').select('id, name, emoji').eq('id', id).single();
+      if (!hood) { setDbLoading(false); return; }
+      setDbNeighborhood(hood);
+      setChatName(hood.name);
+      setChatEmoji(hood.emoji);
+
+      const { data: memberships } = await supabase
+        .from('neighborhood_members')
+        .select('user_id, profiles(id, username, display_name, avatar)')
+        .eq('neighborhood_id', id);
+      const profiles: DbProfile[] = (memberships ?? []).map((m: any) => m.profiles).filter(Boolean);
+      setDbMemberProfiles(profiles);
+      setLocalMemberIds(profiles.map((p) => p.id));
+
+      const { data: msgs } = await supabase
+        .from('messages')
+        .select('id, user_id, content, tag, created_at')
+        .eq('neighborhood_id', id)
+        .order('created_at', { ascending: true })
+        .limit(200);
+      const converted: Message[] = (msgs ?? []).map((m: any) => ({
+        id: m.id,
+        chatId: id,
+        userId: m.user_id,
+        content: m.content,
+        tag: m.tag ?? undefined,
+        timestamp: m.created_at,
+        reactions: [],
+      }));
+      setMessages(converted);
+      setDbLoading(false);
+    };
+    load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  const resolveUser = (uid: string) => {
+    const db = dbMemberProfiles.find((p) => p.id === uid);
+    if (db) return { id: db.id, displayName: db.display_name, username: db.username, avatar: db.avatar || '🏈', bio: '', fanTeams: [], stats: { debatesWon: 0, debatesLost: 0, debatesDrew: 0, betsWon: 0, betsLost: 0, betsPending: 0, hotTakesPosted: 0, hotTakeReactions: 0 }, followingIds: [], followerIds: [], groupIds: [] };
+    if (authUser?.profile && uid === authUser.id) return { id: authUser.id, displayName: authUser.profile.display_name, username: authUser.profile.username, avatar: authUser.profile.avatar || '🏈', bio: '', fanTeams: [], stats: { debatesWon: 0, debatesLost: 0, debatesDrew: 0, betsWon: 0, betsLost: 0, betsPending: 0, hotTakesPosted: 0, hotTakeReactions: 0 }, followingIds: [], followerIds: [], groupIds: [] };
+    return getUserById(uid);
+  };
+
   useEffect(() => {
     if (activeTab === 'chat') {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, activeTab]);
 
-  if (!chat) {
+  if (dbLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="h-8 w-8 rounded-full border-2 border-masthead border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (!chat && !dbNeighborhood) {
     return (
       <div className="flex items-center justify-center h-full text-ink-muted">
         Neighborhood not found
@@ -106,7 +172,10 @@ export default function NeighborhoodPage() {
     );
   }
 
-  const members = localMemberIds.map((mid) => getUserById(mid)).filter(Boolean);
+  // Unified chat object — real DB data or mock chat
+  const effectiveChat = chat ?? { id, name: chatName, emoji: chatEmoji, memberIds: localMemberIds, teamIds: [], messages: [] };
+
+  const members = localMemberIds.map((mid) => resolveUser(mid)).filter(Boolean);
   const allFanTeams = members.flatMap((m) => m!.fanTeams).reduce<Record<string, number>>((acc, ft) => {
     acc[ft.team.id] = (acc[ft.team.id] || 0) + 1;
     return acc;
@@ -138,7 +207,7 @@ export default function NeighborhoodPage() {
       setTypingUserId(null);
       setMessages((prev) => [...prev, {
         id: `reply-${Date.now()}`,
-        chatId: chat.id,
+        chatId: effectiveChat.id,
         userId: responder.id,
         content: QUICK_REPLIES[Math.floor(Math.random() * QUICK_REPLIES.length)],
         timestamp: new Date().toISOString(),
@@ -164,10 +233,14 @@ export default function NeighborhoodPage() {
       return;
     }
 
+    const effectiveChatId = chat?.id ?? id;
+    const effectiveChatName = chatName || chat?.name || '';
+    const senderId = (isRealId && authUser?.id) ? authUser.id : 'me';
+
     const msg: Message = {
       id: `new-${Date.now()}`,
-      chatId: chat.id,
-      userId: 'me',
+      chatId: effectiveChatId,
+      userId: senderId,
       content: inputText.trim(),
       timestamp: new Date().toISOString(),
       tag: pendingTag ?? undefined,
@@ -180,23 +253,36 @@ export default function NeighborhoodPage() {
     setPendingMediaType(null);
     setPendingLinkUrl('');
     setAttachMenuOpen(false);
-    triggerTypingReply();
+
+    // Persist to Supabase for real neighborhoods
+    if (isRealId && authUser && isSupabaseConfigured()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient() as any;
+      supabase.from('messages').insert({
+        neighborhood_id: id,
+        user_id: authUser.id,
+        content: inputText.trim(),
+        tag: pendingTag ?? null,
+      });
+    } else {
+      triggerTypingReply();
+    }
 
     if (pendingTag === 'hot-take') {
       const detectedTeams = detectTeamIds(inputText.trim());
-      const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
+      const mergedTeamIds = Array.from(new Set([...(chat?.teamIds ?? []), ...detectedTeams]));
       const newHT: HotTake = {
         id: `ht-new-${Date.now()}`,
-        chatId: chat.id,
-        chatName: chat.name,
+        chatId: effectiveChatId,
+        chatName: effectiveChatName,
         content: inputText.trim(),
-        authorId: 'me',
+        authorId: senderId,
         reactions: [],
         teamIds: mergedTeamIds,
         createdAt: new Date().toISOString(),
       };
       setHotTakes((prev) => [newHT, ...prev]);
-      sendNotification(`🔥 Hot Take — ${chat.name}`, inputText.trim());
+      sendNotification(`🔥 Hot Take — ${effectiveChatName}`, inputText.trim());
     }
     setInputText('');
     setPendingTag(null);
@@ -214,7 +300,7 @@ export default function NeighborhoodPage() {
         ...prev,
         {
           id: `new-${Date.now()}`,
-          chatId: chat.id,
+          chatId: effectiveChat.id,
           userId: 'me',
           content: claim,
           timestamp: new Date().toISOString(),
@@ -227,11 +313,11 @@ export default function NeighborhoodPage() {
     }
 
     const detectedTeams = detectTeamIds(claim);
-    const mergedBetTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
+    const mergedBetTeamIds = Array.from(new Set([...effectiveChat.teamIds, ...detectedTeams]));
     const newBet: Bet = {
       id: `b-new-${Date.now()}`,
-      chatId: chat.id,
-      chatName: chat.name,
+      chatId: effectiveChat.id,
+      chatName: effectiveChat.name,
       claim,
       participantIds: [...data.side1Ids, ...data.side2Ids],
       side1Ids: data.side1Ids,
@@ -244,7 +330,7 @@ export default function NeighborhoodPage() {
       createdAt: new Date().toISOString(),
     };
     setBets((prev) => [newBet, ...prev]);
-    sendNotification(`🤝 New Bet — ${chat.name}`, claim);
+    sendNotification(`🤝 New Bet — ${effectiveChat.name}`, claim);
 
     setBetSetupClaim(null);
     setBetSetupMessageId(null);
@@ -261,7 +347,7 @@ export default function NeighborhoodPage() {
         ...prev,
         {
           id: `new-${Date.now()}`,
-          chatId: chat.id,
+          chatId: effectiveChat.id,
           userId: 'me',
           content: claim,
           timestamp: new Date().toISOString(),
@@ -273,11 +359,11 @@ export default function NeighborhoodPage() {
       setPendingTag(null);
     }
     const detectedTeams = detectTeamIds(claim);
-    const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
+    const mergedTeamIds = Array.from(new Set([...effectiveChat.teamIds, ...detectedTeams]));
     const newDebate: Debate = {
       id: `d-new-${Date.now()}`,
-      chatId: chat.id,
-      chatName: chat.name,
+      chatId: effectiveChat.id,
+      chatName: effectiveChat.name,
       claim,
       side1Label: data.side1Label,
       side2Label: data.side2Label,
@@ -289,7 +375,7 @@ export default function NeighborhoodPage() {
       createdAt: new Date().toISOString(),
     };
     setDebates((prev) => [newDebate, ...prev]);
-    sendNotification(`⚔️ New Debate — ${chat.name}`, claim);
+    sendNotification(`⚔️ New Debate — ${effectiveChat.name}`, claim);
     setDebateSetupClaim(null);
     setDebateSetupMessageId(null);
   };
@@ -316,11 +402,11 @@ export default function NeighborhoodPage() {
     );
     if (tag === 'hot-take') {
       const detectedTeams = detectTeamIds(msg.content);
-      const mergedTeamIds = Array.from(new Set([...chat.teamIds, ...detectedTeams]));
+      const mergedTeamIds = Array.from(new Set([...effectiveChat.teamIds, ...detectedTeams]));
       const newHT: HotTake = {
         id: `ht-tag-${Date.now()}`,
-        chatId: chat.id,
-        chatName: chat.name,
+        chatId: effectiveChat.id,
+        chatName: effectiveChat.name,
         content: msg.content,
         authorId: msg.userId,
         reactions: [],
@@ -381,7 +467,7 @@ export default function NeighborhoodPage() {
     setTimeout(() => {
       const aiMsg: Message = {
         id: `ai-${Date.now()}`,
-        chatId: chat.id,
+        chatId: effectiveChat.id,
         userId: 'ai',
         content: `**Q: ${question}**\n\nBased on historical data and current stats, this is a great question for the neighborhood. The numbers suggest multiple angles worth debating — want me to break down the specifics?`,
         timestamp: new Date().toISOString(),
@@ -499,13 +585,13 @@ export default function NeighborhoodPage() {
     if (!analysisTitle.trim() || !analysisBody.trim()) return;
     const newAnalysis: Analysis = {
       id: `an-new-${Date.now()}`,
-      chatId: chat.id,
-      chatName: chat.name,
+      chatId: effectiveChat.id,
+      chatName: effectiveChat.name,
       title: analysisTitle.trim(),
       content: analysisBody.trim(),
       authorId: 'me',
       reactions: [],
-      teamIds: chat.teamIds,
+      teamIds: effectiveChat.teamIds,
       createdAt: new Date().toISOString(),
     };
     setAnalyses((prev) => [newAnalysis, ...prev]);
@@ -716,10 +802,10 @@ export default function NeighborhoodPage() {
           <div className="bg-nav-bg px-5 pt-5 pb-6">
             <div className="flex items-center gap-4 mb-4">
               <div className="flex h-16 w-16 items-center justify-center bg-ink-muted/30 text-3xl">
-                {chat.emoji}
+                {effectiveChat.emoji}
               </div>
               <div>
-                <h2 className="font-display text-xl font-bold text-ink">{chat.name}</h2>
+                <h2 className="font-display text-xl font-bold text-ink">{effectiveChat.name}</h2>
                 <p className="text-xs text-ink/60 uppercase tracking-wider font-semibold">{members.length} members · Neighborhood</p>
               </div>
             </div>
@@ -903,8 +989,8 @@ export default function NeighborhoodPage() {
         <div className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-paper">
             {messages.map((msg) => {
-              const sender = getUserById(msg.userId);
-              const isMe = msg.userId === 'me';
+              const sender = resolveUser(msg.userId);
+              const isMe = msg.userId === 'me' || (!!authUser && msg.userId === authUser.id);
               const isAI = msg.userId === 'ai';
               const tag = msg.tag ? tagConfig[msg.tag] : null;
 

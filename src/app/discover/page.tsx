@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Search, Phone, AtSign, X, Plus, Check } from 'lucide-react';
 import { USERS, TEAMS, ME } from '@/lib/mock-data';
 import { ALL_LEAGUES } from '@/lib/leagues-data';
+import { ALL_TEAMS } from '@/lib/teams-data';
 import { teamDisplayName } from '@/lib/utils';
 import type { FandomLevel } from '@/lib/types';
 import TeamLogo from '@/components/TeamLogo';
@@ -42,6 +43,27 @@ export default function DiscoverPage() {
         u.username.toLowerCase().includes(query.toLowerCase())
       )
     : otherUsers;
+
+  // ── Real user search from Supabase profiles ──────────────
+  type DbUser = { id: string; username: string; display_name: string; avatar: string; user_teams: { team_id: string }[] };
+  const [dbUsers, setDbUsers] = useState<DbUser[]>([]);
+
+  useEffect(() => {
+    if (mode !== 'people' || !isSupabaseConfigured() || !authUser) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createClient() as any;
+    const run = async () => {
+      let q = supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar, user_teams(team_id)')
+        .neq('id', authUser.id);
+      const q2 = query.trim().replace(/^@/, '');
+      if (q2.length >= 1) q = q.or(`username.ilike.%${q2}%,display_name.ilike.%${q2}%`);
+      const { data } = await q.limit(40);
+      setDbUsers(data ?? []);
+    };
+    run();
+  }, [mode, query, authUser?.id]);
 
   const filteredLeagues = query.length >= 1
     ? ALL_LEAGUES.filter((l) =>
@@ -197,54 +219,99 @@ export default function DiscoverPage() {
         <div className="flex flex-col py-4 pb-8">
           {query.length < 1 && (
             <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint mb-3 px-5">
-              Suggested — shared fan bases
+              {authUser && isSupabaseConfigured() ? 'All neighbors on Stoop Sports' : 'Suggested — shared fan bases'}
             </p>
           )}
-          {filteredUsers.length === 0 && query.length > 0 && (
-            <div className="text-center py-12 px-5">
-              <p className="font-display text-3xl mb-2 text-ink-faint">🔍</p>
-              <p className="font-display font-bold text-ink">No neighbors found</p>
-              <p className="text-xs text-ink-muted mt-1 italic">Try searching by phone number or @username</p>
-            </div>
-          )}
-          {filteredUsers.map((user, i) => (
-            <div
-              key={user.id}
-              className={`flex items-center gap-3 px-5 py-3.5 hover:bg-paper-dark transition-colors border-b border-rule/50 ${i === 0 ? 'border-t border-rule/50' : ''}`}
-            >
-              <Link href={`/users/${user.id}`} className="flex h-12 w-12 items-center justify-center rounded-full bg-paper-dark border border-rule text-2xl shrink-0 hover:border-ink transition-all">
-                {user.avatar}
-              </Link>
-              <div className="flex-1 min-w-0">
-                <Link href={`/users/${user.id}`} className="font-bold text-ink hover:text-masthead transition-colors">
-                  {user.displayName}
-                </Link>
-                <p className="text-[11px] text-ink-faint font-mono">@{user.username}</p>
-                <div className="flex gap-1 mt-1 flex-wrap">
-                  {user.fanTeams.slice(0, 3).map((ft) => (
-                    <span
-                      key={ft.team.id}
-                      className="px-2 py-0.5 text-[10px] font-bold text-ink uppercase tracking-wide"
-                      style={{ backgroundColor: ft.team.color + '90' }}
-                    >
-                      <TeamLogo team={ft.team} size={12} className="inline-block mr-0.5" />{ft.team.name}
-                    </span>
-                  ))}
+
+          {/* Real DB users (when authenticated) */}
+          {authUser && isSupabaseConfigured() ? (
+            <>
+              {dbUsers.length === 0 && query.length > 0 && (
+                <div className="text-center py-12 px-5">
+                  <p className="font-display text-3xl mb-2 text-ink-faint">🔍</p>
+                  <p className="font-display font-bold text-ink">No neighbors found</p>
+                  <p className="text-xs text-ink-muted mt-1 italic">Try a different name or @username</p>
                 </div>
-              </div>
-              <button
-                onClick={() => toggleFollow(user.id)}
-                className={`shrink-0 flex items-center justify-center h-9 w-9 rounded-full font-bold text-sm transition-all border-2 ${
-                  following.includes(user.id)
-                    ? 'bg-paper-dark border-rule text-ink'
-                    : 'bg-masthead border-transparent text-[#12111a] hover:bg-masthead/80'
-                }`}
-                title={following.includes(user.id) ? 'Unfollow' : 'Follow'}
-              >
-                {following.includes(user.id) ? <Check size={14} /> : <Plus size={14} />}
-              </button>
-            </div>
-          ))}
+              )}
+              {dbUsers.length === 0 && query.length === 0 && (
+                <div className="text-center py-12 px-5">
+                  <p className="font-display text-3xl mb-2 text-ink-faint">🏘️</p>
+                  <p className="font-display font-bold text-ink">No one else here yet</p>
+                  <p className="text-xs text-ink-muted mt-1 italic">Invite friends to join Stoop Sports</p>
+                </div>
+              )}
+              {dbUsers.map((user, i) => {
+                const teamBadges = (user.user_teams ?? [])
+                  .map((ut) => ALL_TEAMS.find((t) => t.id === ut.team_id))
+                  .filter(Boolean)
+                  .slice(0, 3) as typeof ALL_TEAMS;
+                return (
+                  <div
+                    key={user.id}
+                    className={`flex items-center gap-3 px-5 py-3.5 hover:bg-paper-dark transition-colors border-b border-rule/50 ${i === 0 ? 'border-t border-rule/50' : ''}`}
+                  >
+                    <Link href={`/users/${user.id}`} className="flex h-12 w-12 items-center justify-center rounded-full bg-paper-dark border border-rule text-2xl shrink-0 hover:border-ink transition-all">
+                      {user.avatar || '🏈'}
+                    </Link>
+                    <div className="flex-1 min-w-0">
+                      <Link href={`/users/${user.id}`} className="font-bold text-ink hover:text-masthead transition-colors">
+                        {user.display_name}
+                      </Link>
+                      <p className="text-[11px] text-ink-faint font-mono">@{user.username}</p>
+                      {teamBadges.length > 0 && (
+                        <div className="flex gap-1 mt-1 flex-wrap">
+                          {teamBadges.map((team) => (
+                            <span key={team!.id} className="px-2 py-0.5 text-[10px] font-bold text-ink uppercase tracking-wide" style={{ backgroundColor: team!.color + '90' }}>
+                              <TeamLogo team={team!} size={12} className="inline-block mr-0.5" />{team!.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => toggleFollow(user.id)}
+                      className={`shrink-0 flex items-center justify-center h-9 w-9 rounded-full font-bold text-sm transition-all border-2 ${following.includes(user.id) ? 'bg-paper-dark border-rule text-ink' : 'bg-masthead border-transparent text-[#12111a] hover:bg-masthead/80'}`}
+                      title={following.includes(user.id) ? 'Unfollow' : 'Follow'}
+                    >
+                      {following.includes(user.id) ? <Check size={14} /> : <Plus size={14} />}
+                    </button>
+                  </div>
+                );
+              })}
+            </>
+          ) : (
+            /* Mock users fallback (unauthenticated) */
+            <>
+              {filteredUsers.length === 0 && query.length > 0 && (
+                <div className="text-center py-12 px-5">
+                  <p className="font-display text-3xl mb-2 text-ink-faint">🔍</p>
+                  <p className="font-display font-bold text-ink">No neighbors found</p>
+                  <p className="text-xs text-ink-muted mt-1 italic">Try searching by phone number or @username</p>
+                </div>
+              )}
+              {filteredUsers.map((user, i) => (
+                <div key={user.id} className={`flex items-center gap-3 px-5 py-3.5 hover:bg-paper-dark transition-colors border-b border-rule/50 ${i === 0 ? 'border-t border-rule/50' : ''}`}>
+                  <Link href={`/users/${user.id}`} className="flex h-12 w-12 items-center justify-center rounded-full bg-paper-dark border border-rule text-2xl shrink-0 hover:border-ink transition-all">
+                    {user.avatar}
+                  </Link>
+                  <div className="flex-1 min-w-0">
+                    <Link href={`/users/${user.id}`} className="font-bold text-ink hover:text-masthead transition-colors">{user.displayName}</Link>
+                    <p className="text-[11px] text-ink-faint font-mono">@{user.username}</p>
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      {user.fanTeams.slice(0, 3).map((ft) => (
+                        <span key={ft.team.id} className="px-2 py-0.5 text-[10px] font-bold text-ink uppercase tracking-wide" style={{ backgroundColor: ft.team.color + '90' }}>
+                          <TeamLogo team={ft.team} size={12} className="inline-block mr-0.5" />{ft.team.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <button onClick={() => toggleFollow(user.id)} className={`shrink-0 flex items-center justify-center h-9 w-9 rounded-full font-bold text-sm transition-all border-2 ${following.includes(user.id) ? 'bg-paper-dark border-rule text-ink' : 'bg-masthead border-transparent text-[#12111a] hover:bg-masthead/80'}`} title={following.includes(user.id) ? 'Unfollow' : 'Follow'}>
+                    {following.includes(user.id) ? <Check size={14} /> : <Plus size={14} />}
+                  </button>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
 

@@ -1,17 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus, Search, Swords, Handshake, Flame, X } from 'lucide-react';
-import { CHATS, DEBATES, BETS, HOT_TAKES, USERS, getUserById } from '@/lib/mock-data';
+import { CHATS, DEBATES, BETS, HOT_TAKES, getUserById } from '@/lib/mock-data';
 import { timeAgo } from '@/lib/utils';
 import type { Chat } from '@/lib/types';
+import { useAuth } from '@/lib/auth-context';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 
 const EMOJI_OPTIONS = ['🏘️','🏟️','🏈','🏀','⚾','⚽','🏒','🔥','⚡','🎯','🏆','🎪','🌆','🌃'];
 
 type LocalChat = Chat & { isLocal?: boolean };
+type DbNeighborhood = { id: string; name: string; emoji: string; memberCount: number };
+type DbProfile = { id: string; username: string; display_name: string; avatar: string };
 
 export default function NeighborhoodsPage() {
+  const { user: authUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewModal, setShowNewModal] = useState(false);
   const [newName, setNewName] = useState('');
@@ -19,40 +24,120 @@ export default function NeighborhoodsPage() {
   const [newMemberIds, setNewMemberIds] = useState<string[]>([]);
   const [memberSearch, setMemberSearch] = useState('');
   const [localChats, setLocalChats] = useState<LocalChat[]>([]);
+  const [dbNeighborhoods, setDbNeighborhoods] = useState<DbNeighborhood[]>([]);
+  const [dbMemberResults, setDbMemberResults] = useState<DbProfile[]>([]);
+  const [selectedMemberDetails, setSelectedMemberDetails] = useState<Record<string, { displayName: string; avatar: string; username: string }>>({});
 
-  const allChats = [...localChats, ...CHATS];
+  // Load real neighborhoods from Supabase
+  useEffect(() => {
+    if (!authUser || !isSupabaseConfigured()) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createClient() as any;
+    const load = async () => {
+      const { data: memberships } = await supabase
+        .from('neighborhood_members')
+        .select('neighborhood_id, neighborhoods(id, name, emoji)')
+        .eq('user_id', authUser.id);
+      if (!memberships) return;
+      const hoods = await Promise.all(
+        memberships.map(async (m: any) => {
+          const hood = m.neighborhoods;
+          if (!hood) return null;
+          const { count } = await supabase
+            .from('neighborhood_members')
+            .select('*', { count: 'exact', head: true })
+            .eq('neighborhood_id', hood.id);
+          return { id: hood.id, name: hood.name, emoji: hood.emoji, memberCount: count ?? 0 } as DbNeighborhood;
+        })
+      );
+      setDbNeighborhoods(hoods.filter(Boolean) as DbNeighborhood[]);
+    };
+    load();
+  }, [authUser?.id]);
+
+  // Search profiles for member picker
+  useEffect(() => {
+    if (!authUser || !isSupabaseConfigured()) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createClient() as any;
+    const run = async () => {
+      let q = supabase.from('profiles').select('id, username, display_name, avatar').neq('id', authUser.id);
+      if (newMemberIds.length > 0) q = q.not('id', 'in', `(${newMemberIds.join(',')})`);
+      if (memberSearch.trim().length > 0) q = q.or(`username.ilike.%${memberSearch}%,display_name.ilike.%${memberSearch}%`);
+      const { data } = await q.limit(6);
+      setDbMemberResults(data ?? []);
+    };
+    run();
+  }, [memberSearch, newMemberIds, authUser?.id]);
+
+  const isAuthenticated = !!(authUser && isSupabaseConfigured());
+
+  // Use DB neighborhoods for logged-in users; fall back to mock
+  const baseChats = isAuthenticated ? [] : CHATS;
+  const allChats = [...localChats, ...baseChats];
+
   const filtered = allChats.filter((c) =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const filteredDb = dbNeighborhoods.filter((n) =>
+    n.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const otherUsers = USERS.filter((u) => u.id !== 'me');
-  const memberSearchResults = memberSearch.length > 0
-    ? otherUsers.filter((u) =>
-        !newMemberIds.includes(u.id) && (
-          u.displayName.toLowerCase().includes(memberSearch.toLowerCase()) ||
-          u.username.toLowerCase().includes(memberSearch.toLowerCase())
-        )
-      ).slice(0, 5)
-    : otherUsers.filter((u) => !newMemberIds.includes(u.id)).slice(0, 4);
+  // Mock fallback member search (unauthenticated)
+  const mockMemberResults = (() => {
+    const others = CHATS.flatMap(c => c.memberIds).filter((id, i, a) => id !== 'me' && a.indexOf(id) === i);
+    const users = others.map(id => getUserById(id)).filter(Boolean) as NonNullable<ReturnType<typeof getUserById>>[];
+    return memberSearch.length > 0
+      ? users.filter(u => !newMemberIds.includes(u.id) && (u.displayName.toLowerCase().includes(memberSearch.toLowerCase()) || u.username.toLowerCase().includes(memberSearch.toLowerCase()))).slice(0, 5)
+      : users.filter(u => !newMemberIds.includes(u.id)).slice(0, 4);
+  })();
 
-  const createNeighborhood = () => {
+  const createNeighborhood = async () => {
     if (!newName.trim()) return;
-    const newChat: LocalChat = {
-      id: `local-${Date.now()}`,
-      name: newName.trim(),
-      emoji: newEmoji,
-      memberIds: ['me', ...newMemberIds],
-      teamIds: [],
-      messages: [],
-      isLocal: true,
-    };
-    setLocalChats((prev) => [newChat, ...prev]);
+
+    if (isAuthenticated) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient() as any;
+      const { data: hood } = await supabase
+        .from('neighborhoods')
+        .insert({ name: newName.trim(), emoji: newEmoji, created_by: authUser!.id })
+        .select()
+        .single();
+      if (hood) {
+        const memberInserts = [
+          { neighborhood_id: hood.id, user_id: authUser!.id },
+          ...newMemberIds.map((uid) => ({ neighborhood_id: hood.id, user_id: uid })),
+        ];
+        await supabase.from('neighborhood_members').insert(memberInserts);
+        setDbNeighborhoods((prev) => [
+          { id: hood.id, name: hood.name, emoji: hood.emoji, memberCount: 1 + newMemberIds.length },
+          ...prev,
+        ]);
+      }
+    } else {
+      const newChat: LocalChat = {
+        id: `local-${Date.now()}`,
+        name: newName.trim(),
+        emoji: newEmoji,
+        memberIds: ['me', ...newMemberIds],
+        teamIds: [],
+        messages: [],
+        isLocal: true,
+      };
+      setLocalChats((prev) => [newChat, ...prev]);
+    }
+
     setNewName('');
     setNewEmoji('🏘️');
     setNewMemberIds([]);
     setMemberSearch('');
+    setSelectedMemberDetails({});
     setShowNewModal(false);
   };
+
+  const memberSearchResults = isAuthenticated
+    ? dbMemberResults.map((u) => ({ id: u.id, displayName: u.display_name, username: u.username, avatar: u.avatar || '👤' }))
+    : mockMemberResults.map((u) => ({ id: u.id, displayName: u.displayName, username: u.username, avatar: u.avatar as string }));
 
   return (
     <div className="flex flex-col bg-paper min-h-full">
@@ -84,11 +169,48 @@ export default function NeighborhoodsPage() {
 
       {/* Section divider */}
       <div className="section-header px-5 flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-ink">Active Chats</span>
-        <span className="text-[10px] text-ink-faint font-mono">{filtered.length} neighborhood{filtered.length !== 1 ? 's' : ''}</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-ink">My Neighborhoods</span>
+        <span className="text-[10px] text-ink-faint font-mono">{isAuthenticated ? filteredDb.length : filtered.length} neighborhood{(isAuthenticated ? filteredDb.length : filtered.length) !== 1 ? 's' : ''}</span>
       </div>
 
-      {/* Grid */}
+      {/* DB neighborhoods (real, authenticated) */}
+      {isAuthenticated && (
+        <div className="grid grid-cols-2 border-l border-t border-rule">
+          {filteredDb.map((hood) => (
+            <Link
+              key={hood.id}
+              href={`/neighborhoods/${hood.id}`}
+              className="border-r border-b border-rule block bg-paper-dark hover:bg-paper-deeper transition-colors"
+            >
+              <div className="bg-nav-bg px-3 py-3">
+                <div className="flex items-start gap-2">
+                  <span className="text-2xl leading-none mt-0.5 shrink-0">{hood.emoji}</span>
+                  <div className="min-w-0">
+                    <p className="font-display font-bold text-ink text-sm leading-tight">{hood.name}</p>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-ink/50 mt-0.5">{hood.memberCount} member{hood.memberCount !== 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="px-3 py-3 min-h-[52px]">
+                <p className="text-[10px] text-ink-faint italic">Open to chat →</p>
+              </div>
+              <div className="border-t border-rule/60 px-3 py-2">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-masthead">Open Chat →</span>
+              </div>
+            </Link>
+          ))}
+          {filteredDb.length === 0 && (
+            <div className="col-span-2 flex flex-col items-center justify-center py-16 text-center px-5">
+              <p className="font-display text-4xl mb-3 text-ink-faint">🏘️</p>
+              <p className="font-display font-bold text-ink text-lg mb-1">No neighborhoods yet</p>
+              <p className="text-sm text-ink-muted italic">Create one or get added by a friend</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Mock/local neighborhoods (unauthenticated) */}
+      {!isAuthenticated && (<>
       <div className="grid grid-cols-2 border-l border-t border-rule">
         {filtered.map((chat) => {
           const lastMessage = chat.messages[chat.messages.length - 1];
@@ -188,9 +310,10 @@ export default function NeighborhoodsPage() {
           <p className="text-sm text-ink-muted italic">Create one or get added by a friend</p>
         </div>
       )}
+      </>)}
 
       {/* Activity feed footer */}
-      {filtered.length > 0 && (
+      {(!isAuthenticated && filtered.length > 0) && (
         <div className="section-header px-5 mt-0 flex items-center gap-2">
           <Swords size={10} className="text-navy" />
           <span className="text-[10px] font-bold uppercase tracking-widest text-ink-faint">
@@ -258,12 +381,12 @@ export default function NeighborhoodsPage() {
                 {newMemberIds.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     {newMemberIds.map((uid) => {
-                      const u = getUserById(uid);
-                      if (!u) return null;
+                      const det = selectedMemberDetails[uid] ?? (() => { const u = getUserById(uid); return u ? { displayName: u.displayName, username: u.username, avatar: u.avatar as string } : null; })();
+                      if (!det) return null;
                       return (
                         <span key={uid} className="flex items-center gap-1 px-2 py-1 bg-paper-dark border border-rule text-xs font-bold text-ink">
-                          {u.avatar} {u.displayName.split(' ')[0]}
-                          <button onClick={() => setNewMemberIds((p) => p.filter((id) => id !== uid))} className="text-ink-faint hover:text-press ml-0.5">
+                          {det.avatar} {det.displayName.split(' ')[0]}
+                          <button onClick={() => { setNewMemberIds((p) => p.filter((id) => id !== uid)); setSelectedMemberDetails((p) => { const n = { ...p }; delete n[uid]; return n; }); }} className="text-ink-faint hover:text-press ml-0.5">
                             <X size={10} />
                           </button>
                         </span>
@@ -285,7 +408,7 @@ export default function NeighborhoodsPage() {
                   {memberSearchResults.map((u) => (
                     <button
                       key={u.id}
-                      onClick={() => { setNewMemberIds((p) => [...p, u.id]); setMemberSearch(''); }}
+                      onClick={() => { setNewMemberIds((p) => [...p, u.id]); setSelectedMemberDetails((p) => ({ ...p, [u.id]: { displayName: u.displayName, username: u.username, avatar: u.avatar } })); setMemberSearch(''); }}
                       className="flex items-center gap-2 px-3 py-2 border-b border-rule/40 last:border-0 hover:bg-paper-dark transition-colors text-left"
                     >
                       <span className="text-base">{u.avatar}</span>
