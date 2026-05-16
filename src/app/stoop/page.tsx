@@ -134,16 +134,17 @@ export default function StoopPage() {
             <h1 className="font-display text-2xl font-black text-white leading-tight">{displayName}</h1>
             <p className="text-[11px] font-mono text-white/55">@{username}</p>
             {bio && <p className="text-xs text-white/70 italic mt-0.5 line-clamp-2">{bio}</p>}
-            {/* Trophy Room — inline, small */}
-            {badges.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {badges.map((badge) => (
-                  <BadgeChip key={badge.type} badge={badge} size="xs" />
-                ))}
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Trophy Room — 4-col grid, full width */}
+        {badges.length > 0 && (
+          <div className="grid grid-cols-4 gap-2 mb-4">
+            {badges.map((badge) => (
+              <BadgeChip key={badge.type} badge={badge} size="xs" />
+            ))}
+          </div>
+        )}
 
         {/* Unified stats + bragging rights grid */}
         <div className="mt-4 border border-white/20">
