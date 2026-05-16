@@ -112,7 +112,7 @@ export default function NeighborhoodsPage() {
       const supabase = createClient() as any;
       const { data: hood, error: hoodErr } = await supabase
         .from('neighborhoods')
-        .insert({ name: newName.trim(), emoji: newEmoji })
+        .insert({ name: newName.trim(), emoji: newEmoji, created_by: authUser!.id })
         .select()
         .single();
       if (hoodErr) { console.error('Create neighborhood error:', hoodErr); return; }

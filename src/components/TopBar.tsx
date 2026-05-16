@@ -182,7 +182,7 @@ export default function TopBar() {
       try {
         const { data: hood, error: hoodErr } = await supabase
           .from('neighborhoods')
-          .insert({ name: newHoodName.trim(), emoji: newHoodEmoji || '🏘️' })
+          .insert({ name: newHoodName.trim(), emoji: newHoodEmoji || '🏘️', created_by: authUser.id })
           .select()
           .single();
         if (hoodErr) { console.error('Neighborhood insert error:', hoodErr); return; }
@@ -282,7 +282,7 @@ export default function TopBar() {
             >
               <MessageCircle size={20} />
               <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-masthead text-[7px] font-bold text-[#12111a] leading-none">
-                {CHATS.length}
+                {authUser?.neighborhoodMemberships?.length ?? CHATS.length}
               </span>
             </button>
           </>
@@ -516,32 +516,31 @@ export default function TopBar() {
             </button>
           </div>
           <div className="max-h-64 overflow-y-auto">
-            {CHATS.map((chat) => {
-              const lastMsg = chat.messages[chat.messages.length - 1];
-              return (
-                <button
-                  key={chat.id}
-                  onClick={() => { closeAll(); router.push(`/neighborhoods/${chat.id}?tab=chat`); }}
-                  className="flex w-full items-center gap-3 px-4 py-3 hover:bg-paper-deeper transition-colors text-left border-b border-rule/50 last:border-0"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-nav-bg text-lg shrink-0">
-                    {chat.emoji}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-ink text-sm truncate">{chat.name}</p>
-                    {lastMsg && (
-                      <p className="text-[11px] text-ink-muted truncate">{lastMsg.content}</p>
-                    )}
-                  </div>
-                  <div className="shrink-0 flex flex-col items-end gap-1">
-                    {lastMsg && (
-                      <span className="text-[10px] text-ink-faint font-mono">{timeAgo(lastMsg.timestamp)}</span>
-                    )}
-                    <ChevronRight size={13} className="text-ink-faint" />
-                  </div>
-                </button>
-              );
-            })}
+            {(authUser?.neighborhoodMemberships?.length
+              ? authUser.neighborhoodMemberships
+              : CHATS.map((c) => ({ id: c.id, name: c.name, emoji: c.emoji }))
+            ).map((hood) => (
+              <button
+                key={hood.id}
+                onClick={() => { closeAll(); router.push(`/neighborhoods/${hood.id}?tab=chat`); }}
+                className="flex w-full items-center gap-3 px-4 py-3 hover:bg-paper-deeper transition-colors text-left border-b border-rule/50 last:border-0"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-nav-bg text-lg shrink-0">
+                  {hood.emoji}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-ink text-sm truncate">{hood.name}</p>
+                  <p className="text-[11px] text-ink-muted">Open chat →</p>
+                </div>
+                <ChevronRight size={13} className="text-ink-faint shrink-0" />
+              </button>
+            ))}
+            {authUser && authUser.neighborhoodMemberships?.length === 0 && (
+              <div className="px-4 py-5 text-center">
+                <p className="text-xs text-ink-muted italic">No neighborhoods yet</p>
+                <p className="text-[10px] text-ink-faint mt-1">Create one with the + button below</p>
+              </div>
+            )}
           </div>
 
           {/* Footer: All Neighborhoods + create button */}

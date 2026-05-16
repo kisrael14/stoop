@@ -172,6 +172,30 @@ export default function NeighborhoodPage() {
     }
   }, [messages, activeTab]);
 
+  // Poll for new messages every 5 seconds on real neighborhoods
+  useEffect(() => {
+    if (!isRealId || !isSupabaseConfigured() || dbLoading) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createClient() as any;
+    const interval = setInterval(async () => {
+      const { data: msgs } = await supabase
+        .from('messages')
+        .select('id, user_id, content, tag, created_at')
+        .eq('neighborhood_id', id)
+        .order('created_at', { ascending: true })
+        .limit(200);
+      if (msgs) {
+        const converted: Message[] = msgs.map((m: any) => ({
+          id: m.id, chatId: id, userId: m.user_id, content: m.content,
+          tag: m.tag ?? undefined, timestamp: m.created_at, reactions: [],
+        }));
+        setMessages(converted);
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, isRealId, dbLoading]);
+
   if (dbLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -1014,8 +1038,12 @@ export default function NeighborhoodPage() {
                 <div key={msg.id} className={`flex gap-2.5 ${isMe ? 'flex-row-reverse' : ''}`}>
                   {!isMe && (
                     <Link href={isAI ? '#' : `/users/${msg.userId}`} className="shrink-0">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-sm mt-1 hover:border-ink transition-all">
-                        {isAI ? '✦' : sender?.avatar}
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-sm mt-1 hover:border-ink transition-all overflow-hidden">
+                        {isAI ? '✦' : (
+                          typeof sender?.avatar === 'string' && sender.avatar.startsWith('http')
+                            ? <img src={sender.avatar} alt="" className="h-full w-full object-cover" />
+                            : (sender?.avatar || '👤')
+                        )}
                       </div>
                     </Link>
                   )}

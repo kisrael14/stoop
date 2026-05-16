@@ -45,12 +45,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
-    const [{ data: profile }, { data: teams }, { count: followerCount }, { data: followingData }, { data: membershipData }, { data: leagueData }] = await Promise.all([
+    const [{ data: profile }, { data: teams }, { count: followerCount }, { data: followingData }, { data: memberRows }, { data: leagueData }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', authUser.id).single(),
       supabase.from('user_teams').select('*').eq('user_id', authUser.id),
       supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', authUser.id),
       supabase.from('follows').select('following_id').eq('follower_id', authUser.id),
-      sb.from('neighborhood_members').select('neighborhoods(id, name, emoji)').eq('user_id', authUser.id),
+      sb.from('neighborhood_members').select('neighborhood_id').eq('user_id', authUser.id),
       sb.from('user_leagues').select('league_id').eq('user_id', authUser.id),
     ]);
 
@@ -62,9 +62,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       followingProfiles = (fp ?? []) as typeof followingProfiles;
     }
 
-    const neighborhoodMemberships = ((membershipData ?? []) as Array<{ neighborhoods: { id: string; name: string; emoji: string } | null }>)
-      .map((m) => m.neighborhoods)
-      .filter((n): n is { id: string; name: string; emoji: string } => n != null);
+    // Two-step: get hood IDs, then fetch neighborhood details
+    const hoodIds = ((memberRows ?? []) as Array<{ neighborhood_id: string }>).map((m) => m.neighborhood_id);
+    let neighborhoodMemberships: Array<{ id: string; name: string; emoji: string }> = [];
+    if (hoodIds.length > 0) {
+      const { data: hoodsData } = await supabase.from('neighborhoods').select('id, name, emoji').in('id', hoodIds);
+      neighborhoodMemberships = (hoodsData ?? []) as typeof neighborhoodMemberships;
+    }
 
     const leagues = ((leagueData ?? []) as Array<{ league_id: string }>).map((l) => l.league_id);
 
