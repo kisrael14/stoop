@@ -347,16 +347,19 @@ export default function NeighborhoodPage() {
       const msgContent = inputText.trim();
       const msgTag = pendingTag;
 
-      const { error: sendErr } = await supabase.from('messages').insert({
+      const { data: savedMsg, error: sendErr } = await supabase.from('messages').insert({
         neighborhood_id: id,
         user_id: authUser.id,
         content: msgContent,
         tag: msgTag ?? null,
-      });
+      }).select().single();
       if (sendErr) {
         console.error('Message send failed:', sendErr);
         setSendError(sendErr.message ?? 'Message failed to send');
         setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+      } else if (savedMsg) {
+        // Swap temp ID → real DB ID so the realtime subscription deduplicates correctly
+        setMessages((prev) => prev.map((m) => m.id === msg.id ? { ...m, id: savedMsg.id } : m));
       }
 
       if (msgTag === 'hot-take') {
@@ -596,11 +599,13 @@ export default function NeighborhoodPage() {
   };
 
   // ─── Debate actions ──────────────────────────────────────
+  const myUid = authUser?.id ?? 'me';
+
   const castVote = (debateId: string, choice: VoteChoice) => {
     setDebates((prev) =>
       prev.map((d) => {
-        if (d.id !== debateId || d.votes.find((v) => v.userId === 'me')) return d;
-        const newVotes = [...d.votes, { userId: 'me', choice }];
+        if (d.id !== debateId || d.votes.find((v) => v.userId === myUid)) return d;
+        const newVotes = [...d.votes, { userId: myUid, choice }];
         const counts = voteLeader(newVotes);
         const leading = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
         if (leading && leading[1] > members.length / 2) {
@@ -622,7 +627,7 @@ export default function NeighborhoodPage() {
         return {
           ...b,
           status: 'awaiting-resolution' as const,
-          proposal: { proposedBy: 'me', winnerId: winnerId ?? undefined, isPush: winnerId === null, agreements: ['me'], disputes: [] },
+          proposal: { proposedBy: myUid, winnerId: winnerId ?? undefined, isPush: winnerId === null, agreements: [myUid], disputes: [] },
         };
       })
     );
@@ -632,7 +637,7 @@ export default function NeighborhoodPage() {
     setBets((prev) =>
       prev.map((b) => {
         if (b.id !== betId || !b.proposal) return b;
-        const agreements = [...b.proposal.agreements, 'me'];
+        const agreements = [...b.proposal.agreements, myUid];
         if (agreements.length >= b.participantIds.length) {
           return { ...b, status: 'resolved' as const, winnerId: b.proposal.winnerId, isPush: b.proposal.isPush, resolvedAt: new Date().toISOString(), proposal: undefined };
         }
@@ -644,7 +649,7 @@ export default function NeighborhoodPage() {
   const cancelProposal = (betId: string) => {
     setBets((prev) =>
       prev.map((b) =>
-        b.id === betId && b.proposal?.proposedBy === 'me'
+        b.id === betId && b.proposal?.proposedBy === myUid
           ? { ...b, status: 'active' as const, proposal: undefined }
           : b
       )
@@ -1430,9 +1435,9 @@ export default function NeighborhoodPage() {
       {activeTab === 'debates' && (
         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 pb-6 bg-paper">
           {debates.filter((d) => d.status === 'active').map((debate) => {
-            const side1Users = debate.side1UserIds.map((uid) => getUserById(uid)).filter(Boolean);
-            const side2Users = debate.side2UserIds.map((uid) => getUserById(uid)).filter(Boolean);
-            const myVote = debate.votes.find((v) => v.userId === 'me');
+            const side1Users = debate.side1UserIds.map((uid) => resolveUser(uid)).filter(Boolean);
+            const side2Users = debate.side2UserIds.map((uid) => resolveUser(uid)).filter(Boolean);
+            const myVote = debate.votes.find((v) => v.userId === myUid);
             const counts = voteLeader(debate.votes);
             const getVotePct = (c: VoteChoice) => debate.votes.length > 0 ? Math.round(((counts[c] ?? 0) / debate.votes.length) * 100) : 0;
             const expanded = expandedDebate === debate.id;
@@ -1537,9 +1542,9 @@ export default function NeighborhoodPage() {
       {activeTab === 'bets' && (
         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 pb-6 bg-paper">
           {bets.filter((b) => b.status !== 'resolved').map((bet) => {
-            const participants = bet.participantIds.map((pid) => getUserById(pid)).filter(Boolean);
-            const isMine = bet.participantIds.includes('me');
-            const myProposalPending = bet.status === 'awaiting-resolution' && bet.proposal?.proposedBy !== 'me' && !bet.proposal?.agreements.includes('me');
+            const participants = bet.participantIds.map((pid) => resolveUser(pid)).filter(Boolean);
+            const isMine = bet.participantIds.includes(myUid);
+            const myProposalPending = bet.status === 'awaiting-resolution' && bet.proposal?.proposedBy !== myUid && !bet.proposal?.agreements.includes(myUid);
             const expanded = expandedBet === bet.id;
             const statusIcon = { pending: Clock, active: CheckCircle, 'awaiting-resolution': AlertCircle, resolved: CheckCircle, disputed: AlertCircle }[bet.status];
             const StatusIcon = statusIcon;
@@ -1559,9 +1564,9 @@ export default function NeighborhoodPage() {
                       <div>
                         <p className="text-[9px] font-bold uppercase tracking-widest text-navy mb-1">{bet.side1Label ?? 'Side 1'}</p>
                         <div className="flex flex-wrap gap-1">
-                          {bet.side1Ids.map((uid) => { const u = getUserById(uid); return u ? (
+                          {bet.side1Ids.map((uid) => { const u = resolveUser(uid); return u ? (
                             <Link key={uid} href={`/users/${uid}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 border border-rule px-2 py-0.5 text-xs text-ink-muted hover:border-ink bg-paper-dark">
-                              <span>{u.avatar}</span><span>{u.displayName.split(' ')[0]}</span>
+                              <span>{typeof u.avatar === 'string' && u.avatar.startsWith('http') ? <img src={u.avatar} alt="" className="h-4 w-4 rounded-full object-cover" /> : u.avatar}</span><span>{u.displayName.split(' ')[0]}</span>
                             </Link>
                           ) : null; })}
                         </div>
@@ -1569,9 +1574,9 @@ export default function NeighborhoodPage() {
                       <div className="text-right">
                         <p className="text-[9px] font-bold uppercase tracking-widest text-field mb-1">{bet.side2Label ?? 'Side 2'}</p>
                         <div className="flex flex-wrap gap-1 justify-end">
-                          {bet.side2Ids.map((uid) => { const u = getUserById(uid); return u ? (
+                          {bet.side2Ids.map((uid) => { const u = resolveUser(uid); return u ? (
                             <Link key={uid} href={`/users/${uid}`} onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 border border-rule px-2 py-0.5 text-xs text-ink-muted hover:border-ink bg-paper-dark">
-                              <span>{u.avatar}</span><span>{u.displayName.split(' ')[0]}</span>
+                              <span>{typeof u.avatar === 'string' && u.avatar.startsWith('http') ? <img src={u.avatar} alt="" className="h-4 w-4 rounded-full object-cover" /> : u.avatar}</span><span>{u.displayName.split(' ')[0]}</span>
                             </Link>
                           ) : null; })}
                         </div>
@@ -1598,12 +1603,12 @@ export default function NeighborhoodPage() {
                   {bet.status === 'awaiting-resolution' && bet.proposal && (
                     <div className="mt-3 border border-rule-dark/40 bg-paper-dark px-3 py-2 rounded-lg">
                       <p className="text-xs text-ink-muted">
-                        <span className="font-bold">{getUserById(bet.proposal.proposedBy)?.displayName}</span> proposed:{' '}
+                        <span className="font-bold">{resolveUser(bet.proposal.proposedBy)?.displayName}</span> proposed:{' '}
                         <span className="font-bold text-ink">{bet.proposal.isPush ? 'Push' : (() => {
                           const wId = bet.proposal!.winnerId ?? '';
                           if (bet.side1Ids?.includes(wId)) return `${bet.side1Label ?? 'Side 1'} Won`;
                           if (bet.side2Ids?.includes(wId)) return `${bet.side2Label ?? 'Side 2'} Won`;
-                          return `${getUserById(wId)?.displayName} Won`;
+                          return `${resolveUser(wId)?.displayName} Won`;
                         })()}</span>
                       </p>
                       <p className="text-[10px] text-ink-faint mt-0.5">{bet.proposal.agreements.length}/{bet.participantIds.length} agreed</p>
