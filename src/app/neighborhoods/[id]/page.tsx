@@ -398,7 +398,7 @@ export default function NeighborhoodPage() {
   };
 
   const confirmBetSetup = async (data: BetSetupResult) => {
-    const claim = betSetupClaim!;
+    const claim = data.claim;
     const senderId = (isRealId && authUser?.id) ? authUser.id : 'me';
 
     if (betSetupMessageId) {
@@ -453,7 +453,7 @@ export default function NeighborhoodPage() {
   };
 
   const confirmDebateSetup = async (data: DebateSetupResult) => {
-    const claim = debateSetupClaim!;
+    const claim = data.claim;
     const senderId = (isRealId && authUser?.id) ? authUser.id : 'me';
 
     if (debateSetupMessageId) {

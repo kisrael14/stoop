@@ -5,6 +5,7 @@ import { X, Check, Plus } from 'lucide-react';
 import type { User } from '@/lib/types';
 
 export interface BetSetupResult {
+  claim: string;
   side1Ids: string[];
   side2Ids: string[];
   side1Label: string;
@@ -23,7 +24,8 @@ const BANNED = /[$€£¥₹]|\d/;
 
 type Side = 'side1' | 'side2' | null;
 
-export default function BetSetupModal({ claim, members = [], onConfirm, onCancel }: Props) {
+export default function BetSetupModal({ claim: initialClaim, members = [], onConfirm, onCancel }: Props) {
+  const [claim, setClaim] = useState(initialClaim);
   const [side1Label, setSide1Label] = useState('Side A');
   const [side2Label, setSide2Label] = useState('Side B');
   const [assignments, setAssignments]   = useState<Record<string, Side>>({ me: 'side1' });
@@ -33,7 +35,7 @@ export default function BetSetupModal({ claim, members = [], onConfirm, onCancel
   const side1Ids = Object.entries(assignments).filter(([, s]) => s === 'side1').map(([id]) => id);
   const side2Ids = Object.entries(assignments).filter(([, s]) => s === 'side2').map(([id]) => id);
 
-  const valid = stakes.trim().length > 0 && !stakesErr && side1Ids.length > 0 && side2Ids.length > 0;
+  const valid = claim.trim().length > 0 && stakes.trim().length > 0 && !stakesErr && side1Ids.length > 0 && side2Ids.length > 0;
 
   const handleStakes = (val: string) => {
     setStakes(val);
@@ -51,7 +53,7 @@ export default function BetSetupModal({ claim, members = [], onConfirm, onCancel
 
   const submit = () => {
     if (!valid) return;
-    onConfirm({ side1Ids, side2Ids, side1Label, side2Label, stakes });
+    onConfirm({ claim: claim.trim(), side1Ids, side2Ids, side1Label, side2Label, stakes });
   };
 
   return (
@@ -72,10 +74,15 @@ export default function BetSetupModal({ claim, members = [], onConfirm, onCancel
 
           {/* Terms */}
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-2">Terms</p>
-            <div className="border border-rule bg-paper px-4 py-3 rounded-lg">
-              <p className="text-sm text-ink italic leading-snug">&ldquo;{claim}&rdquo;</p>
-            </div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-2">The Bet</p>
+            <textarea
+              value={claim}
+              onChange={(e) => setClaim(e.target.value)}
+              placeholder="e.g. Cowboys will cover the spread Sunday…"
+              rows={3}
+              autoFocus={!initialClaim}
+              className="w-full border border-rule bg-paper px-4 py-3 text-sm text-ink placeholder-ink-faint outline-none focus:border-field transition-colors rounded-lg resize-none leading-relaxed"
+            />
           </div>
 
           {/* Pick Sides */}
