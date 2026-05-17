@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { ALL_TEAMS } from '@/lib/teams-data';
+import CreateNeighborhoodModal from '@/components/CreateNeighborhoodModal';
 
 const HIDDEN_ON = ['/login', '/onboarding'];
 
@@ -23,6 +23,7 @@ export default function PersistentSidebar() {
   const { user: authUser } = useAuth();
   const [tooltip, setTooltip] = useState<TooltipInfo | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   if (HIDDEN_ON.some((p) => pathname.startsWith(p))) return null;
   if (!authUser) return null;
@@ -138,15 +139,18 @@ export default function PersistentSidebar() {
 
         {/* Add button */}
         <div className="w-8 h-px bg-rule mx-auto shrink-0 mt-1" />
-        <Link
-          href="/"
+        <button
+          onClick={() => setShowCreate(true)}
           onMouseEnter={(e) => showTip(e, { label: 'New Neighborhood', sub1: 'Create a group' })}
           onMouseLeave={hideTip}
           className="flex items-center justify-center w-11 h-11 rounded-full shrink-0 border border-dashed border-rule text-ink-faint hover:text-masthead hover:border-masthead transition-colors"
         >
           <Plus size={18} />
-        </Link>
+        </button>
       </aside>
+
+      {/* Create neighborhood modal */}
+      {showCreate && <CreateNeighborhoodModal onClose={() => setShowCreate(false)} />}
 
       {/* Hover tooltip */}
       {tooltip && (
