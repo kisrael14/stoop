@@ -985,17 +985,18 @@ export default function NeighborhoodPage() {
 
       {/* Stats strip */}
       <div className="shrink-0 bg-nav-bg px-5 py-3 border-b border-white/10">
-        <div className="flex gap-6">
-          {[
-            { label: 'Debates',  value: debates.length },
-            { label: 'Bets',     value: bets.length },
-            { label: 'Hot Takes',value: hotTakes.length },
-            { label: 'Analyses', value: analyses.length },
-          ].map(({ label, value }) => (
-            <div key={label}>
+        <div className="flex gap-5">
+          {([
+            { label: 'Members',   value: members.length,    tab: 'overview'  as Tab },
+            { label: 'Debates',   value: debates.length,    tab: 'debates'   as Tab },
+            { label: 'Bets',      value: bets.length,       tab: 'bets'      as Tab },
+            { label: 'Hot Takes', value: hotTakes.length,   tab: 'hot-takes' as Tab },
+            { label: 'Analyses',  value: analyses.length,   tab: 'analysis'  as Tab },
+          ] as { label: string; value: number; tab: Tab }[]).map(({ label, value, tab }) => (
+            <button key={label} onClick={() => setActiveTab(tab)} className="text-left hover:opacity-70 transition-opacity">
               <p className="text-lg font-bold text-white font-mono">{value}</p>
               <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">{label}</p>
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -2059,7 +2060,8 @@ export default function NeighborhoodPage() {
       {/* ── Avatar lightbox ──────────────────────────────────── */}
       {expandedAvatar && (
         <div
-          className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          style={{ zIndex: 9999 }}
           onClick={() => setExpandedAvatar(null)}
         >
           <img

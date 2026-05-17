@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Check, Flame, Swords, Handshake, Trophy, Star, Newspaper, Settings } from 'lucide-react';
@@ -8,6 +8,7 @@ import { getUserById, DEBATES, HOT_TAKES, ANALYSES, CHATS, ME } from '@/lib/mock
 import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { FandomLevel } from '@/lib/types';
 import { ALL_LEAGUES } from '@/lib/leagues-data';
+import { ALL_TEAMS } from '@/lib/teams-data';
 import { computeBadges } from '@/lib/badges';
 import TeamLogo from '@/components/TeamLogo';
 import BadgeChip from '@/components/BadgeChip';
@@ -21,13 +22,166 @@ const FANDOM_STYLES: Record<FandomLevel, { label: string; bg: string; text: stri
   casual:         { label: 'Casual',       bg: 'bg-ink-faint',  text: 'text-ink' },
 };
 
+type RealProfile = {
+  id: string; username: string; display_name: string; avatar: string | null; bio: string | null;
+  follower_count: number; following_count: number; team_ids: string[];
+};
+
 export default function UserProfilePage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user: authUser, refreshProfile } = useAuth();
-  const user = getUserById(id);
+  const mockUser = getUserById(id);
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+  const [realProfile, setRealProfile] = useState<RealProfile | null>(null);
+  const [realLoading, setRealLoading] = useState(isUUID && !mockUser);
   const [following, setFollowing] = useState(ME.followingIds.includes(id));
 
+  useEffect(() => {
+    if (!isUUID || mockUser || !isSupabaseConfigured()) { setRealLoading(false); return; }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createClient() as any;
+    const load = async () => {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles').select('id, username, display_name, avatar, bio').eq('id', id).single();
+        if (!profile) return;
+        const [
+          { count: followerCount },
+          { count: followingCount },
+          { data: teamRows },
+          { data: followRows },
+        ] = await Promise.all([
+          supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', id),
+          supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', id),
+          supabase.from('user_teams').select('team_id').eq('user_id', id),
+          authUser
+            ? supabase.from('follows').select('follower_id').eq('follower_id', authUser.id).eq('following_id', id)
+            : Promise.resolve({ data: [] }),
+        ]);
+        setRealProfile({
+          ...profile,
+          follower_count: followerCount ?? 0,
+          following_count: followingCount ?? 0,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          team_ids: (teamRows ?? []).map((r: any) => r.team_id),
+        });
+        setFollowing((followRows ?? []).length > 0);
+      } finally {
+        setRealLoading(false);
+      }
+    };
+    load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  if (realLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="h-8 w-8 rounded-full border-2 border-masthead border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  // Real Supabase user — show simplified profile
+  if (!mockUser && realProfile) {
+    const isPhoto = realProfile.avatar && realProfile.avatar.startsWith('http');
+    return (
+      <div className="flex flex-col bg-paper min-h-full pb-4">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-rule bg-nav-bg">
+          <button onClick={() => router.back()} className="text-ink/60 hover:text-ink p-1">
+            <ArrowLeft size={20} />
+          </button>
+          <p className="font-bold text-ink font-mono">@{realProfile.username}</p>
+        </div>
+
+        <div className="bg-nav-bg px-5 pt-6 pb-5">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-ink/15 ring-2 ring-masthead shrink-0 overflow-hidden text-4xl">
+              {isPhoto
+                ? <img src={realProfile.avatar!} alt="" className="w-full h-full object-cover" />
+                : <span>{realProfile.avatar || '👤'}</span>}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="font-display text-2xl font-black text-ink leading-tight">{realProfile.display_name}</h1>
+              <p className="text-[11px] font-mono text-ink/50">@{realProfile.username}</p>
+              {realProfile.bio && <p className="text-xs text-ink/70 italic mt-0.5 line-clamp-2">{realProfile.bio}</p>}
+            </div>
+            {authUser && authUser.id !== id && (
+              <button
+                onClick={async () => {
+                  const next = !following;
+                  setFollowing(next);
+                  if (isSupabaseConfigured()) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const supabase = createClient() as any;
+                    if (next) {
+                      await supabase.from('follows').upsert({ follower_id: authUser.id, following_id: id });
+                    } else {
+                      await supabase.from('follows').delete().eq('follower_id', authUser.id).eq('following_id', id);
+                    }
+                    await refreshProfile();
+                  }
+                }}
+                className={`shrink-0 flex items-center justify-center h-10 w-10 rounded-full font-bold text-sm transition-all border-2 ${
+                  following
+                    ? 'bg-ink/15 border-ink/40 text-ink hover:bg-ink/10'
+                    : 'bg-masthead border-transparent text-[#12111a] hover:opacity-80'
+                }`}
+                title={following ? 'Unfollow' : 'Follow'}
+              >
+                {following ? <Check size={15} /> : <Plus size={15} />}
+              </button>
+            )}
+          </div>
+
+          <div className="mt-4 border border-ink/20">
+            <div className="grid grid-cols-2 divide-x divide-ink/20">
+              {[
+                { label: 'Neighbors', value: realProfile.follower_count },
+                { label: 'Following', value: realProfile.following_count },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex flex-col items-center py-3">
+                  <p className="font-display text-lg font-bold leading-none text-ink">{value}</p>
+                  <p className="text-[7px] font-bold uppercase tracking-wider text-ink/70 mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {realProfile.team_ids.length > 0 && (
+          <div className="mx-4 mt-4 border border-rule">
+            <div className="px-3 py-2 bg-nav-bg">
+              <p className="text-[9px] font-black uppercase tracking-[0.25em] text-masthead">Fandom</p>
+            </div>
+            <div className="divide-y divide-rule/60">
+              {realProfile.team_ids.map((teamId) => {
+                const team = ALL_TEAMS.find((t) => t.id === teamId);
+                if (!team) return null;
+                return (
+                  <Link
+                    key={teamId}
+                    href={`/teams/${teamId}`}
+                    className="flex items-center gap-3 px-3 py-2.5 hover:bg-paper-dark transition-colors"
+                  >
+                    <TeamLogo team={team} size={24} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-ink">{teamDisplayName(team)}</p>
+                      <p className="text-[9px] font-bold uppercase tracking-wide text-ink-faint">{team.league}</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const user = mockUser;
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-ink-faint">

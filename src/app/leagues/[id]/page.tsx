@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft, Flame, Snowflake, Swords, Trophy, Star, Users, Plus, Check,
+  ArrowLeft, Flame, Snowflake, Swords, Trophy, Star, Users, Plus, Check, X,
   Home, PenLine, Megaphone, MessageSquare, ChevronDown, ChevronUp, Send, Images,
 } from 'lucide-react';
 import { DEBATES, HOT_TAKES, ANALYSES, getUserById, ME } from '@/lib/mock-data';
@@ -71,6 +71,10 @@ export default function LeaguePage() {
   const [showTeams, setShowTeams] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
+  const [showFansModal, setShowFansModal] = useState(false);
+  type FanProfile = { id: string; username: string; display_name: string; avatar: string | null };
+  const [fansList, setFansList] = useState<FanProfile[]>([]);
+  const [fansLoading, setFansLoading] = useState(false);
 
   const [localHotTakes, setLocalHotTakes] = useState(() => {
     const leagueTeamIds = ALL_TEAMS.filter((t) => t.league === id).map((t) => t.id);
@@ -108,6 +112,22 @@ export default function LeaguePage() {
       .eq('league_id', id)
       .then(({ count }: { count: number | null }) => { if (count != null) setFollowerCount(count); });
   }, [id]);
+
+  const openFansModal = async () => {
+    setShowFansModal(true);
+    if (!isSupabaseConfigured() || fansList.length > 0) return;
+    setFansLoading(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createClient() as any;
+    const { data: leagueRows } = await supabase.from('user_leagues').select('user_id').eq('league_id', id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userIds: string[] = (leagueRows ?? []).map((r: any) => r.user_id);
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('id, username, display_name, avatar').in('id', userIds);
+      setFansList(profiles ?? []);
+    }
+    setFansLoading(false);
+  };
 
   const voteHotTake = (htId: string, vote: '🔥' | '❄️') => {
     const opposite = vote === '🔥' ? '❄️' : '🔥';
@@ -284,7 +304,7 @@ export default function LeaguePage() {
       {/* Stats strip */}
       <div className="shrink-0 px-5 py-3" style={{ background: league.color }}>
         <div className="flex gap-6 border-t border-white/20 pt-3">
-          <button onClick={() => setActiveTab('overview')} className="text-left hover:opacity-70 transition-opacity">
+          <button onClick={openFansModal} className="text-left hover:opacity-70 transition-opacity">
             <p className="text-xl font-bold text-white font-mono">{followerCount}</p>
             <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">Fans</p>
           </button>
@@ -729,6 +749,48 @@ export default function LeaguePage() {
       )}
 
       {activeTab === 'media' && <MediaTab contextType="league" contextId={id} />}
+
+      {/* ── Fans modal ──────────────────────────────────────── */}
+      {showFansModal && (
+        <div className="fixed inset-0 flex items-end justify-center" style={{ zIndex: 9999 }}>
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowFansModal(false)} />
+          <div className="relative w-full max-w-md bg-paper rounded-t-2xl shadow-2xl max-h-[70vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-rule shrink-0">
+              <h2 className="font-bold text-ink text-base">{league.name} Fans ({followerCount})</h2>
+              <button onClick={() => setShowFansModal(false)} className="text-ink-faint hover:text-ink"><X size={20} /></button>
+            </div>
+            <div className="overflow-y-auto flex-1">
+              {fansLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="h-6 w-6 rounded-full border-2 border-masthead border-t-transparent animate-spin" />
+                </div>
+              ) : fansList.length === 0 ? (
+                <div className="text-center py-10 text-ink-muted italic text-sm">No fans yet</div>
+              ) : fansList.map((fan) => {
+                const iFollow = authUser?.followingProfiles?.some((p) => p.id === fan.id) ?? false;
+                return (
+                  <button
+                    key={fan.id}
+                    onClick={() => { setShowFansModal(false); router.push(`/users/${fan.id}`); }}
+                    className="flex w-full items-center gap-3 px-4 py-3 border-b border-rule/40 hover:bg-paper-dark transition-colors text-left last:border-0"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-nav-bg border border-rule overflow-hidden flex items-center justify-center text-xl shrink-0">
+                      {fan.avatar && fan.avatar.startsWith('http')
+                        ? <img src={fan.avatar} alt="" className="w-full h-full object-cover" />
+                        : <span>{fan.avatar || '👤'}</span>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-ink text-sm truncate">{fan.display_name}</p>
+                      <p className="text-[11px] text-ink-faint font-mono">@{fan.username}</p>
+                    </div>
+                    {iFollow && <Check size={15} className="text-masthead shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
