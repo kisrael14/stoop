@@ -67,13 +67,24 @@ export default function TeamPage() {
   const [discussType, setDiscussType] = useState<'take' | 'debate'>('take');
   const [discussText, setDiscussText] = useState('');
   const [isFollowing, setIsFollowing] = useState(() => ME.fanTeams.some((ft) => ft.team.id === id));
+  const [followerCount, setFollowerCount] = useState(0);
 
   // Sync isFollowing with real auth teams when available
   useEffect(() => {
-    if (authUser?.teams) {
-      setIsFollowing(authUser.teams.some((t) => t.team_id === id));
-    }
+    if (authUser?.teams) setIsFollowing(authUser.teams.some((t) => t.team_id === id));
   }, [authUser?.teams, id]);
+
+  // Fetch total follower count
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createClient() as any;
+    supabase
+      .from('user_teams')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('team_id', id)
+      .then(({ count }: { count: number | null }) => { if (count != null) setFollowerCount(count); });
+  }, [id]);
   const [localHotTakes, setLocalHotTakes] = useState(() =>
     HOT_TAKES
       .filter((ht) => ht.teamIds.includes(id))
@@ -254,6 +265,7 @@ export default function TeamPage() {
             onClick={async () => {
               const next = !isFollowing;
               setIsFollowing(next);
+              setFollowerCount((c) => next ? c + 1 : Math.max(0, c - 1));
               if (authUser && isSupabaseConfigured()) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const supabase = createClient() as any;
@@ -277,8 +289,10 @@ export default function TeamPage() {
         </div>
         <div className="flex gap-6 mt-5 pt-4 border-t border-white/20">
           {[
-            { label: 'Debates',   value: teamDebates.length },
-            { label: 'Hot Takes', value: localHotTakes.length },
+            { label: 'Followers',  value: followerCount },
+            { label: 'Debates',    value: teamDebates.length },
+            { label: 'Hot Takes',  value: localHotTakes.length },
+            { label: 'Analysis',   value: localAnalyses.length },
           ].map(({ label, value }) => (
             <div key={label}>
               <p className="text-xl font-bold text-white font-mono">{value}</p>
