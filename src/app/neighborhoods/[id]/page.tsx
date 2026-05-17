@@ -24,6 +24,7 @@ import type { Message, MessageTag, Debate, Bet, HotTake, HotTakeComment, VoteCho
 import { sendNotification } from '@/lib/notifications';
 import TeamLogo from '@/components/TeamLogo';
 import { detectTeamIds } from '@/lib/players-data';
+import { ALL_TEAMS } from '@/lib/teams-data';
 
 type Tab = 'overview' | 'chat' | 'debates' | 'bets' | 'hot-takes' | 'analysis' | 'media';
 const EMOJI_REACTIONS = ['🔥', '💯', '😂', '🧢', '👀', '😭', '🤬', '❤️'];
@@ -105,6 +106,7 @@ export default function NeighborhoodPage() {
   const [chatDescription, setChatDescription] = useState<string | null>(null);
   const [dbNeighborhood, setDbNeighborhood] = useState<{ id: string; name: string; emoji: string; photo_url?: string | null } | null>(null);
   const [dbMemberProfiles, setDbMemberProfiles] = useState<DbProfile[]>([]);
+  const [dbMemberTeams, setDbMemberTeams] = useState<{ teamId: string; count: number }[]>([]);
   const [nicknameMap, setNicknameMap] = useState<Record<string, string>>({});
   const [dbLoading, setDbLoading] = useState(isRealId);
 
@@ -161,6 +163,23 @@ export default function NeighborhoodPage() {
         }
         setDbMemberProfiles(profiles);
         setLocalMemberIds(userIds);
+
+        // Fetch teams followed by members
+        if (userIds.length > 0) {
+          const { data: teamRows } = await supabase
+            .from('user_teams')
+            .select('team_id')
+            .in('user_id', userIds);
+          const counts: Record<string, number> = {};
+          (teamRows ?? []).forEach((r: { team_id: string }) => {
+            counts[r.team_id] = (counts[r.team_id] ?? 0) + 1;
+          });
+          setDbMemberTeams(
+            Object.entries(counts)
+              .sort((a, b) => b[1] - a[1])
+              .map(([teamId, count]) => ({ teamId, count }))
+          );
+        }
 
         // Fetch messages + debates + bets + hot_takes in parallel
         const [
@@ -307,7 +326,6 @@ export default function NeighborhoodPage() {
   }, {});
   const topTeams = Object.entries(allFanTeams)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
     .map(([teamId, count]) => ({ team: TEAMS.find((t) => t.id === teamId)!, count }))
     .filter((x) => x.team);
 
@@ -1041,29 +1059,35 @@ export default function NeighborhoodPage() {
             </div>
           </div>
 
-          {/* Neighborhood teams */}
-          {topTeams.length > 0 && (
-            <div className="px-5 py-4 border-b border-rule">
-              <h3 className="font-display font-bold text-ink text-lg mb-3">Neighborhood Teams</h3>
-              <div className="flex flex-col gap-0">
-                {topTeams.map(({ team, count }, i) => (
-                  <Link
-                    key={team.id}
-                    href={`/teams/${team.id}`}
-                    className={`flex items-center gap-3 px-4 py-2.5 border-b border-rule/50 last:border-0 hover:bg-paper-dark transition-colors ${i === 0 ? 'border-t border-rule/50' : ''}`}
-                    style={{ borderLeftWidth: '3px', borderLeftColor: team.color, borderLeftStyle: 'solid' }}
-                  >
-                    <TeamLogo team={team} size={28} />
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-ink">{teamDisplayName(team)}</p>
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{team.league}</p>
-                    </div>
-                    <span className="text-[11px] text-ink-muted">{count} fan{count !== 1 ? 's' : ''}</span>
-                  </Link>
-                ))}
+          {/* Neighborhood teams — real data for DB hoods, mock data otherwise */}
+          {(() => {
+            const displayTeams = isRealId
+              ? dbMemberTeams.map(({ teamId, count }) => ({ team: ALL_TEAMS.find((t) => t.id === teamId), count })).filter((x) => x.team) as { team: typeof ALL_TEAMS[0]; count: number }[]
+              : topTeams;
+            if (displayTeams.length === 0) return null;
+            return (
+              <div className="px-5 py-4 border-b border-rule">
+                <h3 className="font-display font-bold text-ink text-lg mb-3">Neighborhood Teams</h3>
+                <div className="flex flex-col gap-0">
+                  {displayTeams.map(({ team, count }, i) => (
+                    <Link
+                      key={team.id}
+                      href={`/teams/${team.id}`}
+                      className={`flex items-center gap-3 px-4 py-2.5 border-b border-rule/50 last:border-0 hover:bg-paper-dark transition-colors ${i === 0 ? 'border-t border-rule/50' : ''}`}
+                      style={{ borderLeftWidth: '3px', borderLeftColor: team.color, borderLeftStyle: 'solid' }}
+                    >
+                      <TeamLogo team={team} size={28} />
+                      <div className="flex-1">
+                        <p className="text-sm font-bold text-ink">{teamDisplayName(team)}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{team.league}</p>
+                      </div>
+                      <span className="text-[11px] text-ink-muted">{count} fan{count !== 1 ? 's' : ''}</span>
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Quick-nav */}
           <div className="px-5 py-4 flex flex-col gap-0">
