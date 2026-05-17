@@ -274,20 +274,24 @@ export default function TeamPage() {
       </div>
 
       {/* ── Tab bar ─────────────────────────────────────────────────────── */}
-      <div className="shrink-0 flex gap-1.5 px-3 py-2 bg-paper-dark border-b border-rule overflow-x-auto">
+      <div className="shrink-0 flex bg-paper-dark border-b border-rule">
         {tabs.map(({ id: tabId, label, icon: Icon, count }) => (
           <button
             key={tabId}
             onClick={() => setActiveTab(tabId)}
-            className={`flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap rounded-full transition-colors ${
-              activeTab === tabId ? 'bg-masthead text-[#12111a]' : 'text-ink-muted hover:text-ink hover:bg-paper-deeper'
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[9px] font-bold uppercase tracking-wider transition-colors border-b-2 relative ${
+              activeTab === tabId ? 'border-masthead text-masthead' : 'border-transparent text-ink-muted hover:text-ink'
             }`}
           >
-            <Icon size={11} />
+            <span className="relative">
+              <Icon size={12} />
+              {count > 0 && (
+                <span className="absolute -top-1.5 -right-2.5 flex h-3.5 min-w-3.5 px-0.5 items-center justify-center rounded-full bg-press text-[7px] font-bold text-white leading-none">
+                  {count > 99 ? '99+' : count}
+                </span>
+              )}
+            </span>
             {label}
-            {count > 0 && (
-              <span className="text-[9px] bg-paper-dark px-1 rounded font-mono ml-0.5">{count}</span>
-            )}
           </button>
         ))}
       </div>
