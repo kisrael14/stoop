@@ -11,6 +11,7 @@ import { requestNotificationPermission, startSimulatedNotifications } from '@/li
 import { computeBadges } from '@/lib/badges';
 import BadgeChip from '@/components/BadgeChip';
 import TeamLogo from '@/components/TeamLogo';
+import PeopleListModal, { type PersonEntry } from '@/components/PeopleListModal';
 import { useAuth } from '@/lib/auth-context';
 import { ALL_TEAMS } from '@/lib/teams-data';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
@@ -30,6 +31,77 @@ export default function StoopPage() {
   const { user: authUser, refreshProfile } = useAuth();
   const router = useRouter();
   const [notifStatus, setNotifStatus] = useState<'unknown' | 'granted' | 'denied'>('unknown');
+
+  // Neighbors / Followers modals
+  const [showNeighborsModal, setShowNeighborsModal] = useState(false);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [followersList, setFollowersList] = useState<PersonEntry[]>([]);
+  const [followersLoading, setFollowersLoading] = useState(false);
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [togglingFollowId, setTogglingFollowId] = useState<string | null>(null);
+
+  // Seed followingIds from auth context
+  useEffect(() => {
+    const ids = authUser?.followingProfiles?.map((p) => p.id) ?? ME.followingIds;
+    setFollowingIds(new Set(ids));
+  }, [authUser?.id, authUser?.followingProfiles?.length]);
+
+  const openFollowersModal = async () => {
+    setShowFollowersModal(true);
+    if (followersList.length > 0) return;
+    setFollowersLoading(true);
+    if (authUser && isSupabaseConfigured()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient() as any;
+      try {
+        const { data: rows } = await supabase.from('follows').select('follower_id').eq('following_id', authUser.id);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ids: string[] = (rows ?? []).map((r: any) => r.follower_id);
+        if (ids.length > 0) {
+          const { data: profiles } = await supabase.from('profiles').select('id, username, display_name, avatar').in('id', ids);
+          setFollowersList(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (profiles ?? []).map((p: any) => ({
+              id: p.id, displayName: p.display_name || p.username || 'Unknown',
+              username: p.username || '', avatar: p.avatar || null,
+            }))
+          );
+        }
+      } finally {
+        setFollowersLoading(false);
+      }
+    } else {
+      setFollowersList(
+        ME.followerIds.map((fid) => {
+          const u = getUserById(fid);
+          return u ? { id: u.id, displayName: u.displayName, username: u.username, avatar: u.avatar as string } : null;
+        }).filter(Boolean) as PersonEntry[]
+      );
+      setFollowersLoading(false);
+    }
+  };
+
+  const toggleFollow = async (personId: string) => {
+    if (togglingFollowId) return;
+    setTogglingFollowId(personId);
+    const nowFollowing = !followingIds.has(personId);
+    setFollowingIds((prev) => {
+      const next = new Set(prev);
+      if (nowFollowing) next.add(personId); else next.delete(personId);
+      return next;
+    });
+    if (authUser && isSupabaseConfigured()) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient() as any;
+      if (nowFollowing) {
+        await supabase.from('follows').upsert({ follower_id: authUser.id, following_id: personId });
+      } else {
+        await supabase.from('follows').delete().eq('follower_id', authUser.id).eq('following_id', personId);
+      }
+      await refreshProfile();
+    }
+    setTogglingFollowId(null);
+  };
 
   // Avatar edit modal
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -239,14 +311,14 @@ export default function StoopPage() {
         <div className="mt-4 border border-white/20">
           {/* Row 1 — social stats */}
           <div className="grid grid-cols-4 divide-x divide-white/20">
-            <Link href="/neighbors" className="flex flex-col items-center py-2 hover:bg-white/10 transition-colors">
+            <button onClick={() => setShowNeighborsModal(true)} className="flex flex-col items-center py-2 hover:bg-white/10 transition-colors">
               <p className="font-display text-lg font-bold leading-none text-white">{followingCount}</p>
               <p className="text-[7px] font-bold uppercase tracking-wider text-white/60 mt-0.5">Neighbors</p>
-            </Link>
-            <Link href="/followers" className="flex flex-col items-center py-2 hover:bg-white/10 transition-colors">
+            </button>
+            <button onClick={openFollowersModal} className="flex flex-col items-center py-2 hover:bg-white/10 transition-colors">
               <p className="font-display text-lg font-bold leading-none text-white">{followerCount}</p>
-              <p className="text-[7px] font-bold uppercase tracking-wider text-white/60 mt-0.5">Following</p>
-            </Link>
+              <p className="text-[7px] font-bold uppercase tracking-wider text-white/60 mt-0.5">Following You</p>
+            </button>
             <Link href="/" className="flex flex-col items-center py-2 hover:bg-white/10 transition-colors">
               <p className="font-display text-lg font-bold leading-none text-white">{myNeighborhoods.length}</p>
               <p className="text-[7px] font-bold uppercase tracking-wider text-white/60 mt-0.5">Neighborhoods</p>
@@ -586,6 +658,49 @@ export default function StoopPage() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Neighbors modal */}
+      {showNeighborsModal && (() => {
+        const people: PersonEntry[] = authUser?.followingProfiles
+          ? authUser.followingProfiles.map((p) => ({
+              id: p.id,
+              displayName: p.display_name || p.username || 'Unknown',
+              username: p.username || '',
+              avatar: p.avatar || null,
+            }))
+          : ME.followingIds.map((fid) => {
+              const u = getUserById(fid);
+              return u ? { id: u.id, displayName: u.displayName, username: u.username, avatar: u.avatar as string } : null;
+            }).filter(Boolean) as PersonEntry[];
+        return (
+          <PeopleListModal
+            title="Neighbors"
+            count={people.length}
+            emptyMessage="No neighbors yet. Start following people!"
+            people={people}
+            onClose={() => setShowNeighborsModal(false)}
+            followingIds={followingIds}
+            onToggleFollow={toggleFollow}
+            togglingId={togglingFollowId}
+            findHref="/discover"
+          />
+        );
+      })()}
+
+      {/* Followers modal */}
+      {showFollowersModal && (
+        <PeopleListModal
+          title="Following You"
+          count={followersList.length}
+          emptyMessage="No one follows you yet. Share your takes!"
+          people={followersList}
+          loading={followersLoading}
+          onClose={() => setShowFollowersModal(false)}
+          followingIds={followingIds}
+          onToggleFollow={toggleFollow}
+          togglingId={togglingFollowId}
+        />
       )}
     </div>
   );
