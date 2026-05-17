@@ -6,6 +6,8 @@ import { Plus } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { ALL_TEAMS } from '@/lib/teams-data';
 import CreateNeighborhoodModal from '@/components/CreateNeighborhoodModal';
+import FindNeighborsModal from '@/components/FindNeighborsModal';
+import FollowTeamsModal from '@/components/FollowTeamsModal';
 
 const HIDDEN_ON = ['/login', '/onboarding'];
 
@@ -24,6 +26,8 @@ export default function PersistentSidebar() {
   const [tooltip, setTooltip] = useState<TooltipInfo | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showFindNeighbors, setShowFindNeighbors] = useState(false);
+  const [showFollowTeams, setShowFollowTeams] = useState(false);
 
   if (HIDDEN_ON.some((p) => pathname.startsWith(p))) return null;
   if (!authUser) return null;
@@ -60,6 +64,16 @@ export default function PersistentSidebar() {
           ) : (
             <span className="text-base leading-none">{avatar || initials}</span>
           )}
+        </button>
+
+        {/* Find neighbors + button — below avatar */}
+        <button
+          onClick={() => setShowFindNeighbors(true)}
+          onMouseEnter={(e) => showTip(e, { label: 'Find Neighbors', sub1: 'Follow people' })}
+          onMouseLeave={hideTip}
+          className="flex items-center justify-center w-8 h-8 rounded-full shrink-0 border border-dashed border-rule text-ink-faint hover:text-masthead hover:border-masthead transition-colors"
+        >
+          <Plus size={14} />
         </button>
 
         {/* Groups section */}
@@ -147,7 +161,7 @@ export default function PersistentSidebar() {
 
         {/* Follow teams/leagues + button — sits at end of Leagues section */}
         <button
-          onClick={() => router.push('/discover')}
+          onClick={() => setShowFollowTeams(true)}
           onMouseEnter={(e) => showTip(e, { label: 'Follow Teams & Leagues', sub1: 'Browse & search' })}
           onMouseLeave={hideTip}
           className="flex items-center justify-center w-8 h-8 rounded-full shrink-0 border border-dashed border-rule text-ink-faint hover:text-field hover:border-field transition-colors"
@@ -156,8 +170,9 @@ export default function PersistentSidebar() {
         </button>
       </aside>
 
-      {/* Create neighborhood modal */}
       {showCreate && <CreateNeighborhoodModal onClose={() => setShowCreate(false)} />}
+      {showFindNeighbors && <FindNeighborsModal onClose={() => setShowFindNeighbors(false)} />}
+      {showFollowTeams && <FollowTeamsModal onClose={() => setShowFollowTeams(false)} />}
 
       {/* Hover tooltip */}
       {tooltip && (
