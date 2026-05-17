@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Settings, Flame, Swords, Handshake, Bell, BellOff, PenLine, Newspaper } from 'lucide-react';
+import { ArrowLeft, Home, Flame, Swords, Handshake, Bell, BellOff, PenLine, Newspaper } from 'lucide-react';
 import { ME, DEBATES, BETS, HOT_TAKES, ANALYSES, getUserById, CHATS } from '@/lib/mock-data';
 import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { FandomLevel, FanTeam } from '@/lib/types';
@@ -24,6 +25,7 @@ function mapFandomLevel(level: string | null): FandomLevel {
 
 export default function StoopPage() {
   const { user: authUser } = useAuth();
+  const router = useRouter();
   const [notifStatus, setNotifStatus] = useState<'unknown' | 'granted' | 'denied'>('unknown');
 
   useEffect(() => {
@@ -112,31 +114,32 @@ export default function StoopPage() {
     <div className="flex flex-col bg-paper min-h-full pb-4">
 
       {/* ── MASTHEAD ──────────────────────────────────────── */}
-      {/* nav-bg stays dark in both themes — all text explicitly white-based for legibility */}
-      <div className="bg-nav-bg px-5 pt-12 pb-5">
-        {/* Top controls */}
-        <div className="flex items-center justify-between mb-4">
-          <Link href="/onboarding" className="h-8 w-8 flex items-center justify-center rounded-full bg-white/10 text-white/70 hover:bg-white/20 transition-colors" title="Edit profile">
-            <Settings size={16} />
-          </Link>
-          {/* Spacer for TopChatButton (top-right area) */}
-          <div className="w-10" />
-        </div>
-
-        {/* Profile row */}
-        <div className="flex items-center gap-4 mb-4">
-          <Link href="/users/me" className="relative shrink-0">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/15 text-4xl ring-2 ring-masthead hover:ring-masthead/60 transition-all">
+      <div className="bg-nav-bg">
+        {/* Compact header */}
+        <div className="px-4 py-3 flex items-center gap-2.5">
+          <button onClick={() => router.back()} className="text-ink/60 hover:text-ink p-1 shrink-0">
+            <ArrowLeft size={20} />
+          </button>
+          <Link href="/users/me" className="flex items-center gap-2.5 flex-1 min-w-0 hover:opacity-80 transition-opacity">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-xl shrink-0 ring-2 ring-masthead overflow-hidden">
               {avatar}
             </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-display font-bold text-white truncate leading-tight">{displayName}</p>
+              <p className="text-[10px] font-mono text-white/55 truncate">@{username}</p>
+            </div>
           </Link>
-          <div className="flex-1 min-w-0">
-            <h1 className="font-display text-2xl font-black text-white leading-tight">{displayName}</h1>
-            <p className="text-[11px] font-mono text-white/55">@{username}</p>
-            {bio && <p className="text-xs text-white/70 italic mt-0.5 line-clamp-2">{bio}</p>}
-          </div>
+          <Link
+            href="/"
+            className="shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-ink/10 hover:bg-ink/20 text-ink/70 hover:text-ink transition-all"
+            aria-label="Home"
+          >
+            <Home size={14} />
+          </Link>
         </div>
+        {bio && <p className="px-5 pb-3 text-sm text-white/70 italic">{bio}</p>}
 
+        <div className="px-5 pb-5">
         {/* Trophy Room — 4-col grid, full width */}
         {badges.length > 0 && (
           <div className="grid grid-cols-4 gap-2 mb-4">
@@ -189,6 +192,7 @@ export default function StoopPage() {
           </div>
         </div>
 
+        </div>
       </div>
 
       {/* Notification banner */}

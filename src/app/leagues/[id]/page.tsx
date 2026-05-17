@@ -205,116 +205,80 @@ export default function LeaguePage() {
     { id: 'media',     label: 'Media',    icon: Images,  count: 0 },
   ];
 
-  const headerBg = league.color + 'dd';
-
   return (
     <div className="flex flex-col min-h-full bg-paper" onTouchStart={onSwipeStart} onTouchEnd={onSwipeEnd}>
 
       {/* ── League header ─────────────────────────────────────────────────── */}
-      <div className="shrink-0 px-5 pt-10 pb-5" style={{ backgroundColor: headerBg }}>
-        <div className="flex items-center justify-between mb-5">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-1.5 text-white/60 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors"
-          >
-            <ArrowLeft size={14} /> Back
-          </button>
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`flex items-center justify-center h-8 w-8 rounded-full transition-all ${activeTab === 'overview' ? 'bg-white text-ink' : 'bg-white/10 hover:bg-white/20 text-white/70 hover:text-white'}`}
-            aria-label="Overview"
-          >
-            <Home size={14} />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div
-            className="flex h-16 w-16 items-center justify-center rounded-2xl shrink-0 text-4xl"
-            style={{ backgroundColor: 'rgba(255,255,255,0.12)', border: '2px solid rgba(255,255,255,0.2)' }}
-          >
+      <div className="shrink-0 bg-nav-bg px-4 py-3 flex items-center gap-2.5">
+        <button onClick={() => router.back()} className="text-ink/60 hover:text-ink p-1 shrink-0">
+          <ArrowLeft size={20} />
+        </button>
+        <button
+          onClick={() => setActiveTab('overview')}
+          className="flex items-center gap-2.5 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
+        >
+          <div className="flex h-9 w-9 items-center justify-center bg-ink-muted/30 text-xl shrink-0 rounded-xl overflow-hidden">
             {league.emoji}
           </div>
           <div className="flex-1 min-w-0">
-            <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/50">{league.country}</span>
-            <h1 className="font-display text-2xl font-black text-white leading-none">{league.name}</h1>
-            <h2 className="font-display text-base font-bold leading-none" style={{ color: 'rgba(255,255,255,0.75)' }}>
-              {league.sport}
-            </h2>
+            <p className="font-display font-bold text-ink truncate leading-tight">{league.name}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-ink/50">{league.country} · {league.sport}</p>
           </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Teams dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowTeams((s) => !s)}
-                className="flex items-center gap-1.5 h-10 px-3 rounded-full border-2 border-white/30 bg-white/15 text-white hover:bg-white/25 transition-all font-bold text-xs uppercase tracking-wider"
-              >
-                Teams
-                <ChevronDown size={12} className={`transition-transform ${showTeams ? 'rotate-180' : ''}`} />
-              </button>
-              {showTeams && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-paper-dark border border-rule shadow-2xl rounded-xl overflow-hidden z-50 max-h-72 overflow-y-auto">
-                  {leagueTeams.map((team) => (
-                    <Link
-                      key={team.id}
-                      href={`/teams/${team.id}`}
-                      onClick={() => setShowTeams(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-paper transition-colors border-b border-rule/40 last:border-0"
-                      style={{ borderLeftWidth: '3px', borderLeftColor: team.color, borderLeftStyle: 'solid' }}
-                    >
-                      <TeamLogo team={team} size={22} />
-                      <span className="text-sm font-semibold text-ink truncate">{teamDisplayName(team)}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
+        </button>
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full transition-all ${activeTab === 'overview' ? 'bg-masthead/20 text-masthead' : 'bg-ink/10 hover:bg-ink/20 text-ink/70 hover:text-ink'}`}
+          aria-label="Overview"
+        >
+          <Home size={14} />
+        </button>
+        {/* Teams dropdown */}
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setShowTeams((s) => !s)}
+            className="flex items-center gap-1 h-8 px-2.5 rounded-full transition-all bg-ink/10 hover:bg-ink/20 text-ink/70 hover:text-ink text-[10px] font-bold uppercase tracking-wider"
+          >
+            Teams
+            <ChevronDown size={10} className={`transition-transform ${showTeams ? 'rotate-180' : ''}`} />
+          </button>
+          {showTeams && (
+            <div className="absolute right-0 top-full mt-2 w-56 bg-paper-dark border border-rule shadow-2xl rounded-xl overflow-hidden z-50 max-h-72 overflow-y-auto">
+              {leagueTeams.map((team) => (
+                <Link
+                  key={team.id}
+                  href={`/teams/${team.id}`}
+                  onClick={() => setShowTeams(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-paper transition-colors border-b border-rule/40 last:border-0"
+                  style={{ borderLeftWidth: '3px', borderLeftColor: team.color, borderLeftStyle: 'solid' }}
+                >
+                  <TeamLogo team={team} size={22} />
+                  <span className="text-sm font-semibold text-ink truncate">{teamDisplayName(team)}</span>
+                </Link>
+              ))}
             </div>
-
-            {/* Follow button */}
-            <button
-              onClick={async () => {
-                const next = !isFollowing;
-                setIsFollowing(next);
-                setFollowerCount((c) => next ? c + 1 : Math.max(0, c - 1));
-                if (authUser && isSupabaseConfigured()) {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const supabase = createClient() as any;
-                  if (next) {
-                    await supabase.from('user_leagues').insert({ user_id: authUser.id, league_id: id });
-                  } else {
-                    await supabase.from('user_leagues').delete().eq('user_id', authUser.id).eq('league_id', id);
-                  }
-                  await refreshProfile();
-                }
-              }}
-              className={`flex items-center justify-center h-10 w-10 rounded-full font-bold text-sm transition-all shrink-0 border-2 ${
-                isFollowing
-                  ? 'bg-white/20 border-white/40 text-white hover:bg-white/10'
-                  : 'bg-white border-transparent text-ink hover:bg-white/90'
-              }`}
-              title={isFollowing ? 'Unfollow league' : 'Follow league'}
-            >
-              {isFollowing ? <Check size={15} /> : <Plus size={15} />}
-            </button>
-          </div>
+          )}
         </div>
-
-        {/* Stats row */}
-        <div className="flex gap-6 mt-5 pt-4 border-t border-white/20">
-          {[
-            { label: 'Fans',       value: followerCount },
-            { label: 'Teams',      value: leagueTeams.length },
-            { label: 'Debates',    value: leagueDebates.length },
-            { label: 'Hot Takes',  value: localHotTakes.length },
-            { label: 'Analysis',   value: localAnalyses.length },
-          ].map(({ label, value }) => (
-            <div key={label}>
-              <p className="text-xl font-bold text-white font-mono">{value}</p>
-              <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">{label}</p>
-            </div>
-          ))}
-        </div>
+        <button
+          onClick={async () => {
+            const next = !isFollowing;
+            setIsFollowing(next);
+            setFollowerCount((c) => next ? c + 1 : Math.max(0, c - 1));
+            if (authUser && isSupabaseConfigured()) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const supabase = createClient() as any;
+              if (next) {
+                await supabase.from('user_leagues').insert({ user_id: authUser.id, league_id: id });
+              } else {
+                await supabase.from('user_leagues').delete().eq('user_id', authUser.id).eq('league_id', id);
+              }
+              await refreshProfile();
+            }
+          }}
+          className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full transition-all ${isFollowing ? 'bg-masthead/20 text-masthead' : 'bg-ink/10 hover:bg-ink/20 text-ink/70 hover:text-ink'}`}
+          title={isFollowing ? 'Unfollow league' : 'Follow league'}
+        >
+          {isFollowing ? <Check size={14} /> : <Plus size={14} />}
+        </button>
       </div>
 
       {/* ── Tab bar ─────────────────────────────────────────────────────── */}
@@ -337,6 +301,24 @@ export default function LeaguePage() {
       {/* ── OVERVIEW TAB ──────────────────────────────────────────────────── */}
       {activeTab === 'overview' && (
         <div className="flex-1 overflow-y-auto pb-8">
+
+          {/* Stats strip */}
+          <div className="bg-nav-bg px-5 pb-4">
+            <div className="flex gap-6 border-t border-white/20 pt-4">
+              {[
+                { label: 'Fans',      value: followerCount },
+                { label: 'Teams',     value: leagueTeams.length },
+                { label: 'Debates',   value: leagueDebates.length },
+                { label: 'Hot Takes', value: localHotTakes.length },
+                { label: 'Analysis',  value: localAnalyses.length },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <p className="text-xl font-bold text-white font-mono">{value}</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Top Fans */}
           <div className="px-5 pt-5">

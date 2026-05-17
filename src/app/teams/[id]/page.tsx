@@ -8,7 +8,7 @@ import { DEBATES, HOT_TAKES, ANALYSES, getUserById, USERS, ME } from '@/lib/mock
 import { getTeamByIdFull } from '@/lib/teams-data';
 import { useAuth } from '@/lib/auth-context';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
-import { timeAgo, totalReactions } from '@/lib/utils';
+import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { VoteChoice, HotTake, Analysis, HotTakeComment } from '@/lib/types';
 import TeamLogo from '@/components/TeamLogo';
 import MediaTab from '@/components/MediaTab';
@@ -221,87 +221,56 @@ export default function TeamPage() {
     { id: 'media',     label: 'Media',    icon: Images,  count: 0 },
   ];
 
-  const headerBg = team.color + 'dd';
-
   return (
     <div className="flex flex-col min-h-full bg-paper" onTouchStart={onSwipeStart} onTouchEnd={onSwipeEnd}>
       {/* ── Team header ─────────────────────────────────────────────────── */}
-      <div className="shrink-0 px-5 pt-10 pb-5" style={{ backgroundColor: headerBg }}>
-        <div className="flex items-center justify-between mb-5">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-1.5 text-white/60 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors"
-          >
-            <ArrowLeft size={14} /> Back
-          </button>
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`flex items-center justify-center h-8 w-8 rounded-full transition-all ${activeTab === 'overview' ? 'bg-white text-ink' : 'bg-white/10 hover:bg-white/20 text-white/70 hover:text-white'}`}
-            aria-label="Overview"
-          >
-            <Home size={14} />
-          </button>
-        </div>
-        <div className="flex items-center gap-4">
+      <div className="shrink-0 bg-nav-bg px-4 py-3 flex items-center gap-2.5">
+        <button onClick={() => router.back()} className="text-ink/60 hover:text-ink p-1 shrink-0">
+          <ArrowLeft size={20} />
+        </button>
+        <button
+          onClick={() => setActiveTab('overview')}
+          className="flex items-center gap-2.5 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
+        >
           <div
-            className="flex h-16 w-16 items-center justify-center rounded-2xl shrink-0 p-1"
-            style={{ backgroundColor: 'rgba(255,255,255,0.12)', border: '2px solid rgba(255,255,255,0.2)' }}
+            className="flex h-9 w-9 items-center justify-center rounded-xl shrink-0 overflow-hidden p-0.5"
+            style={{ backgroundColor: team.color + '33', border: `2px solid ${team.color}55` }}
           >
-            <TeamLogo team={team} size={52} />
+            <TeamLogo team={team} size={30} />
           </div>
           <div className="flex-1 min-w-0">
-            <Link
-              href={`/leagues/${team.league}`}
-              className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/50 hover:text-white/80 transition-colors"
-            >
-              {team.league} ↗
-            </Link>
-            {!['EPL','LaLiga','SerieA','Ligue1','Bundesliga'].includes(team.league) && (
-              <h1 className="font-display text-2xl font-black text-white leading-none">{team.city}</h1>
-            )}
-            <h2 className="font-display text-2xl font-black leading-none" style={{ color: 'rgba(255,255,255,0.75)' }}>
-              {team.name} <span className="text-sm font-bold tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.5)' }}>fans</span>
-            </h2>
+            <p className="font-display font-bold text-ink truncate leading-tight">{teamDisplayName(team)}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-ink/50">{team.league}</p>
           </div>
-          <button
-            onClick={async () => {
-              const next = !isFollowing;
-              setIsFollowing(next);
-              setFollowerCount((c) => next ? c + 1 : Math.max(0, c - 1));
-              if (authUser && isSupabaseConfigured()) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const supabase = createClient() as any;
-                if (next) {
-                  await supabase.from('user_teams').upsert({ user_id: authUser.id, team_id: id, fandom_level: 'casual' });
-                } else {
-                  await supabase.from('user_teams').delete().eq('user_id', authUser.id).eq('team_id', id);
-                }
-                await refreshProfile();
+        </button>
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full transition-all ${activeTab === 'overview' ? 'bg-masthead/20 text-masthead' : 'bg-ink/10 hover:bg-ink/20 text-ink/70 hover:text-ink'}`}
+          aria-label="Overview"
+        >
+          <Home size={14} />
+        </button>
+        <button
+          onClick={async () => {
+            const next = !isFollowing;
+            setIsFollowing(next);
+            setFollowerCount((c) => next ? c + 1 : Math.max(0, c - 1));
+            if (authUser && isSupabaseConfigured()) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const supabase = createClient() as any;
+              if (next) {
+                await supabase.from('user_teams').upsert({ user_id: authUser.id, team_id: id, fandom_level: 'casual' });
+              } else {
+                await supabase.from('user_teams').delete().eq('user_id', authUser.id).eq('team_id', id);
               }
-            }}
-            className={`flex items-center justify-center h-10 w-10 rounded-full font-bold text-sm transition-all shrink-0 border-2 ${
-              isFollowing
-                ? 'bg-white/20 border-white/40 text-white hover:bg-white/10'
-                : 'bg-white border-transparent text-ink hover:bg-white/90'
-            }`}
-            title={isFollowing ? 'Unfollow' : 'Follow team'}
-          >
-            {isFollowing ? <Check size={15} /> : <Plus size={15} />}
-          </button>
-        </div>
-        <div className="flex gap-6 mt-5 pt-4 border-t border-white/20">
-          {[
-            { label: 'Fans',       value: followerCount },
-            { label: 'Debates',    value: teamDebates.length },
-            { label: 'Hot Takes',  value: localHotTakes.length },
-            { label: 'Analysis',   value: localAnalyses.length },
-          ].map(({ label, value }) => (
-            <div key={label}>
-              <p className="text-xl font-bold text-white font-mono">{value}</p>
-              <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">{label}</p>
-            </div>
-          ))}
-        </div>
+              await refreshProfile();
+            }
+          }}
+          className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full transition-all ${isFollowing ? 'bg-masthead/20 text-masthead' : 'bg-ink/10 hover:bg-ink/20 text-ink/70 hover:text-ink'}`}
+          title={isFollowing ? 'Unfollow' : 'Follow team'}
+        >
+          {isFollowing ? <Check size={14} /> : <Plus size={14} />}
+        </button>
       </div>
 
       {/* ── Tab bar ─────────────────────────────────────────────────────── */}
@@ -326,6 +295,23 @@ export default function TeamPage() {
       {/* ── OVERVIEW TAB ──────────────────────────────────────────────────── */}
       {activeTab === 'overview' && (
         <div className="flex-1 overflow-y-auto pb-8">
+
+          {/* Stats strip */}
+          <div className="bg-nav-bg px-5 pb-4">
+            <div className="flex gap-6 border-t border-white/20 pt-4">
+              {[
+                { label: 'Fans',      value: followerCount },
+                { label: 'Debates',   value: teamDebates.length },
+                { label: 'Hot Takes', value: localHotTakes.length },
+                { label: 'Analysis',  value: localAnalyses.length },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <p className="text-xl font-bold text-white font-mono">{value}</p>
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Top Fans */}
           <div className="px-5 pt-5">

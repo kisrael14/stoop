@@ -101,6 +101,7 @@ export default function NeighborhoodPage() {
   const isRealId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   type DbProfile = { id: string; username: string; display_name: string; avatar: string };
   const [chatPhoto, setChatPhoto] = useState<string | null>(null);
+  const [chatDescription, setChatDescription] = useState<string | null>(null);
   const [dbNeighborhood, setDbNeighborhood] = useState<{ id: string; name: string; emoji: string; photo_url?: string | null } | null>(null);
   const [dbMemberProfiles, setDbMemberProfiles] = useState<DbProfile[]>([]);
   const [nicknameMap, setNicknameMap] = useState<Record<string, string>>({});
@@ -118,11 +119,12 @@ export default function NeighborhoodPage() {
     const load = async () => {
       try {
         // Try with photo_url; fall back without it if the column doesn't exist yet
-        let hood: { id: string; name: string; emoji: string; photo_url?: string | null } | null = null;
-        const { data: hoodFull, error: hoodFullErr } = await supabase.from('neighborhoods').select('id, name, emoji, photo_url').eq('id', id).single();
+        let hood: { id: string; name: string; emoji: string; photo_url?: string | null; description?: string | null } | null = null;
+        const { data: hoodFull, error: hoodFullErr } = await supabase.from('neighborhoods').select('id, name, emoji, photo_url, description').eq('id', id).single();
         if (!hoodFullErr) {
           hood = hoodFull;
         } else {
+          // Fall back without optional columns
           const { data: hoodBasic, error: hoodBasicErr } = await supabase.from('neighborhoods').select('id, name, emoji').eq('id', id).single();
           if (hoodBasicErr || !hoodBasic) { console.error('Neighborhood fetch error:', hoodBasicErr); return; }
           hood = hoodBasic;
@@ -132,6 +134,7 @@ export default function NeighborhoodPage() {
         setChatName(hood.name);
         setChatEmoji(hood.emoji);
         if (hood.photo_url) setChatPhoto(hood.photo_url);
+        if (hood.description) setChatDescription(hood.description);
         const hoodName = hood.name;
 
         // Members — try with nickname, fall back without if column doesn't exist
@@ -974,7 +977,11 @@ export default function NeighborhoodPage() {
       {/* ── OVERVIEW TAB ─────────────────────────────────────── */}
       {activeTab === 'overview' && (
         <div className="flex-1 overflow-y-auto pb-4">
-          <div className="bg-nav-bg px-5 pt-5 pb-6">
+          <div className="bg-nav-bg px-5 pt-4 pb-6">
+            {chatDescription
+              ? <p className="text-sm text-white/70 italic mb-3">{chatDescription}</p>
+              : <p className="text-sm text-white/30 italic mb-3">No description yet</p>
+            }
             <div className="flex gap-5 border-t border-ink/20 pt-4">
               {[
                 { label: 'Debates', value: debates.length, color: 'text-ink' },
