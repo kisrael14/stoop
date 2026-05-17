@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * SQL required before nicknames and photos work:
+ * SQL required before all features work:
  *   ALTER TABLE neighborhood_members ADD COLUMN IF NOT EXISTS nickname TEXT;
  *   ALTER TABLE neighborhoods ADD COLUMN IF NOT EXISTS photo_url TEXT;
+ *   ALTER TABLE neighborhoods ADD COLUMN IF NOT EXISTS description TEXT;
  * Storage: create a Supabase bucket named "neighborhood-photos" (public).
  */
 
@@ -47,6 +48,7 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
 
   // Core fields
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [emoji, setEmoji] = useState('🏘️');
   const [iconMode, setIconMode] = useState<'emoji' | 'photo'>('emoji');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -86,16 +88,17 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
     const load = async () => {
       setLoadingData(true);
 
-      // Fetch neighborhood metadata — try with photo_url, fall back without
+      // Fetch neighborhood metadata — try with optional columns, fall back without
       const { data: hoodFull, error: hoodFullErr } = await supabase
         .from('neighborhoods')
-        .select('name, emoji, photo_url')
+        .select('name, emoji, photo_url, description')
         .eq('id', neighborhoodId)
         .single();
 
       if (!hoodFullErr && hoodFull) {
         setName(hoodFull.name ?? '');
         setEmoji(hoodFull.emoji ?? '🏘️');
+        setDescription(hoodFull.description ?? '');
         if (hoodFull.photo_url) {
           setPhotoPreview(hoodFull.photo_url);
           setIconMode('photo');
@@ -241,7 +244,7 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
     if (mode === 'create') {
       const { data: hood, error: hoodErr } = await supabase
         .from('neighborhoods')
-        .insert({ name: name.trim(), emoji, created_by: authUser.id })
+        .insert({ name: name.trim(), emoji, description: description.trim() || null, created_by: authUser.id })
         .select()
         .single();
 
@@ -281,7 +284,7 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
     if (!neighborhoodId) { setSaving(false); return; }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updates: Record<string, any> = { name: name.trim(), emoji };
+    const updates: Record<string, any> = { name: name.trim(), emoji, description: description.trim() || null };
 
     if (iconMode === 'photo') {
       const photoUrl = await uploadPhoto(neighborhoodId);
@@ -399,6 +402,24 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
                     className="w-full border border-rule focus:border-masthead bg-paper py-2.5 px-3 text-sm text-ink placeholder-ink-faint outline-none transition-colors rounded-lg"
                   />
                 </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-faint block mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What's this group about? Who's in it?"
+                  maxLength={280}
+                  rows={3}
+                  className="w-full border border-rule focus:border-masthead bg-paper py-2.5 px-3 text-sm text-ink placeholder-ink-faint outline-none transition-colors rounded-lg resize-none leading-relaxed"
+                />
+                {description.length > 200 && (
+                  <p className="text-right text-[10px] text-ink-faint mt-0.5">{280 - description.length} left</p>
+                )}
               </div>
 
               {/* Icon mode toggle */}

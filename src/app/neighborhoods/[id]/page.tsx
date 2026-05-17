@@ -944,12 +944,13 @@ export default function NeighborhoodPage() {
           onClose={() => setShowEditModal(false)}
           onSaved={() => {
             const supabase = createClient() as any; // eslint-disable-line @typescript-eslint/no-explicit-any
-            supabase.from('neighborhoods').select('name, emoji, photo_url').eq('id', id).single()
-              .then(({ data }: { data: { name: string; emoji: string; photo_url?: string | null } | null }) => {
+            supabase.from('neighborhoods').select('name, emoji, photo_url, description').eq('id', id).single()
+              .then(({ data }: { data: { name: string; emoji: string; photo_url?: string | null; description?: string | null } | null }) => {
                 if (data) {
                   setChatName(data.name);
                   setChatEmoji(data.emoji);
                   setChatPhoto(data.photo_url ?? null);
+                  setChatDescription(data.description ?? null);
                 }
               });
           }}
