@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Home, Flame, Swords, Handshake, Bell, BellOff, PenLine, Newspaper } from 'lucide-react';
+import { ArrowLeft, Home, Pencil, Camera, Check, X, Flame, Swords, Handshake, Bell, BellOff, PenLine, Newspaper } from 'lucide-react';
 import { ME, DEBATES, BETS, HOT_TAKES, ANALYSES, getUserById, CHATS } from '@/lib/mock-data';
 import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { FandomLevel, FanTeam } from '@/lib/types';
@@ -13,6 +13,9 @@ import BadgeChip from '@/components/BadgeChip';
 import TeamLogo from '@/components/TeamLogo';
 import { useAuth } from '@/lib/auth-context';
 import { ALL_TEAMS } from '@/lib/teams-data';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
+
+const AVATAR_EMOJIS = ['👋','🏈','🏀','⚾','⚽','🏒','🎯','🔥','⚡','🏆','🦁','🐺','🦅','🐉','💪','🫡'];
 
 function mapFandomLevel(level: string | null): FandomLevel {
   if (!level) return 'casual';
@@ -24,9 +27,18 @@ function mapFandomLevel(level: string | null): FandomLevel {
 }
 
 export default function StoopPage() {
-  const { user: authUser } = useAuth();
+  const { user: authUser, refreshProfile } = useAuth();
   const router = useRouter();
   const [notifStatus, setNotifStatus] = useState<'unknown' | 'granted' | 'denied'>('unknown');
+
+  // Avatar edit modal
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [avatarMode, setAvatarMode] = useState<'emoji' | 'photo'>('emoji');
+  const [avatarEmoji, setAvatarEmoji] = useState('👋');
+  const [avatarPhotoPreview, setAvatarPhotoPreview] = useState<string | null>(null);
+  const [avatarPhotoFile, setAvatarPhotoFile] = useState<File | null>(null);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const avatarFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -110,6 +122,50 @@ export default function StoopPage() {
     ? Math.round((stats.betsWon / (stats.betsWon + stats.betsLost)) * 100)
     : 0;
 
+  const openAvatarModal = () => {
+    const current = authUser?.profile?.avatar ?? ME.avatar;
+    if (typeof current === 'string' && current.startsWith('http')) {
+      setAvatarMode('photo');
+      setAvatarPhotoPreview(current);
+      setAvatarPhotoFile(null);
+    } else {
+      setAvatarMode('emoji');
+      setAvatarEmoji(typeof current === 'string' ? current : '👋');
+      setAvatarPhotoPreview(null);
+      setAvatarPhotoFile(null);
+    }
+    setShowAvatarModal(true);
+  };
+
+  const saveAvatar = async () => {
+    if (!authUser || !isSupabaseConfigured()) return;
+    setAvatarSaving(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createClient() as any;
+    let newAvatar: string = avatarEmoji;
+
+    if (avatarMode === 'photo' && avatarPhotoFile) {
+      const ext = avatarPhotoFile.name.split('.').pop() ?? 'jpg';
+      const { data: up } = await supabase.storage
+        .from('profile-photos')
+        .upload(`${authUser.id}/avatar.${ext}`, avatarPhotoFile, { upsert: true });
+      if (up) {
+        const { data: urlData } = supabase.storage.from('profile-photos').getPublicUrl(up.path);
+        if (urlData?.publicUrl) newAvatar = urlData.publicUrl;
+      }
+    } else if (avatarMode === 'photo' && avatarPhotoPreview?.startsWith('http')) {
+      // No new file — keep existing photo URL unchanged
+      setShowAvatarModal(false);
+      setAvatarSaving(false);
+      return;
+    }
+
+    await supabase.from('profiles').update({ avatar: newAvatar }).eq('id', authUser.id);
+    await refreshProfile();
+    setShowAvatarModal(false);
+    setAvatarSaving(false);
+  };
+
   return (
     <div className="flex flex-col bg-paper min-h-full pb-4">
 
@@ -136,6 +192,13 @@ export default function StoopPage() {
           >
             <Home size={14} />
           </Link>
+          <button
+            onClick={openAvatarModal}
+            className="shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-ink/10 hover:bg-ink/20 text-ink/70 hover:text-ink transition-all"
+            aria-label="Edit profile picture"
+          >
+            <Pencil size={14} />
+          </button>
         </div>
         {bio && <p className="px-5 pb-3 text-sm text-white/70 italic">{bio}</p>}
 
@@ -357,6 +420,117 @@ export default function StoopPage() {
             })}
           </div>
         </div>
+      )}
+      {/* ── Avatar edit modal ──────────────────────────────────────── */}
+      {showAvatarModal && (
+        <>
+          <div className="fixed inset-0 z-50 bg-nav-bg/80 backdrop-blur-sm" onClick={() => setShowAvatarModal(false)} />
+          <div className="fixed inset-x-4 top-[10%] z-50 bg-paper-dark border border-rule shadow-2xl max-w-sm mx-auto max-h-[80vh] flex flex-col rounded-xl overflow-hidden">
+
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-4 bg-nav-bg shrink-0">
+              <p className="font-display font-bold text-ink text-base">Edit Profile Picture</p>
+              <button onClick={() => setShowAvatarModal(false)} className="text-ink/60 hover:text-ink transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-5 py-5 flex flex-col gap-5">
+
+              {/* Live preview */}
+              <div className="flex justify-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/15 text-4xl ring-2 ring-masthead overflow-hidden shrink-0">
+                  {avatarMode === 'photo' && avatarPhotoPreview
+                    ? <img src={avatarPhotoPreview} alt="" className="w-full h-full object-cover" />
+                    : <span>{avatarEmoji}</span>
+                  }
+                </div>
+              </div>
+
+              {/* Mode toggle */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAvatarMode('emoji')}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${avatarMode === 'emoji' ? 'border-masthead bg-masthead/10 text-masthead' : 'border-rule text-ink-faint hover:border-ink-muted hover:text-ink'}`}
+                >
+                  Emoji
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAvatarMode('photo')}
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${avatarMode === 'photo' ? 'border-masthead bg-masthead/10 text-masthead' : 'border-rule text-ink-faint hover:border-ink-muted hover:text-ink'}`}
+                >
+                  Photo
+                </button>
+              </div>
+
+              {/* Emoji grid */}
+              {avatarMode === 'emoji' && (
+                <div className="flex flex-wrap gap-2">
+                  {AVATAR_EMOJIS.map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      onClick={() => setAvatarEmoji(e)}
+                      className={`flex items-center justify-center h-10 w-10 text-2xl rounded-lg border transition-all ${avatarEmoji === e ? 'border-masthead bg-paper-dark scale-110' : 'border-rule hover:border-ink-muted'}`}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Photo upload */}
+              {avatarMode === 'photo' && (
+                <label className="block cursor-pointer">
+                  <div className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed transition-colors overflow-hidden ${avatarPhotoPreview ? 'border-masthead/40 h-40' : 'border-rule hover:border-masthead h-28'}`}>
+                    {avatarPhotoPreview
+                      ? <img src={avatarPhotoPreview} alt="" className="w-full h-full object-cover" />
+                      : <><Camera size={22} className="text-ink-faint" /><span className="text-xs text-ink-faint">Tap to upload a photo</span></>
+                    }
+                  </div>
+                  {avatarPhotoPreview && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); setAvatarPhotoPreview(null); setAvatarPhotoFile(null); }}
+                      className="mt-1.5 text-[11px] text-ink-faint hover:text-masthead transition-colors w-full text-center"
+                    >
+                      Remove photo
+                    </button>
+                  )}
+                  <input
+                    ref={avatarFileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setAvatarPhotoFile(file);
+                      const reader = new FileReader();
+                      reader.onload = (ev) => setAvatarPhotoPreview(ev.target?.result as string);
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="shrink-0 border-t border-rule bg-paper-dark px-5 py-4">
+              <button
+                type="button"
+                onClick={saveAvatar}
+                disabled={avatarSaving || (avatarMode === 'photo' && !avatarPhotoPreview)}
+                className="w-full flex items-center justify-center gap-2 bg-masthead text-[#12111a] py-3 text-xs font-bold uppercase tracking-widest disabled:opacity-40 disabled:cursor-not-allowed rounded-full btn-3d hover:bg-masthead/90 transition-colors"
+              >
+                <Check size={14} />
+                {avatarSaving ? 'Saving…' : 'Save Picture'}
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
