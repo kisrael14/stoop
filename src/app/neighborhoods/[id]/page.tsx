@@ -7,7 +7,7 @@ import {
   ArrowLeft, Home, MessageCircle, Swords, Handshake, Flame, Snowflake,
   Send, Sparkles, X, Trophy, Users, Pencil, Check, Plus, Search,
   AlertCircle, CheckCircle, Clock, Megaphone, MessageSquare, ChevronDown, ChevronUp, PenLine,
-  Paperclip, Link2,
+  Paperclip, Link2, Images,
 } from 'lucide-react';
 import BetSetupModal, { type BetSetupResult } from '@/components/BetSetupModal';
 import DebateSetupModal, { type DebateSetupResult } from '@/components/DebateSetupModal';
@@ -18,13 +18,14 @@ import { useAuth } from '@/lib/auth-context';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { markHoodSeen } from '@/components/PersistentSidebar';
 import NeighborhoodFormModal from '@/components/NeighborhoodFormModal';
+import MediaTab from '@/components/MediaTab';
 import { timeAgo, voteLeader, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { Message, MessageTag, Debate, Bet, HotTake, HotTakeComment, VoteChoice, Analysis } from '@/lib/types';
 import { sendNotification } from '@/lib/notifications';
 import TeamLogo from '@/components/TeamLogo';
 import { detectTeamIds } from '@/lib/players-data';
 
-type Tab = 'overview' | 'chat' | 'debates' | 'bets' | 'hot-takes' | 'analysis';
+type Tab = 'overview' | 'chat' | 'debates' | 'bets' | 'hot-takes' | 'analysis' | 'media';
 const EMOJI_REACTIONS = ['🔥', '💯', '😂', '🧢', '👀', '😭', '🤬', '❤️'];
 const HOT_TAKE_MAX = 280;
 
@@ -817,9 +818,10 @@ export default function NeighborhoodPage() {
     { id: 'bets', label: 'Bets', icon: Handshake },
     { id: 'hot-takes', label: 'Takes', icon: Flame },
     { id: 'analysis', label: 'Analysis', icon: PenLine },
+    { id: 'media', label: 'Media', icon: Images },
   ];
 
-  const TAB_ORDER: Tab[] = ['overview', 'chat', 'debates', 'bets', 'hot-takes', 'analysis'];
+  const TAB_ORDER: Tab[] = ['overview', 'chat', 'debates', 'bets', 'hot-takes', 'analysis', 'media'];
 
   const onTabSwipeStart = (e: React.TouchEvent) => {
     swipeStartX.current = e.touches[0].clientX;
@@ -1950,6 +1952,8 @@ export default function NeighborhoodPage() {
           onCancel={() => { setDebateSetupClaim(null); setDebateSetupMessageId(null); }}
         />
       )}
+
+      {activeTab === 'media' && <MediaTab contextType="neighborhood" contextId={id} />}
     </div>
   );
 }

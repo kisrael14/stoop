@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Flame, Snowflake, Swords, Trophy, Star, Users, Plus, Check,
-  Home, PenLine, Megaphone, MessageSquare, ChevronDown, ChevronUp, Send,
+  Home, PenLine, Megaphone, MessageSquare, ChevronDown, ChevronUp, Send, Images,
 } from 'lucide-react';
 import { DEBATES, HOT_TAKES, ANALYSES, getUserById, ME } from '@/lib/mock-data';
 import { getLeagueById } from '@/lib/leagues-data';
@@ -15,8 +15,9 @@ import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { Analysis, HotTakeComment } from '@/lib/types';
 import TeamLogo from '@/components/TeamLogo';
+import MediaTab from '@/components/MediaTab';
 
-type Tab = 'overview' | 'debates' | 'hot-takes' | 'analysis';
+type Tab = 'overview' | 'debates' | 'hot-takes' | 'analysis' | 'media';
 type Period = 'weekly' | 'monthly' | 'yearly';
 
 const PERIOD_DAYS: Record<Period, number> = { weekly: 7, monthly: 30, yearly: 365 };
@@ -129,7 +130,7 @@ export default function LeaguePage() {
     );
   };
 
-  const TAB_ORDER: Tab[] = ['overview', 'debates', 'hot-takes', 'analysis'];
+  const TAB_ORDER: Tab[] = ['overview', 'debates', 'hot-takes', 'analysis', 'media'];
   const onSwipeStart = (e: React.TouchEvent) => { swipeStartX.current = e.touches[0].clientX; swipeStartY.current = e.touches[0].clientY; };
   const onSwipeEnd = (e: React.TouchEvent) => {
     const dx = e.changedTouches[0].clientX - swipeStartX.current;
@@ -201,6 +202,7 @@ export default function LeaguePage() {
     { id: 'debates',   label: 'Debates',  icon: Swords,  count: leagueDebates.length },
     { id: 'hot-takes', label: 'Takes',    icon: Flame,   count: localHotTakes.length },
     { id: 'analysis',  label: 'Analysis', icon: PenLine, count: localAnalyses.length },
+    { id: 'media',     label: 'Media',    icon: Images,  count: 0 },
   ];
 
   const headerBg = league.color + 'dd';
@@ -729,6 +731,7 @@ export default function LeaguePage() {
         </div>
       )}
 
+      {activeTab === 'media' && <MediaTab contextType="league" contextId={id} />}
     </div>
   );
 }

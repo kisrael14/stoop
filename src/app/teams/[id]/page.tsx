@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Flame, Snowflake, Swords, Trophy, Star, Users, Plus, Check, X, Send, Home, PenLine, Megaphone, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Flame, Snowflake, Swords, Trophy, Star, Users, Plus, Check, X, Send, Home, PenLine, Megaphone, MessageSquare, ChevronDown, ChevronUp, Images } from 'lucide-react';
 import { DEBATES, HOT_TAKES, ANALYSES, getUserById, USERS, ME } from '@/lib/mock-data';
 import { getTeamByIdFull } from '@/lib/teams-data';
 import { useAuth } from '@/lib/auth-context';
@@ -11,8 +11,9 @@ import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { timeAgo, totalReactions } from '@/lib/utils';
 import type { VoteChoice, HotTake, Analysis, HotTakeComment } from '@/lib/types';
 import TeamLogo from '@/components/TeamLogo';
+import MediaTab from '@/components/MediaTab';
 
-type Tab = 'overview' | 'debates' | 'hot-takes' | 'analysis';
+type Tab = 'overview' | 'debates' | 'hot-takes' | 'analysis' | 'media';
 type Period = 'weekly' | 'monthly' | 'yearly';
 
 const PERIOD_DAYS: Record<Period, number> = { weekly: 7, monthly: 30, yearly: 365 };
@@ -144,7 +145,7 @@ export default function TeamPage() {
     setShowDiscussModal(false);
   };
 
-  const TAB_ORDER: Tab[] = ['overview', 'debates', 'hot-takes', 'analysis'];
+  const TAB_ORDER: Tab[] = ['overview', 'debates', 'hot-takes', 'analysis', 'media'];
   const onSwipeStart = (e: React.TouchEvent) => {
     swipeStartX.current = e.touches[0].clientX;
     swipeStartY.current = e.touches[0].clientY;
@@ -217,6 +218,7 @@ export default function TeamPage() {
     { id: 'debates',   label: 'Debates',  icon: Swords,  count: teamDebates.length },
     { id: 'hot-takes', label: 'Takes',    icon: Flame,   count: localHotTakes.length },
     { id: 'analysis',  label: 'Analysis', icon: PenLine, count: localAnalyses.length },
+    { id: 'media',     label: 'Media',    icon: Images,  count: 0 },
   ];
 
   const headerBg = team.color + 'dd';
@@ -788,6 +790,7 @@ export default function TeamPage() {
         </div>
       )}
 
+      {activeTab === 'media' && <MediaTab contextType="team" contextId={id} />}
     </div>
   );
 }
