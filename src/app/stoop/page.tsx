@@ -683,7 +683,6 @@ export default function StoopPage() {
             followingIds={followingIds}
             onToggleFollow={toggleFollow}
             togglingId={togglingFollowId}
-            findHref="/discover"
           />
         );
       })()}

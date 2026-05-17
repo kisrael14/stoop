@@ -102,7 +102,6 @@ export default function NeighborsPage() {
       followingIds={followingIds}
       onToggleFollow={toggleFollow}
       togglingId={togglingId}
-      findHref="/discover"
     />
   );
 }
