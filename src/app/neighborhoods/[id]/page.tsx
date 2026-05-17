@@ -114,21 +114,37 @@ export default function NeighborhoodPage() {
     const supabase = createClient() as any;
     const load = async () => {
       try {
-        const { data: hood, error: hoodErr } = await supabase.from('neighborhoods').select('id, name, emoji, photo_url').eq('id', id).single();
-        if (hoodErr || !hood) { console.error('Neighborhood fetch error:', hoodErr); return; }
+        // Try with photo_url; fall back without it if the column doesn't exist yet
+        let hood: { id: string; name: string; emoji: string; photo_url?: string | null } | null = null;
+        const { data: hoodFull, error: hoodFullErr } = await supabase.from('neighborhoods').select('id, name, emoji, photo_url').eq('id', id).single();
+        if (!hoodFullErr) {
+          hood = hoodFull;
+        } else {
+          const { data: hoodBasic, error: hoodBasicErr } = await supabase.from('neighborhoods').select('id, name, emoji').eq('id', id).single();
+          if (hoodBasicErr || !hoodBasic) { console.error('Neighborhood fetch error:', hoodBasicErr); return; }
+          hood = hoodBasic;
+        }
+        if (!hood) return;
         setDbNeighborhood(hood);
         setChatName(hood.name);
         setChatEmoji(hood.emoji);
         if (hood.photo_url) setChatPhoto(hood.photo_url);
         const hoodName = hood.name;
 
-        // Members
-        const { data: memberRows, error: memberErr } = await supabase
+        // Members — try with nickname, fall back without if column doesn't exist
+        const { data: memberRowsWithNick, error: nickErr } = await supabase
           .from('neighborhood_members').select('user_id, nickname').eq('neighborhood_id', id);
-        if (memberErr) console.error('Member fetch error:', memberErr);
-        const userIds: string[] = (memberRows ?? []).map((m: any) => m.user_id);
+        let memberRows: Array<{ user_id: string; nickname?: string | null }>;
+        if (!nickErr) {
+          memberRows = memberRowsWithNick ?? [];
+        } else {
+          const { data: memberRowsBasic } = await supabase
+            .from('neighborhood_members').select('user_id').eq('neighborhood_id', id);
+          memberRows = (memberRowsBasic ?? []).map((m: any) => ({ user_id: m.user_id, nickname: null }));
+        }
+        const userIds: string[] = memberRows.map((m) => m.user_id);
         const nicks: Record<string, string> = {};
-        (memberRows ?? []).forEach((m: any) => { if (m.nickname) nicks[m.user_id] = m.nickname; });
+        memberRows.forEach((m) => { if (m.nickname) nicks[m.user_id] = m.nickname; });
         setNicknameMap(nicks);
         let profiles: DbProfile[] = [];
         if (userIds.length > 0) {
