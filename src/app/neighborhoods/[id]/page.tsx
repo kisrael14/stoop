@@ -54,6 +54,7 @@ export default function NeighborhoodPage() {
   const [debateSetupClaim, setDebateSetupClaim] = useState<string | null>(null);
   const [debateSetupMessageId, setDebateSetupMessageId] = useState<string | null>(null);
   const [typingUserId, setTypingUserId] = useState<string | null>(null);
+  const [lastSeenChat, setLastSeenChat] = useState<string>(new Date(0).toISOString());
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [pendingMediaUrl, setPendingMediaUrl] = useState<string | null>(null);
   const [pendingMediaType, setPendingMediaType] = useState<'photo' | 'link' | null>(null);
@@ -236,8 +237,16 @@ export default function NeighborhoodPage() {
   useEffect(() => {
     if (activeTab === 'chat') {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      const now = new Date().toISOString();
+      localStorage.setItem(`hood-chat-seen-${id}`, now);
+      setLastSeenChat(now);
     }
-  }, [messages, activeTab]);
+  }, [messages, activeTab, id]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(`hood-chat-seen-${id}`);
+    if (stored) setLastSeenChat(stored);
+  }, [id]);
 
   // Realtime subscription — appends new messages as they arrive without overwriting state
   useEffect(() => {
@@ -844,7 +853,6 @@ export default function NeighborhoodPage() {
   };
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
-    { id: 'chat', label: 'Chat', icon: MessageCircle },
     { id: 'debates', label: 'Debates', icon: Swords },
     { id: 'bets', label: 'Bets', icon: Handshake },
     { id: 'hot-takes', label: 'Takes', icon: Flame },
@@ -870,6 +878,9 @@ export default function NeighborhoodPage() {
 
   const charsLeft = HOT_TAKE_MAX - inputText.length;
   const overLimit = pendingTag === 'hot-take' && inputText.length > HOT_TAKE_MAX;
+  const unreadCount = messages.filter(
+    (m) => m.userId !== authUser?.id && m.timestamp > lastSeenChat
+  ).length;
 
   return (
     <div className="flex flex-col h-full bg-paper" onTouchStart={onTabSwipeStart} onTouchEnd={onTabSwipeEnd}>
@@ -900,6 +911,18 @@ export default function NeighborhoodPage() {
           aria-label="Overview"
         >
           <Home size={14} />
+        </button>
+        <button
+          onClick={() => setActiveTab('chat')}
+          className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full transition-all relative ${activeTab === 'chat' ? 'bg-masthead/20 text-masthead' : 'bg-ink/10 hover:bg-ink/20 text-ink/70 hover:text-ink'}`}
+          aria-label="Chat"
+        >
+          <MessageCircle size={14} />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-0.5 items-center justify-center rounded-full bg-press text-[8px] font-bold text-white leading-none">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
         </button>
         <button
           onClick={() => setShowEditModal(true)}
