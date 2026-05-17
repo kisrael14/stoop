@@ -277,15 +277,15 @@ export default function TeamPage() {
       <div className="shrink-0 px-5 py-3" style={{ background: team.color }}>
         <div className="flex gap-6 border-t border-white/20 pt-3">
           {[
-            { label: 'Fans',      value: followerCount },
-            { label: 'Debates',   value: teamDebates.length },
-            { label: 'Hot Takes', value: localHotTakes.length },
-            { label: 'Analysis',  value: localAnalyses.length },
-          ].map(({ label, value }) => (
-            <div key={label}>
+            { label: 'Fans',      value: followerCount,          tab: 'overview'   as Tab },
+            { label: 'Debates',   value: teamDebates.length,     tab: 'debates'    as Tab },
+            { label: 'Hot Takes', value: localHotTakes.length,   tab: 'hot-takes'  as Tab },
+            { label: 'Analysis',  value: localAnalyses.length,   tab: 'analysis'   as Tab },
+          ].map(({ label, value, tab }) => (
+            <button key={label} onClick={() => setActiveTab(tab)} className="text-left hover:opacity-70 transition-opacity">
               <p className="text-xl font-bold text-white font-mono">{value}</p>
               <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">{label}</p>
-            </div>
+            </button>
           ))}
         </div>
       </div>

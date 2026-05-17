@@ -284,18 +284,26 @@ export default function LeaguePage() {
       {/* Stats strip */}
       <div className="shrink-0 px-5 py-3" style={{ background: league.color }}>
         <div className="flex gap-6 border-t border-white/20 pt-3">
-          {[
-            { label: 'Fans',      value: followerCount },
-            { label: 'Teams',     value: leagueTeams.length },
-            { label: 'Debates',   value: leagueDebates.length },
-            { label: 'Hot Takes', value: localHotTakes.length },
-            { label: 'Analysis',  value: localAnalyses.length },
-          ].map(({ label, value }) => (
-            <div key={label}>
-              <p className="text-xl font-bold text-white font-mono">{value}</p>
-              <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">{label}</p>
-            </div>
-          ))}
+          <button onClick={() => setActiveTab('overview')} className="text-left hover:opacity-70 transition-opacity">
+            <p className="text-xl font-bold text-white font-mono">{followerCount}</p>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">Fans</p>
+          </button>
+          <button onClick={() => setShowTeams(true)} className="text-left hover:opacity-70 transition-opacity">
+            <p className="text-xl font-bold text-white font-mono">{leagueTeams.length}</p>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">Teams</p>
+          </button>
+          <button onClick={() => setActiveTab('debates')} className="text-left hover:opacity-70 transition-opacity">
+            <p className="text-xl font-bold text-white font-mono">{leagueDebates.length}</p>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">Debates</p>
+          </button>
+          <button onClick={() => setActiveTab('hot-takes')} className="text-left hover:opacity-70 transition-opacity">
+            <p className="text-xl font-bold text-white font-mono">{localHotTakes.length}</p>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">Hot Takes</p>
+          </button>
+          <button onClick={() => setActiveTab('analysis')} className="text-left hover:opacity-70 transition-opacity">
+            <p className="text-xl font-bold text-white font-mono">{localAnalyses.length}</p>
+            <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">Analysis</p>
+          </button>
         </div>
       </div>
 
