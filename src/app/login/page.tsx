@@ -78,7 +78,7 @@ export default function LoginPage() {
     if (!identifier.trim() || !password.trim()) {
       setError('Please fill in all fields.'); return;
     }
-    if (!SUPABASE_CONFIGURED) { router.push('/stoop'); return; }
+    if (!SUPABASE_CONFIGURED) { router.push('/'); return; }
 
     setLoading(true); setError('');
 
@@ -96,7 +96,7 @@ export default function LoginPage() {
     });
     setLoading(false);
     if (err) { setError('Incorrect email or password.'); return; }
-    router.push('/stoop');
+    router.push('/');
   };
 
   const handleSubmit = () => mode === 'signup' ? handleSignUp() : handleSignIn();
