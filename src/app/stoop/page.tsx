@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Home, Pencil, Camera, Check, X, Flame, Swords, Handshake, Bell, BellOff, PenLine, Newspaper } from 'lucide-react';
+import { ArrowLeft, Home, Pencil, Camera, Check, X, Flame, Swords, Handshake, Bell, BellOff, PenLine } from 'lucide-react';
 import { ME, DEBATES, BETS, HOT_TAKES, ANALYSES, getUserById, CHATS } from '@/lib/mock-data';
 import { timeAgo, totalReactions, teamDisplayName, cropImageToSquare } from '@/lib/utils';
 import type { FandomLevel, FanTeam } from '@/lib/types';
@@ -102,6 +102,9 @@ export default function StoopPage() {
     }
     setTogglingFollowId(null);
   };
+
+  // Feed toggle
+  const [feed, setFeed] = useState<'hood' | 'streets'>('hood');
 
   // Avatar edit modal
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -379,98 +382,120 @@ export default function StoopPage() {
         </div>
       )}
 
-      {/* ── MY NEIGHBORHOOD ────────────────────────────────── */}
+      {/* ── NEIGHBORHOOD / STREETS FEED ───────────────────────── */}
       <div className="mx-4 mt-4 border border-rule">
-        <div className="flex items-center justify-between px-3 py-2 bg-nav-bg">
-          <p className="text-[9px] font-black uppercase tracking-[0.25em] text-masthead">My Neighborhood</p>
-          <Link href="/" className="text-[10px] font-bold text-press hover:text-press/80">See all →</Link>
+        {/* Filter tabs */}
+        <div className="flex bg-nav-bg border-b border-rule/40">
+          <button
+            onClick={() => setFeed('hood')}
+            className={`flex-1 py-2.5 text-[9px] font-bold uppercase tracking-widest transition-colors border-b-2 ${
+              feed === 'hood'
+                ? 'border-masthead text-masthead'
+                : 'border-transparent text-ink-muted hover:text-ink'
+            }`}
+          >
+            My Neighborhood
+          </button>
+          <button
+            onClick={() => setFeed('streets')}
+            className={`flex-1 py-2.5 text-[9px] font-bold uppercase tracking-widest transition-colors border-b-2 ${
+              feed === 'streets'
+                ? 'border-press text-press'
+                : 'border-transparent text-ink-muted hover:text-ink'
+            }`}
+          >
+            The Streets
+          </button>
         </div>
 
-        <div className="divide-y divide-rule/60">
-          {myDebates.map((debate) => {
-            const side1First = getUserById(debate.side1UserIds[0]);
-            const side2First = getUserById(debate.side2UserIds[0]);
-            return (
-              <Link
-                key={debate.id}
-                href={`/neighborhoods/${debate.chatId}?tab=debates`}
-                className="flex gap-3 px-3 py-3 hover:bg-paper-dark transition-colors"
-              >
-                <div className="shrink-0 mt-0.5">
-                  <div className="h-8 w-8 flex items-center justify-center bg-navy text-ink text-base rounded-sm">⚔️</div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-navy mb-0.5">Debate · {debate.chatName}</p>
-                  <p className="text-xs font-medium text-ink leading-snug line-clamp-2 italic">&ldquo;{debate.claim}&rdquo;</p>
-                  <p className="text-[9px] text-ink-faint mt-1">
-                    <span className="font-bold">{debate.side1Label ?? 'Side 1'}</span> {side1First?.displayName.split(' ')[0]}
-                    {' '}<span className="text-rule-dark">vs</span>{' '}
-                    <span className="font-bold">{debate.side2Label ?? 'Side 2'}</span> {side2First?.displayName.split(' ')[0]}
-                    {' · '}{debate.votes.length} votes
-                  </p>
-                </div>
-              </Link>
-            );
-          })}
-
-          {myBets.map((bet) => {
-            const p1 = getUserById(bet.participantIds[0]);
-            const p2 = getUserById(bet.participantIds[1]);
-            return (
-              <Link
-                key={bet.id}
-                href={`/neighborhoods/${bet.chatId}?tab=bets`}
-                className="flex gap-3 px-3 py-3 hover:bg-paper-dark transition-colors"
-              >
-                <div className="shrink-0 mt-0.5">
-                  <div className="h-8 w-8 flex items-center justify-center bg-field text-ink text-base rounded-sm">🤝</div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-field mb-0.5">Bet · {bet.chatName}</p>
-                    <span className={`text-[9px] font-bold uppercase ml-auto ${bet.status === 'awaiting-resolution' ? 'text-rule-dark' : 'text-field'}`}>{bet.status}</span>
-                  </div>
-                  <p className="text-xs font-medium text-ink leading-snug line-clamp-2 italic">&ldquo;{bet.claim}&rdquo;</p>
-                  <p className="text-[9px] text-ink-faint mt-1">{p1?.displayName.split(' ')[0]} 🤝 {p2?.displayName.split(' ')[0]}</p>
-                </div>
-              </Link>
-            );
-          })}
-
-          {myHotTakes.map((ht) => {
-            const author = getUserById(ht.authorId);
-            return (
-              <Link
-                key={ht.id}
-                href={`/neighborhoods/${ht.chatId}?tab=hot-takes`}
-                className="flex gap-3 px-3 py-3 hover:bg-paper-dark transition-colors"
-              >
-                <div className="shrink-0 mt-0.5">
-                  <div className="h-8 w-8 flex items-center justify-center bg-press text-ink text-base rounded-sm">🔥</div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-press mb-0.5">Hot Take · {ht.chatName}</p>
-                  <p className="text-xs font-medium text-ink leading-snug line-clamp-2 italic">&ldquo;{ht.content}&rdquo;</p>
-                  <p className="text-[9px] text-ink-faint mt-1">{author?.displayName} · {totalReactions(ht.reactions)} reactions · {timeAgo(ht.createdAt)}</p>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── FROM THE STREETS ───────────────────────────────── */}
-      {streetsFeed.length > 0 && (
-        <div className="mx-4 mt-4 border border-rule">
-          <div className="flex items-center justify-between px-3 py-2 bg-nav-bg">
-            <div className="flex items-center gap-1.5">
-              <Newspaper size={11} className="text-ink/60" />
-              <p className="text-[9px] font-black uppercase tracking-[0.25em] text-masthead">From The Streets</p>
-            </div>
-            <Link href="/streets" className="text-[10px] font-bold text-press hover:text-press/80">The Streets →</Link>
-          </div>
-          <p className="px-3 py-1.5 text-[9px] text-ink-faint italic border-b border-rule/40">Public posts from your teams</p>
+        {/* My Neighborhood feed */}
+        {feed === 'hood' && (
           <div className="divide-y divide-rule/60">
+            {myDebates.length === 0 && myBets.length === 0 && myHotTakes.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-10 px-6 text-center">
+                <p className="text-2xl mb-2">🏘</p>
+                <p className="text-xs text-ink-muted italic">No recent activity in your neighborhoods</p>
+              </div>
+            )}
+            {myDebates.map((debate) => {
+              const side1First = getUserById(debate.side1UserIds[0]);
+              const side2First = getUserById(debate.side2UserIds[0]);
+              return (
+                <Link
+                  key={debate.id}
+                  href={`/neighborhoods/${debate.chatId}?tab=debates`}
+                  className="flex gap-3 px-3 py-3 hover:bg-paper-dark transition-colors"
+                >
+                  <div className="shrink-0 mt-0.5">
+                    <div className="h-8 w-8 flex items-center justify-center bg-navy text-ink text-base rounded-sm">⚔️</div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-navy mb-0.5">Debate · {debate.chatName}</p>
+                    <p className="text-xs font-medium text-ink leading-snug line-clamp-2 italic">&ldquo;{debate.claim}&rdquo;</p>
+                    <p className="text-[9px] text-ink-faint mt-1">
+                      <span className="font-bold">{debate.side1Label ?? 'Side 1'}</span> {side1First?.displayName.split(' ')[0]}
+                      {' '}<span className="text-rule-dark">vs</span>{' '}
+                      <span className="font-bold">{debate.side2Label ?? 'Side 2'}</span> {side2First?.displayName.split(' ')[0]}
+                      {' · '}{debate.votes.length} votes
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+            {myBets.map((bet) => {
+              const p1 = getUserById(bet.participantIds[0]);
+              const p2 = getUserById(bet.participantIds[1]);
+              return (
+                <Link
+                  key={bet.id}
+                  href={`/neighborhoods/${bet.chatId}?tab=bets`}
+                  className="flex gap-3 px-3 py-3 hover:bg-paper-dark transition-colors"
+                >
+                  <div className="shrink-0 mt-0.5">
+                    <div className="h-8 w-8 flex items-center justify-center bg-field text-ink text-base rounded-sm">🤝</div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-field mb-0.5">Bet · {bet.chatName}</p>
+                      <span className={`text-[9px] font-bold uppercase ml-auto ${bet.status === 'awaiting-resolution' ? 'text-rule-dark' : 'text-field'}`}>{bet.status}</span>
+                    </div>
+                    <p className="text-xs font-medium text-ink leading-snug line-clamp-2 italic">&ldquo;{bet.claim}&rdquo;</p>
+                    <p className="text-[9px] text-ink-faint mt-1">{p1?.displayName.split(' ')[0]} 🤝 {p2?.displayName.split(' ')[0]}</p>
+                  </div>
+                </Link>
+              );
+            })}
+            {myHotTakes.map((ht) => {
+              const author = getUserById(ht.authorId);
+              return (
+                <Link
+                  key={ht.id}
+                  href={`/neighborhoods/${ht.chatId}?tab=hot-takes`}
+                  className="flex gap-3 px-3 py-3 hover:bg-paper-dark transition-colors"
+                >
+                  <div className="shrink-0 mt-0.5">
+                    <div className="h-8 w-8 flex items-center justify-center bg-press text-ink text-base rounded-sm">🔥</div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-press mb-0.5">Hot Take · {ht.chatName}</p>
+                    <p className="text-xs font-medium text-ink leading-snug line-clamp-2 italic">&ldquo;{ht.content}&rdquo;</p>
+                    <p className="text-[9px] text-ink-faint mt-1">{author?.displayName} · {totalReactions(ht.reactions)} reactions · {timeAgo(ht.createdAt)}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        {/* The Streets feed */}
+        {feed === 'streets' && (
+          <div className="divide-y divide-rule/60">
+            {streetsFeed.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-10 px-6 text-center">
+                <p className="text-2xl mb-2">🏙️</p>
+                <p className="text-xs text-ink-muted italic">No public posts from your teams yet</p>
+              </div>
+            )}
             {streetsFeed.map(({ type, item }) => {
               if (type === 'take') {
                 const ht = item as typeof streetsHotTakes[0];
@@ -499,7 +524,6 @@ export default function StoopPage() {
                   </Link>
                 );
               }
-              // analysis
               const a = item as typeof streetsAnalyses[0];
               const author = getUserById(a.authorId);
               return (
@@ -514,8 +538,8 @@ export default function StoopPage() {
               );
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
       {/* ── Avatar edit modal ──────────────────────────────────────── */}
       {showAvatarModal && (
         <>
