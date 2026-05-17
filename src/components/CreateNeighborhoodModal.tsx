@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { X, Plus, Search, Check, UserPlus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
+import { markHoodSeen } from '@/components/PersistentSidebar';
 
 const EMOJI_OPTIONS = ['🏘️','🏟️','🏈','🏀','⚾','⚽','🏒','🔥','⚡','🎯','🏆','🎪','🌆','🌃'];
 
@@ -98,6 +99,7 @@ export default function CreateNeighborhoodModal({ onClose }: Props) {
       return;
     }
 
+    markHoodSeen(hood.id);
     onClose();
     router.push(`/neighborhoods/${hood.id}`);
   };

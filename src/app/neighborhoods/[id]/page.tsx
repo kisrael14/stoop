@@ -16,6 +16,7 @@ import {
 } from '@/lib/mock-data';
 import { useAuth } from '@/lib/auth-context';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
+import { markHoodSeen } from '@/components/PersistentSidebar';
 import { timeAgo, voteLeader, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { Message, MessageTag, Debate, Bet, HotTake, HotTakeComment, VoteChoice, Analysis } from '@/lib/types';
 import { sendNotification } from '@/lib/notifications';
@@ -102,6 +103,11 @@ export default function NeighborhoodPage() {
   const [dbNeighborhood, setDbNeighborhood] = useState<{ id: string; name: string; emoji: string } | null>(null);
   const [dbMemberProfiles, setDbMemberProfiles] = useState<DbProfile[]>([]);
   const [dbLoading, setDbLoading] = useState(isRealId);
+
+  // Mark this neighborhood as read immediately on entry
+  useEffect(() => {
+    if (isRealId) markHoodSeen(id);
+  }, [id, isRealId]);
 
   useEffect(() => {
     if (!isRealId || !isSupabaseConfigured()) { setDbLoading(false); return; }

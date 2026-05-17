@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { ALL_TEAMS } from '@/lib/teams-data';
+import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import CreateNeighborhoodModal from '@/components/CreateNeighborhoodModal';
 import FindNeighborsModal from '@/components/FindNeighborsModal';
 import FollowTeamsModal from '@/components/FollowTeamsModal';
@@ -19,6 +20,12 @@ interface TooltipInfo {
   y: number;
 }
 
+export function markHoodSeen(hoodId: string) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(`hood-seen-${hoodId}`, new Date().toISOString());
+  }
+}
+
 export default function PersistentSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -28,9 +35,45 @@ export default function PersistentSidebar() {
   const [showCreate, setShowCreate] = useState(false);
   const [showFindNeighbors, setShowFindNeighbors] = useState(false);
   const [showFollowTeams, setShowFollowTeams] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
-  if (HIDDEN_ON.some((p) => pathname.startsWith(p))) return null;
-  if (!authUser) return null;
+  const loadUnreads = useCallback(async () => {
+    if (!authUser || !isSupabaseConfigured()) return;
+    const hoods = authUser.neighborhoodMemberships ?? [];
+    if (!hoods.length) return;
+
+    const hoodIds = hoods.map((h) => h.id);
+    const lastSeenMap: Record<string, string> = {};
+    hoodIds.forEach((id) => {
+      lastSeenMap[id] = localStorage.getItem(`hood-seen-${id}`) ?? new Date(0).toISOString();
+    });
+
+    const oldest = Object.values(lastSeenMap).reduce((min, v) => (v < min ? v : min));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createClient() as any;
+    const { data } = await supabase
+      .from('messages')
+      .select('neighborhood_id, created_at')
+      .in('neighborhood_id', hoodIds)
+      .gt('created_at', oldest)
+      .neq('user_id', authUser.id);
+
+    const counts: Record<string, number> = {};
+    (data ?? []).forEach((msg: { neighborhood_id: string; created_at: string }) => {
+      if (msg.created_at > lastSeenMap[msg.neighborhood_id]) {
+        counts[msg.neighborhood_id] = (counts[msg.neighborhood_id] ?? 0) + 1;
+      }
+    });
+    setUnreadCounts(counts);
+  }, [authUser?.id, (authUser?.neighborhoodMemberships ?? []).map((h) => h.id).join(',')]);
+
+  // Reload when navigating away from a neighborhood (clears that badge)
+  useEffect(() => {
+    loadUnreads();
+  }, [pathname, loadUnreads]);
+
+  const hidden = HIDDEN_ON.some((p) => pathname.startsWith(p));
+  if (hidden || !authUser) return null;
 
   const showTip = (e: React.MouseEvent, info: Omit<TooltipInfo, 'y'>) => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -84,18 +127,28 @@ export default function PersistentSidebar() {
 
         {neighborhoods.map((hood) => {
           const isActive = pathname.includes(hood.id);
+          const unread = isActive ? 0 : (unreadCounts[hood.id] ?? 0);
           return (
             <button
               key={hood.id}
               onClick={() => router.push(`/neighborhoods/${hood.id}`)}
-              onMouseEnter={(e) => showTip(e, { emoji: hood.emoji, label: hood.name, sub1: 'Neighborhood' })}
+              onMouseEnter={(e) => showTip(e, {
+                emoji: hood.emoji,
+                label: hood.name,
+                sub1: unread > 0 ? `${unread} new message${unread !== 1 ? 's' : ''}` : 'Neighborhood',
+              })}
               onMouseLeave={hideTip}
-              className={`flex items-center justify-center w-11 h-11 rounded-2xl text-xl shrink-0 transition-all hover:rounded-[14px] ${
+              className={`relative flex items-center justify-center w-11 h-11 rounded-2xl text-xl shrink-0 transition-all hover:rounded-[14px] ${
                 isActive ? 'ring-2 ring-masthead rounded-[14px]' : ''
               }`}
               style={{ background: 'var(--color-paper-dark)' }}
             >
               {hood.emoji}
+              {unread > 0 && (
+                <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-masthead text-[#12111a] text-[9px] font-black leading-none shadow-md">
+                  {unread > 99 ? '99+' : unread}
+                </span>
+              )}
             </button>
           );
         })}
