@@ -138,12 +138,16 @@ export default function PersistentSidebar() {
                 sub1: unread > 0 ? `${unread} new message${unread !== 1 ? 's' : ''}` : 'Neighborhood',
               })}
               onMouseLeave={hideTip}
-              className={`relative flex items-center justify-center w-11 h-11 rounded-2xl text-xl shrink-0 transition-all hover:rounded-[14px] ${
+              className={`relative flex items-center justify-center w-11 h-11 rounded-2xl text-xl shrink-0 transition-all hover:rounded-[14px] overflow-hidden ${
                 isActive ? 'ring-2 ring-masthead rounded-[14px]' : ''
               }`}
               style={{ background: 'var(--color-paper-dark)' }}
             >
-              {hood.emoji}
+              {hood.photo_url ? (
+                <img src={hood.photo_url} alt={hood.name} className="w-full h-full object-cover" />
+              ) : (
+                hood.emoji
+              )}
               {unread > 0 && (
                 <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-masthead text-[#12111a] text-[9px] font-black leading-none shadow-md">
                   {unread > 99 ? '99+' : unread}

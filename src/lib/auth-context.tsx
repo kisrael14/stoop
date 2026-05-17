@@ -17,7 +17,7 @@ interface AuthUser {
   followingCount: number;
   leagues: string[];
   followingProfiles: Array<{ id: string; username: string; display_name: string; avatar: string }>;
-  neighborhoodMemberships: Array<{ id: string; name: string; emoji: string }>;
+  neighborhoodMemberships: Array<{ id: string; name: string; emoji: string; photo_url?: string | null }>;
 }
 
 interface AuthContextValue {
@@ -64,9 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Two-step: get hood IDs, then fetch neighborhood details
     const hoodIds = ((memberRows ?? []) as Array<{ neighborhood_id: string }>).map((m) => m.neighborhood_id);
-    let neighborhoodMemberships: Array<{ id: string; name: string; emoji: string }> = [];
+    let neighborhoodMemberships: Array<{ id: string; name: string; emoji: string; photo_url?: string | null }> = [];
     if (hoodIds.length > 0) {
-      const { data: hoodsData } = await supabase.from('neighborhoods').select('id, name, emoji').in('id', hoodIds);
+      const { data: hoodsData } = await supabase.from('neighborhoods').select('id, name, emoji, photo_url').in('id', hoodIds);
       neighborhoodMemberships = (hoodsData ?? []) as typeof neighborhoodMemberships;
     }
 

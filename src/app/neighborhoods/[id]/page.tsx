@@ -97,7 +97,8 @@ export default function NeighborhoodPage() {
   const { user: authUser } = useAuth();
   const isRealId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   type DbProfile = { id: string; username: string; display_name: string; avatar: string };
-  const [dbNeighborhood, setDbNeighborhood] = useState<{ id: string; name: string; emoji: string } | null>(null);
+  const [chatPhoto, setChatPhoto] = useState<string | null>(null);
+  const [dbNeighborhood, setDbNeighborhood] = useState<{ id: string; name: string; emoji: string; photo_url?: string | null } | null>(null);
   const [dbMemberProfiles, setDbMemberProfiles] = useState<DbProfile[]>([]);
   const [dbLoading, setDbLoading] = useState(isRealId);
 
@@ -112,11 +113,12 @@ export default function NeighborhoodPage() {
     const supabase = createClient() as any;
     const load = async () => {
       try {
-        const { data: hood, error: hoodErr } = await supabase.from('neighborhoods').select('id, name, emoji').eq('id', id).single();
+        const { data: hood, error: hoodErr } = await supabase.from('neighborhoods').select('id, name, emoji, photo_url').eq('id', id).single();
         if (hoodErr || !hood) { console.error('Neighborhood fetch error:', hoodErr); return; }
         setDbNeighborhood(hood);
         setChatName(hood.name);
         setChatEmoji(hood.emoji);
+        if (hood.photo_url) setChatPhoto(hood.photo_url);
         const hoodName = hood.name;
 
         // Members
@@ -826,8 +828,12 @@ export default function NeighborhoodPage() {
           onClick={() => setActiveTab('overview')}
           className="flex items-center gap-2.5 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
         >
-          <div className="flex h-9 w-9 items-center justify-center bg-ink-muted/30 text-xl shrink-0">
-            {chatEmoji}
+          <div className="flex h-9 w-9 items-center justify-center bg-ink-muted/30 text-xl shrink-0 rounded-xl overflow-hidden">
+            {chatPhoto ? (
+              <img src={chatPhoto} alt={chatName} className="w-full h-full object-cover" />
+            ) : (
+              chatEmoji
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-display font-bold text-ink truncate leading-tight">{chatName}</p>
@@ -857,11 +863,14 @@ export default function NeighborhoodPage() {
           neighborhoodId={id}
           onClose={() => setShowEditModal(false)}
           onSaved={() => {
-            // Reload neighborhood name/emoji from DB after save
             const supabase = createClient() as any; // eslint-disable-line @typescript-eslint/no-explicit-any
-            supabase.from('neighborhoods').select('name, emoji').eq('id', id).single()
-              .then(({ data }: { data: { name: string; emoji: string } | null }) => {
-                if (data) { setChatName(data.name); setChatEmoji(data.emoji); }
+            supabase.from('neighborhoods').select('name, emoji, photo_url').eq('id', id).single()
+              .then(({ data }: { data: { name: string; emoji: string; photo_url?: string | null } | null }) => {
+                if (data) {
+                  setChatName(data.name);
+                  setChatEmoji(data.emoji);
+                  setChatPhoto(data.photo_url ?? null);
+                }
               });
           }}
         />
