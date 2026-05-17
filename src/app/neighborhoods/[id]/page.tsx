@@ -1028,34 +1028,39 @@ export default function NeighborhoodPage() {
               <span className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{members.length} total</span>
             </div>
             <div className="flex flex-col gap-0">
-              {members.map((m, i) => (
-                <Link
-                  key={m!.id}
-                  href={`/users/${m!.id}`}
-                  className={`flex items-center gap-3 px-1 py-2.5 border-b border-rule/50 last:border-0 ${i === 0 ? 'border-t border-rule/50' : ''} hover:bg-paper-dark transition-colors rounded`}
-                >
+              {members.map((m, i) => {
+                const isPhoto = m!.avatar && typeof m!.avatar === 'string' && m!.avatar.startsWith('http');
+                return (
                   <div
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-paper-dark border border-rule text-lg shrink-0 overflow-hidden"
-                    onClick={m!.avatar && typeof m!.avatar === 'string' && m!.avatar.startsWith('http') ? (e) => { e.preventDefault(); e.stopPropagation(); setExpandedAvatar(m!.avatar as string); } : undefined}
-                    style={m!.avatar && typeof m!.avatar === 'string' && m!.avatar.startsWith('http') ? { cursor: 'zoom-in' } : undefined}
+                    key={m!.id}
+                    className={`flex items-center gap-3 px-1 py-2.5 border-b border-rule/50 last:border-0 ${i === 0 ? 'border-t border-rule/50' : ''}`}
                   >
-                    {m!.avatar && typeof m!.avatar === 'string' && m!.avatar.startsWith('http')
-                      ? <img src={m!.avatar} alt="" className="w-full h-full object-cover" />
-                      : m!.avatar}
+                    {/* Avatar sits outside the Link so clicking it doesn't navigate */}
+                    <button
+                      onClick={isPhoto ? () => setExpandedAvatar(m!.avatar as string) : undefined}
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-paper-dark border border-rule text-lg shrink-0 overflow-hidden"
+                      style={{ cursor: isPhoto ? 'zoom-in' : 'default' }}
+                    >
+                      {isPhoto
+                        ? <img src={m!.avatar as string} alt="" className="w-full h-full object-cover" />
+                        : m!.avatar}
+                    </button>
+                    <Link href={`/users/${m!.id}`} className="flex-1 min-w-0 flex items-center gap-2 hover:opacity-80 transition-opacity">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-ink text-sm">{m!.displayName}</p>
+                        <p className="text-[11px] text-ink-faint">@{m!.username}</p>
+                      </div>
+                      <div className="flex gap-1 flex-wrap justify-end">
+                        {m!.fanTeams.slice(0, 2).map((ft) => (
+                          <span key={ft.team.id} title={ft.team.name}>
+                            <TeamLogo team={ft.team} size={15} />
+                          </span>
+                        ))}
+                      </div>
+                    </Link>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-ink text-sm">{m!.displayName}</p>
-                    <p className="text-[11px] text-ink-faint">@{m!.username}</p>
-                  </div>
-                  <div className="flex gap-1 flex-wrap justify-end">
-                    {m!.fanTeams.slice(0, 2).map((ft) => (
-                      <span key={ft.team.id} title={ft.team.name}>
-                        <TeamLogo team={ft.team} size={15} />
-                      </span>
-                    ))}
-                  </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           </div>
 
