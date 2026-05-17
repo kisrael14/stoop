@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Flame, User } from 'lucide-react';
+import { Home, Flame } from 'lucide-react';
 
 const HIDDEN_ON = ['/login', '/onboarding'];
 
@@ -11,14 +11,12 @@ export default function BottomNav() {
 
   if (HIDDEN_ON.some((p) => pathname.startsWith(p))) return null;
 
-  const isHomeActive = pathname === '/' || pathname.startsWith('/neighborhoods/');
+  const isHomeActive = pathname === '/' || pathname === '/stoop' || pathname.startsWith('/stoop/') || pathname.startsWith('/neighborhoods/') || pathname.startsWith('/users/');
   const isStreetsActive = pathname === '/streets' || pathname.startsWith('/streets/');
-  const isYouActive = pathname === '/stoop' || pathname.startsWith('/stoop/') || pathname.startsWith('/users/');
 
   const navItems = [
     { href: '/', label: 'Home', icon: Home, active: isHomeActive },
     { href: '/streets', label: 'Streets', icon: Flame, active: isStreetsActive },
-    { href: '/stoop', label: 'You', icon: User, active: isYouActive },
   ];
 
   return (

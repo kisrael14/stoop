@@ -158,7 +158,7 @@ export default function StoopPage() {
               <p className="font-display text-lg font-bold leading-none text-white">{followerCount}</p>
               <p className="text-[7px] font-bold uppercase tracking-wider text-white/60 mt-0.5">Following</p>
             </Link>
-            <Link href="/neighborhoods" className="flex flex-col items-center py-2 hover:bg-white/10 transition-colors">
+            <Link href="/" className="flex flex-col items-center py-2 hover:bg-white/10 transition-colors">
               <p className="font-display text-lg font-bold leading-none text-white">{myNeighborhoods.length}</p>
               <p className="text-[7px] font-bold uppercase tracking-wider text-white/60 mt-0.5">Neighborhoods</p>
             </Link>
@@ -169,13 +169,13 @@ export default function StoopPage() {
           </div>
           {/* Row 2 — activity stats */}
           <div className="grid grid-cols-3 divide-x divide-white/20 border-t border-white/20">
-            <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-white/10 transition-colors">
+            <Link href="/" className="flex flex-col items-center py-2 gap-0.5 hover:bg-white/10 transition-colors">
               <Swords size={10} className="text-white/60" />
               <p className="font-display text-base font-black text-masthead leading-none">{debatePct}%</p>
               <p className="text-[7px] font-bold text-white/60 leading-none">{stats.debatesWon}W · {stats.debatesLost}L</p>
               <p className="text-[7px] font-bold uppercase tracking-wide text-white/70">Debates</p>
             </Link>
-            <Link href="/neighborhoods" className="flex flex-col items-center py-2 gap-0.5 hover:bg-white/10 transition-colors">
+            <Link href="/" className="flex flex-col items-center py-2 gap-0.5 hover:bg-white/10 transition-colors">
               <Handshake size={10} className="text-white/60" />
               <p className="font-display text-base font-black text-masthead leading-none">{betPct}%</p>
               <p className="text-[7px] font-bold text-white/60 leading-none">{stats.betsWon}W · {stats.betsLost}L</p>
@@ -221,7 +221,7 @@ export default function StoopPage() {
       <div className="mx-4 mt-4 border border-rule">
         <div className="flex items-center justify-between px-3 py-2 bg-nav-bg">
           <p className="text-[9px] font-black uppercase tracking-[0.25em] text-masthead">My Neighborhood</p>
-          <Link href="/neighborhoods" className="text-[10px] font-bold text-press hover:text-press/80">See all →</Link>
+          <Link href="/" className="text-[10px] font-bold text-press hover:text-press/80">See all →</Link>
         </div>
 
         <div className="divide-y divide-rule/60">

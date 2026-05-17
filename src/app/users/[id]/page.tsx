@@ -329,7 +329,7 @@ export default function UserProfilePage() {
             <p className="text-[9px] font-black uppercase tracking-[0.25em] text-masthead">
               {isMe ? 'My Neighborhood' : 'Their Neighborhood'}
             </p>
-            <Link href="/neighborhoods" className="text-[10px] font-bold text-press hover:text-press/80">See all →</Link>
+            <Link href="/" className="text-[10px] font-bold text-press hover:text-press/80">See all →</Link>
           </div>
           <div className="divide-y divide-rule/60">
             {userDebates.map((debate) => {
