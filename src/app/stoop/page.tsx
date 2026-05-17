@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Home, Pencil, Camera, Check, X, Flame, Swords, Handshake, Bell, BellOff, PenLine, Newspaper } from 'lucide-react';
 import { ME, DEBATES, BETS, HOT_TAKES, ANALYSES, getUserById, CHATS } from '@/lib/mock-data';
-import { timeAgo, totalReactions, teamDisplayName } from '@/lib/utils';
+import { timeAgo, totalReactions, teamDisplayName, cropImageToSquare } from '@/lib/utils';
 import type { FandomLevel, FanTeam } from '@/lib/types';
 import { requestNotificationPermission, startSimulatedNotifications } from '@/lib/notifications';
 import { computeBadges } from '@/lib/badges';
@@ -38,7 +38,10 @@ export default function StoopPage() {
   const [avatarPhotoPreview, setAvatarPhotoPreview] = useState<string | null>(null);
   const [avatarPhotoFile, setAvatarPhotoFile] = useState<File | null>(null);
   const [avatarSaving, setAvatarSaving] = useState(false);
+  const [avatarPosX, setAvatarPosX] = useState(50);
+  const [avatarPosY, setAvatarPosY] = useState(50);
   const avatarFileRef = useRef<HTMLInputElement>(null);
+  const avatarDragRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -134,8 +137,25 @@ export default function StoopPage() {
       setAvatarPhotoPreview(null);
       setAvatarPhotoFile(null);
     }
+    setAvatarPosX(50);
+    setAvatarPosY(50);
     setShowAvatarModal(true);
   };
+
+  const onAvatarDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    const point = 'touches' in e ? e.touches[0] : e;
+    avatarDragRef.current = { x: point.clientX, y: point.clientY };
+  };
+  const onAvatarDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!avatarDragRef.current) return;
+    const point = 'touches' in e ? e.touches[0] : e;
+    const dx = point.clientX - avatarDragRef.current.x;
+    const dy = point.clientY - avatarDragRef.current.y;
+    avatarDragRef.current = { x: point.clientX, y: point.clientY };
+    setAvatarPosX((p) => Math.max(0, Math.min(100, p - dx * 0.4)));
+    setAvatarPosY((p) => Math.max(0, Math.min(100, p - dy * 0.4)));
+  };
+  const onAvatarDragEnd = () => { avatarDragRef.current = null; };
 
   const saveAvatar = async () => {
     if (!authUser || !isSupabaseConfigured()) return;
@@ -144,11 +164,11 @@ export default function StoopPage() {
     const supabase = createClient() as any;
     let newAvatar: string = avatarEmoji;
 
-    if (avatarMode === 'photo' && avatarPhotoFile) {
-      const ext = avatarPhotoFile.name.split('.').pop() ?? 'jpg';
+    if (avatarMode === 'photo' && avatarPhotoFile && avatarPhotoPreview) {
+      const cropped = await cropImageToSquare(avatarPhotoPreview, avatarPosX, avatarPosY);
       const { data: up } = await supabase.storage
         .from('profile-photos')
-        .upload(`${authUser.id}/avatar.${ext}`, avatarPhotoFile, { upsert: true });
+        .upload(`${authUser.id}/avatar.jpg`, cropped, { upsert: true });
       if (up) {
         const { data: urlData } = supabase.storage.from('profile-photos').getPublicUrl(up.path);
         if (urlData?.publicUrl) newAvatar = urlData.publicUrl;
@@ -178,7 +198,10 @@ export default function StoopPage() {
           </button>
           <Link href="/users/me" className="flex items-center gap-2.5 flex-1 min-w-0 hover:opacity-80 transition-opacity">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-xl shrink-0 ring-2 ring-masthead overflow-hidden">
-              {avatar}
+              {avatar && typeof avatar === 'string' && avatar.startsWith('http')
+                ? <img src={avatar} alt={displayName} className="w-full h-full object-cover" />
+                : <span className="leading-none">{avatar}</span>
+              }
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-display font-bold text-white truncate leading-tight">{displayName}</p>
@@ -438,13 +461,16 @@ export default function StoopPage() {
             <div className="overflow-y-auto flex-1 px-5 py-5 flex flex-col gap-5">
 
               {/* Live preview */}
-              <div className="flex justify-center">
+              <div className="flex flex-col items-center gap-1">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/15 text-4xl ring-2 ring-masthead overflow-hidden shrink-0">
                   {avatarMode === 'photo' && avatarPhotoPreview
-                    ? <img src={avatarPhotoPreview} alt="" className="w-full h-full object-cover" />
+                    ? <img src={avatarPhotoPreview} alt="" className="w-full h-full object-cover" style={{ objectPosition: `${avatarPosX}% ${avatarPosY}%` }} />
                     : <span>{avatarEmoji}</span>
                   }
                 </div>
+                {avatarMode === 'photo' && avatarPhotoPreview && (
+                  <p className="text-[10px] text-ink-faint">Preview — drag photo below to reposition</p>
+                )}
               </div>
 
               {/* Mode toggle */}
@@ -483,37 +509,66 @@ export default function StoopPage() {
 
               {/* Photo upload */}
               {avatarMode === 'photo' && (
-                <label className="block cursor-pointer">
-                  <div className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed transition-colors overflow-hidden ${avatarPhotoPreview ? 'border-masthead/40 h-40' : 'border-rule hover:border-masthead h-28'}`}>
-                    {avatarPhotoPreview
-                      ? <img src={avatarPhotoPreview} alt="" className="w-full h-full object-cover" />
-                      : <><Camera size={22} className="text-ink-faint" /><span className="text-xs text-ink-faint">Tap to upload a photo</span></>
-                    }
+                <div className="flex flex-col gap-1.5">
+                  <div className={`rounded-xl border-2 overflow-hidden relative ${avatarPhotoPreview ? 'border-masthead/40 h-44' : 'border-dashed border-rule h-28'}`}>
+                    {avatarPhotoPreview ? (
+                      <img
+                        src={avatarPhotoPreview}
+                        alt=""
+                        className="w-full h-full object-cover cursor-grab active:cursor-grabbing select-none"
+                        style={{ objectPosition: `${avatarPosX}% ${avatarPosY}%` }}
+                        draggable={false}
+                        onMouseDown={onAvatarDragStart}
+                        onMouseMove={onAvatarDragMove}
+                        onMouseUp={onAvatarDragEnd}
+                        onMouseLeave={onAvatarDragEnd}
+                        onTouchStart={onAvatarDragStart}
+                        onTouchMove={onAvatarDragMove}
+                        onTouchEnd={onAvatarDragEnd}
+                      />
+                    ) : (
+                      <label className="flex flex-col items-center justify-center gap-2 w-full h-full cursor-pointer hover:bg-paper/30 transition-colors">
+                        <Camera size={22} className="text-ink-faint" />
+                        <span className="text-xs text-ink-faint">Tap to upload a photo</span>
+                        <input ref={avatarFileRef} type="file" accept="image/*" className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setAvatarPhotoFile(file);
+                            setAvatarPosX(50); setAvatarPosY(50);
+                            const reader = new FileReader();
+                            reader.onload = (ev) => setAvatarPhotoPreview(ev.target?.result as string);
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                      </label>
+                    )}
                   </div>
                   {avatarPhotoPreview && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.preventDefault(); setAvatarPhotoPreview(null); setAvatarPhotoFile(null); }}
-                      className="mt-1.5 text-[11px] text-ink-faint hover:text-masthead transition-colors w-full text-center"
-                    >
-                      Remove photo
-                    </button>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-ink-faint italic">Drag to reposition</p>
+                      <div className="flex gap-3">
+                        <label className="text-[11px] text-field cursor-pointer hover:text-field/80 transition-colors">
+                          Change photo
+                          <input ref={avatarFileRef} type="file" accept="image/*" className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              setAvatarPhotoFile(file);
+                              setAvatarPosX(50); setAvatarPosY(50);
+                              const reader = new FileReader();
+                              reader.onload = (ev) => setAvatarPhotoPreview(ev.target?.result as string);
+                              reader.readAsDataURL(file);
+                            }}
+                          />
+                        </label>
+                        <button type="button" onClick={() => { setAvatarPhotoPreview(null); setAvatarPhotoFile(null); }} className="text-[11px] text-ink-faint hover:text-masthead transition-colors">
+                          Remove
+                        </button>
+                      </div>
+                    </div>
                   )}
-                  <input
-                    ref={avatarFileRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setAvatarPhotoFile(file);
-                      const reader = new FileReader();
-                      reader.onload = (ev) => setAvatarPhotoPreview(ev.target?.result as string);
-                      reader.readAsDataURL(file);
-                    }}
-                  />
-                </label>
+                </div>
               )}
             </div>
 

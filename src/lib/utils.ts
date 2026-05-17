@@ -37,3 +37,34 @@ const EURO_SOCCER_LEAGUES = new Set(['EPL', 'LaLiga', 'SerieA', 'Ligue1', 'Bunde
 export function teamDisplayName(team: { city: string; name: string; league: string }): string {
   return EURO_SOCCER_LEAGUES.has(team.league) ? team.name : `${team.city} ${team.name}`;
 }
+
+/** Crop a photo to a square using canvas, respecting a drag-position offset (0–100%). */
+export function cropImageToSquare(src: string, posX: number, posY: number, size = 400): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d')!;
+      const aspect = img.naturalWidth / img.naturalHeight;
+      let srcX: number, srcY: number, srcSize: number;
+      if (aspect >= 1) {
+        srcSize = img.naturalHeight;
+        srcX = (img.naturalWidth - srcSize) * (posX / 100);
+        srcY = 0;
+      } else {
+        srcSize = img.naturalWidth;
+        srcX = 0;
+        srcY = (img.naturalHeight - srcSize) * (posY / 100);
+      }
+      ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, size, size);
+      canvas.toBlob(
+        (blob) => resolve(new File([blob!], 'avatar.jpg', { type: 'image/jpeg' })),
+        'image/jpeg',
+        0.92,
+      );
+    };
+    img.src = src;
+  });
+}

@@ -11,6 +11,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Search, Check, UserPlus, Camera, Trash2 } from 'lucide-react';
+import { cropImageToSquare } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/lib/auth-context';
 import { markHoodSeen } from '@/components/PersistentSidebar';
@@ -53,6 +54,9 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
   const [iconMode, setIconMode] = useState<'emoji' | 'photo'>('emoji');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPosX, setPhotoPosX] = useState(50);
+  const [photoPosY, setPhotoPosY] = useState(50);
+  const photoDragRef = useRef<{ x: number; y: number } | null>(null);
 
   // Members
   const [members, setMembers] = useState<MemberEntry[]>([]);
@@ -212,18 +216,34 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
     const file = e.target.files?.[0];
     if (!file) return;
     setPhotoFile(file);
+    setPhotoPosX(50); setPhotoPosY(50);
     const reader = new FileReader();
     reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
   };
 
+  const onPhotoDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    const point = 'touches' in e ? e.touches[0] : e;
+    photoDragRef.current = { x: point.clientX, y: point.clientY };
+  };
+  const onPhotoDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!photoDragRef.current) return;
+    const point = 'touches' in e ? e.touches[0] : e;
+    const dx = point.clientX - photoDragRef.current.x;
+    const dy = point.clientY - photoDragRef.current.y;
+    photoDragRef.current = { x: point.clientX, y: point.clientY };
+    setPhotoPosX((p) => Math.max(0, Math.min(100, p - dx * 0.4)));
+    setPhotoPosY((p) => Math.max(0, Math.min(100, p - dy * 0.4)));
+  };
+  const onPhotoDragEnd = () => { photoDragRef.current = null; };
+
   const uploadPhoto = async (hoodId: string): Promise<string | null> => {
-    if (!photoFile) return null;
+    if (!photoFile || !photoPreview) return null;
     try {
-      const ext = photoFile.name.split('.').pop() ?? 'jpg';
+      const cropped = await cropImageToSquare(photoPreview, photoPosX, photoPosY);
       const { data: up, error: upErr } = await supabase.storage
         .from('neighborhood-photos')
-        .upload(`${hoodId}/avatar.${ext}`, photoFile, { upsert: true });
+        .upload(`${hoodId}/avatar.jpg`, cropped, { upsert: true });
       if (upErr || !up) return null;
       const { data: urlData } = supabase.storage
         .from('neighborhood-photos')
@@ -355,7 +375,7 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
   const isMe = (id: string) => id === authUser?.id;
 
   const iconPreview = iconMode === 'photo' && photoPreview
-    ? <img src={photoPreview} alt="Group" className="w-full h-full object-cover" />
+    ? <img src={photoPreview} alt="Group" className="w-full h-full object-cover" style={{ objectPosition: `${photoPosX}% ${photoPosY}%` }} />
     : <span className="text-3xl">{emoji}</span>;
 
   return (
@@ -474,36 +494,46 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
 
                 {/* Photo upload */}
                 {iconMode === 'photo' && (
-                  <label className="block cursor-pointer">
-                    <div className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed transition-colors overflow-hidden ${
-                      photoPreview ? 'border-masthead/40 h-32' : 'border-rule hover:border-masthead h-24'
-                    }`}>
+                  <div className="flex flex-col gap-1.5">
+                    <div className={`rounded-xl border-2 overflow-hidden relative ${photoPreview ? 'border-masthead/40 h-40' : 'border-dashed border-rule h-24'}`}>
                       {photoPreview ? (
-                        <img src={photoPreview} alt="Group" className="w-full h-full object-cover" />
+                        <img
+                          src={photoPreview}
+                          alt="Group"
+                          className="w-full h-full object-cover cursor-grab active:cursor-grabbing select-none"
+                          style={{ objectPosition: `${photoPosX}% ${photoPosY}%` }}
+                          draggable={false}
+                          onMouseDown={onPhotoDragStart}
+                          onMouseMove={onPhotoDragMove}
+                          onMouseUp={onPhotoDragEnd}
+                          onMouseLeave={onPhotoDragEnd}
+                          onTouchStart={onPhotoDragStart}
+                          onTouchMove={onPhotoDragMove}
+                          onTouchEnd={onPhotoDragEnd}
+                        />
                       ) : (
-                        <>
+                        <label className="flex flex-col items-center justify-center gap-2 w-full h-full cursor-pointer hover:bg-paper/30 transition-colors">
                           <Camera size={22} className="text-ink-faint" />
                           <span className="text-xs text-ink-faint">Tap to upload a photo</span>
-                        </>
+                          <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                        </label>
                       )}
                     </div>
                     {photoPreview && (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.preventDefault(); setPhotoPreview(null); setPhotoFile(null); }}
-                        className="mt-1.5 text-[11px] text-ink-faint hover:text-masthead transition-colors w-full text-center"
-                      >
-                        Remove photo
-                      </button>
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-ink-faint italic">Drag to reposition</p>
+                        <div className="flex gap-3">
+                          <label className="text-[11px] text-field cursor-pointer hover:text-field/80 transition-colors">
+                            Change photo
+                            <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                          </label>
+                          <button type="button" onClick={() => { setPhotoPreview(null); setPhotoFile(null); }} className="text-[11px] text-ink-faint hover:text-masthead transition-colors">
+                            Remove
+                          </button>
+                        </div>
+                      </div>
                     )}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      className="hidden"
-                    />
-                  </label>
+                  </div>
                 )}
               </div>
 
