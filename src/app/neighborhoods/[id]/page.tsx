@@ -964,6 +964,23 @@ export default function NeighborhoodPage() {
         </div>
       )}
 
+      {/* Stats strip */}
+      <div className="shrink-0 bg-nav-bg px-5 py-3 border-b border-white/10">
+        <div className="flex gap-6">
+          {[
+            { label: 'Debates',  value: debates.length },
+            { label: 'Bets',     value: bets.length },
+            { label: 'Hot Takes',value: hotTakes.length },
+            { label: 'Analyses', value: analyses.length },
+          ].map(({ label, value }) => (
+            <div key={label}>
+              <p className="text-lg font-bold text-white font-mono">{value}</p>
+              <p className="text-[9px] font-bold uppercase tracking-wider text-white/50">{label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Tab bar — equal-width, fits all tabs without scrolling */}
       <div className="shrink-0 flex bg-paper-dark border-b border-rule">
         {tabs.map(({ id: tabId, label, icon: Icon }) => (
@@ -985,22 +1002,6 @@ export default function NeighborhoodPage() {
       {/* ── OVERVIEW TAB ─────────────────────────────────────── */}
       {activeTab === 'overview' && (
         <div className="flex-1 overflow-y-auto pb-4">
-          <div className="bg-nav-bg px-5 pt-4 pb-6">
-            <div className="flex gap-5 border-t border-ink/20 pt-4">
-              {[
-                { label: 'Debates', value: debates.length, color: 'text-ink' },
-                { label: 'Bets', value: bets.length, color: 'text-ink' },
-                { label: 'Hot Takes', value: hotTakes.length, color: 'text-press' },
-                { label: 'Analyses', value: analyses.length, color: 'text-ink' },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="text-center">
-                  <p className={`text-xl font-bold ${color}`}>{value}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-ink/50">{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Members */}
           <div className="px-5 py-4 border-b border-rule">
             <div className="flex items-center justify-between mb-3">
