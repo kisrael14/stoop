@@ -94,7 +94,7 @@ export default function PersistentSidebar() {
 
   return (
     <>
-      <aside className="w-[68px] shrink-0 bg-nav-bg border-r border-rule flex flex-col items-center py-4 gap-2 overflow-y-auto overflow-x-visible">
+      <aside className="w-[68px] shrink-0 h-full bg-nav-bg border-r border-rule flex flex-col items-center py-4 gap-2 overflow-y-auto">
         {/* User avatar */}
         <button
           onClick={() => router.push('/stoop')}
