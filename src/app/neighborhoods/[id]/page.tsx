@@ -1592,7 +1592,7 @@ export default function NeighborhoodPage() {
             <>
               <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint mt-2 border-b border-rule pb-1">Archived</p>
               {bets.filter((b) => b.status === 'resolved').map((bet) => {
-                const winner = bet.winnerId ? getUserById(bet.winnerId) : null;
+                const winner = bet.winnerId ? resolveUser(bet.winnerId) : null;
                 return (
                   <div key={bet.id} className="border border-rule/50 bg-paper/60 px-4 py-4 opacity-70">
                     <p className="text-sm text-ink mb-2 line-clamp-2 italic">&ldquo;{bet.claim}&rdquo;</p>
@@ -1621,7 +1621,7 @@ export default function NeighborhoodPage() {
       {activeTab === 'hot-takes' && (
         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4 pb-6 bg-paper">
           {hotTakes.map((ht) => {
-            const author = getUserById(ht.authorId);
+            const author = resolveUser(ht.authorId);
             const isMe = ht.authorId === 'me';
             const fireR = ht.reactions.find((r) => r.emoji === '🔥');
             const iceR  = ht.reactions.find((r) => r.emoji === '❄️');
@@ -1696,7 +1696,7 @@ export default function NeighborhoodPage() {
                 {showingComments && (
                   <div className="border-t border-rule/30 bg-paper-dark px-4 py-3 flex flex-col gap-3">
                     {htComments.map((c) => {
-                      const commenter = getUserById(c.userId);
+                      const commenter = resolveUser(c.userId);
                       return (
                         <div key={c.id} className="flex gap-2">
                           <Link href={`/users/${c.userId}`} className="flex h-7 w-7 items-center justify-center rounded-full bg-paper border border-rule text-sm shrink-0 hover:border-ink">
@@ -1815,7 +1815,7 @@ export default function NeighborhoodPage() {
           {/* Analysis cards */}
           <div className="flex flex-col gap-4 px-4 py-4 pb-6">
             {analyses.map((an) => {
-              const author = getUserById(an.authorId);
+              const author = resolveUser(an.authorId);
               const isMe = an.authorId === 'me';
               const anComments = an.comments ?? [];
               const showingComments = showAnalystCommentsFor === an.id;
@@ -1872,7 +1872,7 @@ export default function NeighborhoodPage() {
                   {showingComments && (
                     <div className="border-t border-rule/30 bg-paper-dark px-4 py-3 flex flex-col gap-3">
                       {anComments.map((c) => {
-                        const commenter = getUserById(c.userId);
+                        const commenter = resolveUser(c.userId);
                         return (
                           <div key={c.id} className="flex gap-2">
                             <Link href={`/users/${c.userId}`} className="flex h-7 w-7 items-center justify-center rounded-full bg-paper border border-rule text-sm shrink-0 hover:border-ink">
