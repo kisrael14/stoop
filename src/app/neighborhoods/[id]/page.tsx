@@ -17,6 +17,7 @@ import {
 import { useAuth } from '@/lib/auth-context';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
 import { markHoodSeen } from '@/components/PersistentSidebar';
+import NeighborhoodFormModal from '@/components/NeighborhoodFormModal';
 import { timeAgo, voteLeader, totalReactions, teamDisplayName } from '@/lib/utils';
 import type { Message, MessageTag, Debate, Bet, HotTake, HotTakeComment, VoteChoice, Analysis } from '@/lib/types';
 import { sendNotification } from '@/lib/notifications';
@@ -88,13 +89,9 @@ export default function NeighborhoodPage() {
   const [analysisBody, setAnalysisBody] = useState('');
 
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editEmoji, setEditEmoji] = useState('');
   const [chatName, setChatName] = useState(chat?.name ?? '');
   const [chatEmoji, setChatEmoji] = useState(chat?.emoji ?? '');
   const [localMemberIds, setLocalMemberIds] = useState<string[]>(chat?.memberIds ?? []);
-  const [editingMembers, setEditingMembers] = useState(false);
-  const [memberSearchQuery, setMemberSearchQuery] = useState('');
 
   // ── Supabase / real neighborhood support ─────────────────
   const { user: authUser } = useAuth();
@@ -845,7 +842,7 @@ export default function NeighborhoodPage() {
           <Home size={14} />
         </button>
         <button
-          onClick={() => { setEditName(chatName); setEditEmoji(chatEmoji); setShowEditModal(true); }}
+          onClick={() => setShowEditModal(true)}
           className="shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-ink/10 hover:bg-ink/20 text-ink/70 hover:text-ink transition-all"
           aria-label="Edit neighborhood"
         >
@@ -854,53 +851,20 @@ export default function NeighborhoodPage() {
       </div>
 
       {/* Edit Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
-          <div className="absolute inset-0 bg-nav-bg/80 backdrop-blur-sm" onClick={() => setShowEditModal(false)} />
-          <div className="relative w-full max-w-md bg-paper-dark rounded-t-2xl border-t border-rule overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3.5 bg-nav-bg">
-              <p className="font-display font-bold text-ink text-sm">Edit Neighborhood</p>
-              <button onClick={() => setShowEditModal(false)} className="text-ink/60 hover:text-ink"><X size={16} /></button>
-            </div>
-            <div className="px-5 py-4 flex flex-col gap-3">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-1.5">Emoji</p>
-                <div className="flex gap-2 flex-wrap">
-                  {['🏈', '⚾', '🏀', '🏒', '⚽', '🎽', '🏆', '🗽', '🌆', '🔥', '⚡', '🌊'].map((e) => (
-                    <button
-                      key={e}
-                      onClick={() => setEditEmoji(e)}
-                      className={`w-9 h-9 text-lg flex items-center justify-center rounded-xl border-2 transition-all ${editEmoji === e ? 'border-masthead bg-masthead/10' : 'border-rule hover:border-ink-muted'}`}
-                    >
-                      {e}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-1.5">Name</p>
-                <input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="Neighborhood name…"
-                  className="w-full border border-rule bg-paper-dark px-4 py-2.5 text-sm text-ink placeholder-ink-faint outline-none focus:border-ink rounded-lg"
-                />
-              </div>
-            </div>
-            <div className="border-t border-rule bg-paper-dark px-5 py-3 flex gap-2">
-              <button onClick={() => setShowEditModal(false)} className="border border-rule px-4 py-2 text-xs font-bold uppercase tracking-wider text-ink-muted rounded-full hover:bg-paper-deeper">
-                Cancel
-              </button>
-              <button
-                onClick={() => { if (editName.trim()) setChatName(editName.trim()); if (editEmoji) setChatEmoji(editEmoji); setShowEditModal(false); }}
-                disabled={!editName.trim()}
-                className="flex-1 bg-masthead text-[#12111a] py-2 text-xs font-bold uppercase tracking-widest rounded-full hover:bg-masthead/80 disabled:opacity-40 flex items-center justify-center gap-1.5"
-              >
-                <Check size={12} /> Save
-              </button>
-            </div>
-          </div>
-        </div>
+      {showEditModal && isRealId && (
+        <NeighborhoodFormModal
+          mode="edit"
+          neighborhoodId={id}
+          onClose={() => setShowEditModal(false)}
+          onSaved={() => {
+            // Reload neighborhood name/emoji from DB after save
+            const supabase = createClient() as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+            supabase.from('neighborhoods').select('name, emoji').eq('id', id).single()
+              .then(({ data }: { data: { name: string; emoji: string } | null }) => {
+                if (data) { setChatName(data.name); setChatEmoji(data.emoji); }
+              });
+          }}
+        />
       )}
 
       {/* Tab bar — pill style */}
@@ -953,106 +917,34 @@ export default function NeighborhoodPage() {
           <div className="px-5 py-4 border-b border-rule">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-display font-bold text-ink text-lg">Members</h3>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{members.length} total</span>
-                <button
-                  onClick={() => { setEditingMembers((v) => !v); setMemberSearchQuery(''); }}
-                  className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 border transition-colors ${
-                    editingMembers ? 'bg-nav-bg text-ink border-rule' : 'bg-paper-dark text-ink-muted border-rule hover:border-ink'
-                  }`}
-                >
-                  {editingMembers ? 'Done' : 'Edit'}
-                </button>
-              </div>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-ink-faint">{members.length} total</span>
             </div>
             <div className="flex flex-col gap-0">
               {members.map((m, i) => (
-                <div
+                <Link
                   key={m!.id}
-                  className={`flex items-center gap-3 px-4 py-3 border-b border-rule/50 last:border-0 ${i === 0 ? 'border-t border-rule/50' : ''} ${editingMembers ? 'bg-paper' : 'hover:bg-paper-dark transition-colors'}`}
+                  href={`/users/${m!.id}`}
+                  className={`flex items-center gap-3 px-1 py-2.5 border-b border-rule/50 last:border-0 ${i === 0 ? 'border-t border-rule/50' : ''} hover:bg-paper-dark transition-colors rounded`}
                 >
-                  {editingMembers && m!.id !== 'me' && (
-                    <button
-                      onClick={() => setLocalMemberIds((prev) => prev.filter((mid) => mid !== m!.id))}
-                      className="shrink-0 flex items-center justify-center h-7 w-7 rounded-full bg-press/10 border border-press/40 text-press hover:bg-press hover:text-ink transition-all"
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
-                  {(!editingMembers || m!.id === 'me') && (
-                    <Link href={`/users/${m!.id}`} className="flex h-10 w-10 items-center justify-center rounded-full bg-paper-dark border border-rule text-xl shrink-0 hover:border-ink transition-all">
-                      {m!.avatar}
-                    </Link>
-                  )}
-                  {editingMembers && m!.id !== 'me' && (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-paper-dark border border-rule text-xl shrink-0">
-                      {m!.avatar}
-                    </div>
-                  )}
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-paper-dark border border-rule text-lg shrink-0 overflow-hidden">
+                    {m!.avatar && typeof m!.avatar === 'string' && m!.avatar.startsWith('http')
+                      ? <img src={m!.avatar} alt="" className="w-full h-full object-cover" />
+                      : m!.avatar}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-ink text-sm">{m!.displayName}</p>
-                    <p className="text-[11px] text-ink-faint font-mono">@{m!.username}</p>
+                    <p className="text-[11px] text-ink-faint">@{m!.username}</p>
                   </div>
-                  {!editingMembers && (
-                    <>
-                      <div className="flex gap-1 flex-wrap justify-end">
-                        {m!.fanTeams.slice(0, 2).map((ft) => (
-                          <span key={ft.team.id} title={ft.team.name}>
-                            <TeamLogo team={ft.team} size={16} />
-                          </span>
-                        ))}
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-xs font-bold text-field">{m!.stats.debatesWon}W</p>
-                        <p className="text-[9px] uppercase tracking-wide text-ink-faint">debates</p>
-                      </div>
-                    </>
-                  )}
-                </div>
+                  <div className="flex gap-1 flex-wrap justify-end">
+                    {m!.fanTeams.slice(0, 2).map((ft) => (
+                      <span key={ft.team.id} title={ft.team.name}>
+                        <TeamLogo team={ft.team} size={15} />
+                      </span>
+                    ))}
+                  </div>
+                </Link>
               ))}
             </div>
-
-            {/* Add member search */}
-            {editingMembers && (() => {
-              const nonMembers = USERS.filter((u) => u.id !== 'me' && !localMemberIds.includes(u.id));
-              const filtered = memberSearchQuery.length > 0
-                ? nonMembers.filter((u) =>
-                    u.displayName.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
-                    u.username.toLowerCase().includes(memberSearchQuery.toLowerCase())
-                  )
-                : nonMembers.slice(0, 5);
-              return (
-                <div className="mt-3 border-t border-rule pt-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-ink-faint mb-2">Add Member</p>
-                  <div className="relative mb-2">
-                    <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
-                    <input
-                      type="text"
-                      value={memberSearchQuery}
-                      onChange={(e) => setMemberSearchQuery(e.target.value)}
-                      placeholder="Search by name or @username…"
-                      className="w-full border border-rule bg-paper py-2 pl-8 pr-3 text-xs text-ink placeholder-ink-faint outline-none focus:border-ink transition-colors"
-                    />
-                  </div>
-                  {filtered.map((u) => (
-                    <button
-                      key={u.id}
-                      onClick={() => setLocalMemberIds((prev) => [...prev, u.id])}
-                      className="flex w-full items-center gap-3 px-3 py-2.5 border-b border-rule/40 last:border-0 hover:bg-paper-dark transition-colors"
-                    >
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-paper-dark border border-rule text-lg shrink-0">
-                        {u.avatar}
-                      </div>
-                      <div className="flex-1 min-w-0 text-left">
-                        <p className="font-bold text-ink text-xs">{u.displayName}</p>
-                        <p className="text-[10px] text-ink-faint font-mono">@{u.username}</p>
-                      </div>
-                      <Plus size={14} className="text-ink-muted shrink-0" />
-                    </button>
-                  ))}
-                </div>
-              );
-            })()}
           </div>
 
           {/* Neighborhood teams */}

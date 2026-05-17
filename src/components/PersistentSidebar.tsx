@@ -6,7 +6,7 @@ import { Plus } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { ALL_TEAMS } from '@/lib/teams-data';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
-import CreateNeighborhoodModal from '@/components/CreateNeighborhoodModal';
+import NeighborhoodFormModal from '@/components/NeighborhoodFormModal';
 import FindNeighborsModal from '@/components/FindNeighborsModal';
 import FollowTeamsModal from '@/components/FollowTeamsModal';
 
@@ -223,7 +223,9 @@ export default function PersistentSidebar() {
         </button>
       </aside>
 
-      {showCreate && <CreateNeighborhoodModal onClose={() => setShowCreate(false)} />}
+      {showCreate && (
+        <NeighborhoodFormModal mode="create" onClose={() => setShowCreate(false)} />
+      )}
       {showFindNeighbors && <FindNeighborsModal onClose={() => setShowFindNeighbors(false)} />}
       {showFollowTeams && <FollowTeamsModal onClose={() => setShowFollowTeams(false)} />}
 
