@@ -48,6 +48,7 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
   // Core fields
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('🏘️');
+  const [iconMode, setIconMode] = useState<'emoji' | 'photo'>('emoji');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
 
@@ -95,9 +96,13 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
       if (!hoodFullErr && hoodFull) {
         setName(hoodFull.name ?? '');
         setEmoji(hoodFull.emoji ?? '🏘️');
-        if (hoodFull.photo_url) setPhotoPreview(hoodFull.photo_url);
+        if (hoodFull.photo_url) {
+          setPhotoPreview(hoodFull.photo_url);
+          setIconMode('photo');
+        } else {
+          setIconMode('emoji');
+        }
       } else {
-        // photo_url column may not exist yet — retry without it
         const { data: hoodBasic } = await supabase
           .from('neighborhoods')
           .select('name, emoji')
@@ -107,6 +112,7 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
           setName(hoodBasic.name ?? '');
           setEmoji(hoodBasic.emoji ?? '🏘️');
         }
+        setIconMode('emoji');
       }
 
       // Fetch members — try with nickname column, fall back without
@@ -245,12 +251,13 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
         return;
       }
 
-      const photoUrl = await uploadPhoto(hood.id);
-      if (photoUrl) {
-        await supabase.from('neighborhoods').update({ photo_url: photoUrl }).eq('id', hood.id);
+      if (iconMode === 'photo') {
+        const photoUrl = await uploadPhoto(hood.id);
+        if (photoUrl) {
+          await supabase.from('neighborhoods').update({ photo_url: photoUrl }).eq('id', hood.id);
+        }
       }
 
-      // Ensure creator is always in the list
       const allMembers = members.some((m) => m.id === authUser.id)
         ? members
         : [{ id: authUser.id, displayName: 'You', username: null, avatar: null, nickname: '' }, ...members];
@@ -274,8 +281,17 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updates: Record<string, any> = { name: name.trim(), emoji };
-    const photoUrl = await uploadPhoto(neighborhoodId);
-    if (photoUrl) updates.photo_url = photoUrl;
+
+    if (iconMode === 'photo') {
+      const photoUrl = await uploadPhoto(neighborhoodId);
+      if (photoUrl) {
+        updates.photo_url = photoUrl;
+      }
+      // if no new file but photoPreview still set, existing photo_url is unchanged — don't touch it
+    } else {
+      // emoji mode — clear any stored photo so the emoji becomes the icon
+      updates.photo_url = null;
+    }
 
     const { error: updateErr } = await supabase
       .from('neighborhoods')
@@ -290,7 +306,6 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
 
     const newIds = new Set(members.map((m) => m.id));
 
-    // Remove members no longer in list (never remove yourself)
     const toRemove = [...originalMemberIds].filter(
       (id) => !newIds.has(id) && id !== authUser.id
     );
@@ -302,7 +317,6 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
         .in('user_id', toRemove);
     }
 
-    // Add newly added members
     const toAdd = members.filter((m) => !originalMemberIds.has(m.id));
     if (toAdd.length) {
       await supabase.from('neighborhood_members').insert(
@@ -314,7 +328,6 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
       );
     }
 
-    // Update nicknames for existing members
     await Promise.all(
       members
         .filter((m) => originalMemberIds.has(m.id))
@@ -335,6 +348,10 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
   // ── Render ─────────────────────────────────────────────────────────────────
 
   const isMe = (id: string) => id === authUser?.id;
+
+  const iconPreview = iconMode === 'photo' && photoPreview
+    ? <img src={photoPreview} alt="Group" className="w-full h-full object-cover" />
+    : <span className="text-3xl">{emoji}</span>;
 
   return (
     <>
@@ -359,28 +376,12 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
             </div>
           ) : (
             <>
-              {/* Photo + Name row */}
+              {/* Preview + Name row */}
               <div className="flex items-center gap-4">
-                <label
-                  className="relative flex items-center justify-center w-16 h-16 rounded-2xl border-2 border-dashed border-rule hover:border-masthead transition-colors overflow-hidden shrink-0 bg-paper cursor-pointer"
-                  title="Upload group photo"
-                >
-                  {photoPreview ? (
-                    <img src={photoPreview} alt="Group" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-3xl">{emoji}</span>
-                  )}
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-2xl">
-                    <Camera size={18} className="text-white" />
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoChange}
-                    className="hidden"
-                  />
-                </label>
+                {/* Live icon preview — read-only, shows result of current selection */}
+                <div className="flex items-center justify-center w-16 h-16 rounded-2xl border-2 border-rule overflow-hidden shrink-0 bg-paper">
+                  {iconPreview}
+                </div>
 
                 <div className="flex-1 min-w-0">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-ink-faint block mb-1.5">
@@ -398,26 +399,89 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
                 </div>
               </div>
 
-              {/* Emoji */}
+              {/* Icon mode toggle */}
               <div>
-                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-faint block mb-1.5">
-                  Icon
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-faint block mb-2">
+                  Group Icon
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  {EMOJI_OPTIONS.map((e) => (
-                    <button
-                      key={e}
-                      onClick={() => setEmoji(e)}
-                      className={`flex items-center justify-center h-9 w-9 text-xl rounded-lg border transition-all ${
-                        emoji === e
-                          ? 'border-masthead bg-paper-dark scale-110'
-                          : 'border-rule hover:border-ink-muted'
-                      }`}
-                    >
-                      {e}
-                    </button>
-                  ))}
+                <div className="flex gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setIconMode('emoji')}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${
+                      iconMode === 'emoji'
+                        ? 'border-masthead bg-masthead/10 text-masthead'
+                        : 'border-rule text-ink-faint hover:border-ink-muted hover:text-ink'
+                    }`}
+                  >
+                    Emoji
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIconMode('photo')}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg border transition-all ${
+                      iconMode === 'photo'
+                        ? 'border-masthead bg-masthead/10 text-masthead'
+                        : 'border-rule text-ink-faint hover:border-ink-muted hover:text-ink'
+                    }`}
+                  >
+                    Photo
+                  </button>
                 </div>
+
+                {/* Emoji picker */}
+                {iconMode === 'emoji' && (
+                  <div className="flex flex-wrap gap-2">
+                    {EMOJI_OPTIONS.map((e) => (
+                      <button
+                        key={e}
+                        type="button"
+                        onClick={() => setEmoji(e)}
+                        className={`flex items-center justify-center h-9 w-9 text-xl rounded-lg border transition-all ${
+                          emoji === e
+                            ? 'border-masthead bg-paper-dark scale-110'
+                            : 'border-rule hover:border-ink-muted'
+                        }`}
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Photo upload */}
+                {iconMode === 'photo' && (
+                  <label className="block cursor-pointer">
+                    <div className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed transition-colors overflow-hidden ${
+                      photoPreview ? 'border-masthead/40 h-32' : 'border-rule hover:border-masthead h-24'
+                    }`}>
+                      {photoPreview ? (
+                        <img src={photoPreview} alt="Group" className="w-full h-full object-cover" />
+                      ) : (
+                        <>
+                          <Camera size={22} className="text-ink-faint" />
+                          <span className="text-xs text-ink-faint">Tap to upload a photo</span>
+                        </>
+                      )}
+                    </div>
+                    {photoPreview && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); setPhotoPreview(null); setPhotoFile(null); }}
+                        className="mt-1.5 text-[11px] text-ink-faint hover:text-masthead transition-colors w-full text-center"
+                      >
+                        Remove photo
+                      </button>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
               </div>
 
               {/* Members */}
@@ -432,7 +496,6 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
                       key={m.id}
                       className="flex items-center gap-2.5 bg-paper rounded-lg border border-rule px-3 py-2"
                     >
-                      {/* Avatar */}
                       <div className="flex items-center justify-center w-8 h-8 rounded-full bg-paper-dark shrink-0 text-sm overflow-hidden">
                         {m.avatar && m.avatar.startsWith('http') ? (
                           <img src={m.avatar} alt="" className="w-full h-full object-cover" />
@@ -441,7 +504,6 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
                         )}
                       </div>
 
-                      {/* Name + nickname input */}
                       <div className="flex-1 min-w-0 flex flex-col gap-1">
                         <p className="text-xs font-semibold text-ink truncate leading-none">
                           {m.displayName}
@@ -459,9 +521,9 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
                         />
                       </div>
 
-                      {/* Remove — not for yourself */}
                       {!isMe(m.id) && (
                         <button
+                          type="button"
                           onClick={() => removeMember(m.id)}
                           className="shrink-0 text-ink/25 hover:text-masthead transition-colors"
                           title="Remove from group"
@@ -496,6 +558,7 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
                     {results.map((p) => (
                       <button
                         key={p.id}
+                        type="button"
                         onClick={() => addMember(p)}
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-paper-dark transition-colors border-b border-rule/40 last:border-0 text-left"
                       >
@@ -544,6 +607,7 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
         {/* Footer */}
         <div className="shrink-0 border-t border-rule bg-paper-dark px-5 py-4">
           <button
+            type="button"
             onClick={save}
             disabled={!name.trim() || saving || loadingData}
             className="w-full flex items-center justify-center gap-2 bg-masthead text-[#12111a] py-3 text-xs font-bold uppercase tracking-widest disabled:opacity-40 disabled:cursor-not-allowed rounded-full btn-3d hover:bg-masthead/90 transition-colors"
