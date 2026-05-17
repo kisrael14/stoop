@@ -85,27 +85,49 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
     const load = async () => {
       setLoadingData(true);
 
-      // Fetch neighborhood metadata
-      const { data: hood } = await supabase
+      // Fetch neighborhood metadata — try with photo_url, fall back without
+      const { data: hoodFull, error: hoodFullErr } = await supabase
         .from('neighborhoods')
         .select('name, emoji, photo_url')
         .eq('id', neighborhoodId)
         .single();
 
-      if (hood) {
-        setName(hood.name ?? '');
-        setEmoji(hood.emoji ?? '🏘️');
-        if (hood.photo_url) setPhotoPreview(hood.photo_url);
+      if (!hoodFullErr && hoodFull) {
+        setName(hoodFull.name ?? '');
+        setEmoji(hoodFull.emoji ?? '🏘️');
+        if (hoodFull.photo_url) setPhotoPreview(hoodFull.photo_url);
+      } else {
+        // photo_url column may not exist yet — retry without it
+        const { data: hoodBasic } = await supabase
+          .from('neighborhoods')
+          .select('name, emoji')
+          .eq('id', neighborhoodId)
+          .single();
+        if (hoodBasic) {
+          setName(hoodBasic.name ?? '');
+          setEmoji(hoodBasic.emoji ?? '🏘️');
+        }
       }
 
-      // Fetch members with nicknames
-      const { data: memberRows } = await supabase
+      // Fetch members — try with nickname column, fall back without
+      let memberRows: Array<{ user_id: string; nickname: string | null }> = [];
+      const { data: withNick, error: nickErr } = await supabase
         .from('neighborhood_members')
         .select('user_id, nickname')
         .eq('neighborhood_id', neighborhoodId);
 
-      if (memberRows?.length) {
-        const userIds = memberRows.map((m: { user_id: string }) => m.user_id);
+      if (!nickErr) {
+        memberRows = withNick ?? [];
+      } else {
+        const { data: withoutNick } = await supabase
+          .from('neighborhood_members')
+          .select('user_id')
+          .eq('neighborhood_id', neighborhoodId);
+        memberRows = (withoutNick ?? []).map((m: { user_id: string }) => ({ ...m, nickname: null }));
+      }
+
+      if (memberRows.length > 0) {
+        const userIds = memberRows.map((m) => m.user_id);
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, username, display_name, avatar')
@@ -115,7 +137,7 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
           (profiles ?? []).map((p: SearchProfile) => [p.id, p])
         );
 
-        const loaded: MemberEntry[] = memberRows.map((m: { user_id: string; nickname: string | null }) => {
+        const loaded: MemberEntry[] = memberRows.map((m) => {
           const p = profileMap.get(m.user_id) as SearchProfile | undefined;
           return {
             id: m.user_id,
