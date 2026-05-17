@@ -100,6 +100,7 @@ export default function NeighborhoodPage() {
   const [chatPhoto, setChatPhoto] = useState<string | null>(null);
   const [dbNeighborhood, setDbNeighborhood] = useState<{ id: string; name: string; emoji: string; photo_url?: string | null } | null>(null);
   const [dbMemberProfiles, setDbMemberProfiles] = useState<DbProfile[]>([]);
+  const [nicknameMap, setNicknameMap] = useState<Record<string, string>>({});
   const [dbLoading, setDbLoading] = useState(isRealId);
 
   // Mark this neighborhood as read immediately on entry
@@ -123,9 +124,12 @@ export default function NeighborhoodPage() {
 
         // Members
         const { data: memberRows, error: memberErr } = await supabase
-          .from('neighborhood_members').select('user_id').eq('neighborhood_id', id);
+          .from('neighborhood_members').select('user_id, nickname').eq('neighborhood_id', id);
         if (memberErr) console.error('Member fetch error:', memberErr);
         const userIds: string[] = (memberRows ?? []).map((m: any) => m.user_id);
+        const nicks: Record<string, string> = {};
+        (memberRows ?? []).forEach((m: any) => { if (m.nickname) nicks[m.user_id] = m.nickname; });
+        setNicknameMap(nicks);
         let profiles: DbProfile[] = [];
         if (userIds.length > 0) {
           const { data: profileData } = await supabase
@@ -204,9 +208,10 @@ export default function NeighborhoodPage() {
   }, [id]);
 
   const resolveUser = (uid: string) => {
+    const nick = nicknameMap[uid];
     const db = dbMemberProfiles.find((p) => p.id === uid);
-    if (db) return { id: db.id, displayName: db.display_name, username: db.username, avatar: db.avatar || '🏈', bio: '', fanTeams: [], stats: { debatesWon: 0, debatesLost: 0, debatesDrew: 0, betsWon: 0, betsLost: 0, betsPending: 0, hotTakesPosted: 0, hotTakeReactions: 0 }, followingIds: [], followerIds: [], groupIds: [] };
-    if (authUser?.profile && uid === authUser.id) return { id: authUser.id, displayName: authUser.profile.display_name, username: authUser.profile.username, avatar: authUser.profile.avatar || '🏈', bio: '', fanTeams: [], stats: { debatesWon: 0, debatesLost: 0, debatesDrew: 0, betsWon: 0, betsLost: 0, betsPending: 0, hotTakesPosted: 0, hotTakeReactions: 0 }, followingIds: [], followerIds: [], groupIds: [] };
+    if (db) return { id: db.id, displayName: nick || db.display_name, username: db.username, avatar: db.avatar || '🏈', bio: '', fanTeams: [], stats: { debatesWon: 0, debatesLost: 0, debatesDrew: 0, betsWon: 0, betsLost: 0, betsPending: 0, hotTakesPosted: 0, hotTakeReactions: 0 }, followingIds: [], followerIds: [], groupIds: [] };
+    if (authUser?.profile && uid === authUser.id) return { id: authUser.id, displayName: nick || authUser.profile.display_name, username: authUser.profile.username, avatar: authUser.profile.avatar || '🏈', bio: '', fanTeams: [], stats: { debatesWon: 0, debatesLost: 0, debatesDrew: 0, betsWon: 0, betsLost: 0, betsPending: 0, hotTakesPosted: 0, hotTakeReactions: 0 }, followingIds: [], followerIds: [], groupIds: [] };
     return getUserById(uid);
   };
 
