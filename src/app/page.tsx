@@ -195,8 +195,11 @@ function LeftSidebar({ authUser, neighborhoods: propNeighborhoods, onCreateClick
           )}
         </button>
 
-        {/* Separator */}
-        <div className="w-8 h-px bg-rule mx-auto shrink-0" />
+        {/* Groups section label */}
+        <div className="w-full flex flex-col items-center gap-1 shrink-0 pt-1">
+          <div className="w-8 h-px bg-rule" />
+          <p className="text-[7px] font-bold uppercase tracking-[0.18em] text-ink/35">Groups</p>
+        </div>
 
         {/* Neighborhood bubbles */}
         {neighborhoods.map((hood) => {
@@ -222,8 +225,11 @@ function LeftSidebar({ authUser, neighborhoods: propNeighborhoods, onCreateClick
           );
         })}
 
-        {/* Separator */}
-        <div className="w-8 h-px bg-rule mx-auto shrink-0" />
+        {/* Teams section label */}
+        <div className="w-full flex flex-col items-center gap-1 shrink-0 pt-1">
+          <div className="w-8 h-px bg-rule" />
+          <p className="text-[7px] font-bold uppercase tracking-[0.18em] text-ink/35">Teams</p>
+        </div>
 
         {/* Team bubbles */}
         {teams.map((t) => {
@@ -246,8 +252,13 @@ function LeftSidebar({ authUser, neighborhoods: propNeighborhoods, onCreateClick
           );
         })}
 
-        {/* Separator (only if we have leagues) */}
-        {leagues.length > 0 && <div className="w-8 h-px bg-rule mx-auto shrink-0" />}
+        {/* Leagues section label (only if we have leagues) */}
+        {leagues.length > 0 && (
+          <div className="w-full flex flex-col items-center gap-1 shrink-0 pt-1">
+            <div className="w-8 h-px bg-rule" />
+            <p className="text-[7px] font-bold uppercase tracking-[0.18em] text-ink/35">Leagues</p>
+          </div>
+        )}
 
         {/* League bubbles */}
         {leagues.map((leagueId) => {
