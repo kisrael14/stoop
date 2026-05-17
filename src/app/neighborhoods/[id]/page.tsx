@@ -919,15 +919,6 @@ export default function NeighborhoodPage() {
       {activeTab === 'overview' && (
         <div className="flex-1 overflow-y-auto pb-4">
           <div className="bg-nav-bg px-5 pt-5 pb-6">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="flex h-16 w-16 items-center justify-center bg-ink-muted/30 text-3xl">
-                {effectiveChat.emoji}
-              </div>
-              <div>
-                <h2 className="font-display text-xl font-bold text-ink">{effectiveChat.name}</h2>
-                <p className="text-xs text-ink/60 uppercase tracking-wider font-semibold">{members.length} members · Neighborhood</p>
-              </div>
-            </div>
             <div className="flex gap-5 border-t border-ink/20 pt-4">
               {[
                 { label: 'Debates', value: debates.length, color: 'text-ink' },
