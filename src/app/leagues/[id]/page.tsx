@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Flame, Snowflake, Swords, Trophy, Users, Plus, Check } from 'lucide-react';
+import { ArrowLeft, Flame, Snowflake, Swords, Trophy, Users, Plus, Check, ChevronDown } from 'lucide-react';
 import { DEBATES, HOT_TAKES, getUserById } from '@/lib/mock-data';
 import { getLeagueById } from '@/lib/leagues-data';
 import { ALL_TEAMS } from '@/lib/teams-data';
@@ -19,6 +19,7 @@ export default function LeaguePage() {
   const league = getLeagueById(id);
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [isFollowing, setIsFollowing] = useState(false);
+  const [showTeams, setShowTeams] = useState(false);
   const [localHotTakes, setLocalHotTakes] = useState(() => {
     const leagueTeamIds = ALL_TEAMS.filter((t) => t.league === id).map((t) => t.id);
     return HOT_TAKES
@@ -94,17 +95,47 @@ export default function LeaguePage() {
               {league.sport}
             </h2>
           </div>
-          <button
-            onClick={() => setIsFollowing((f) => !f)}
-            className={`flex items-center justify-center h-10 w-10 rounded-full font-bold text-sm transition-all shrink-0 border-2 ${
-              isFollowing
-                ? 'bg-white/20 border-white/40 text-white hover:bg-white/10'
-                : 'bg-white border-transparent text-ink hover:bg-white/90'
-            }`}
-            title={isFollowing ? 'Unfollow league' : 'Follow league'}
-          >
-            {isFollowing ? <Check size={15} /> : <Plus size={15} />}
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Teams dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowTeams((s) => !s)}
+                className="flex items-center gap-1.5 h-10 px-3 rounded-full border-2 border-white/30 bg-white/15 text-white hover:bg-white/25 transition-all font-bold text-xs uppercase tracking-wider"
+              >
+                Teams
+                <ChevronDown size={12} className={`transition-transform ${showTeams ? 'rotate-180' : ''}`} />
+              </button>
+              {showTeams && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-paper-dark border border-rule shadow-2xl rounded-xl overflow-hidden z-50 max-h-72 overflow-y-auto">
+                  {leagueTeams.map((team) => (
+                    <Link
+                      key={team.id}
+                      href={`/teams/${team.id}`}
+                      onClick={() => setShowTeams(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-paper transition-colors border-b border-rule/40 last:border-0"
+                      style={{ borderLeftWidth: '3px', borderLeftColor: team.color, borderLeftStyle: 'solid' }}
+                    >
+                      <TeamLogo team={team} size={22} />
+                      <span className="text-sm font-semibold text-ink truncate">{teamDisplayName(team)}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Follow button */}
+            <button
+              onClick={() => setIsFollowing((f) => !f)}
+              className={`flex items-center justify-center h-10 w-10 rounded-full font-bold text-sm transition-all shrink-0 border-2 ${
+                isFollowing
+                  ? 'bg-white/20 border-white/40 text-white hover:bg-white/10'
+                  : 'bg-white border-transparent text-ink hover:bg-white/90'
+              }`}
+              title={isFollowing ? 'Unfollow league' : 'Follow league'}
+            >
+              {isFollowing ? <Check size={15} /> : <Plus size={15} />}
+            </button>
+          </div>
         </div>
         <div className="flex gap-6 mt-5 pt-4 border-t border-white/20">
           {[
@@ -142,30 +173,6 @@ export default function LeaguePage() {
       {/* ── OVERVIEW TAB ──────────────────────────────────────────────────── */}
       {activeTab === 'overview' && (
         <div className="flex-1 overflow-y-auto pb-8">
-          {/* Teams list */}
-          <div className="px-5 pt-5">
-            <div className="section-header mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-ink">Teams ({leagueTeams.length})</span>
-            </div>
-            <div className="flex flex-col">
-              {leagueTeams.map((team, i) => (
-                <Link
-                  key={team.id}
-                  href={`/teams/${team.id}`}
-                  className={`flex items-center gap-3 px-4 py-3 bg-paper hover:bg-paper-dark transition-colors border-b border-rule/50 ${i === 0 ? 'border-t border-rule/50' : ''}`}
-                  style={{ borderLeftWidth: '3px', borderLeftColor: team.color, borderLeftStyle: 'solid' }}
-                >
-                  <TeamLogo team={team} size={32} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-ink text-sm">{teamDisplayName(team)}</p>
-                    <p className="text-[10px] text-ink-faint">{team.emoji}</p>
-                  </div>
-                  <span className="text-ink-faint text-xs">→</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-
           {/* Recent Activity */}
           <div className="px-5 pt-5">
             <div className="section-header mb-3">
