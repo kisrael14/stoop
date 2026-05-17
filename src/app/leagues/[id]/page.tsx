@@ -209,25 +209,25 @@ export default function LeaguePage() {
     <div className="flex flex-col min-h-full bg-paper" onTouchStart={onSwipeStart} onTouchEnd={onSwipeEnd}>
 
       {/* ── League header ─────────────────────────────────────────────────── */}
-      <div className="shrink-0 bg-nav-bg px-4 py-3 flex items-center gap-2.5">
-        <button onClick={() => router.back()} className="text-ink/60 hover:text-ink p-1 shrink-0">
+      <div className="shrink-0 px-4 py-3 flex items-center gap-2.5" style={{ background: league.color }}>
+        <button onClick={() => router.back()} className="text-white/60 hover:text-white p-1 shrink-0">
           <ArrowLeft size={20} />
         </button>
         <button
           onClick={() => setActiveTab('overview')}
           className="flex items-center gap-2.5 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity"
         >
-          <div className="flex h-9 w-9 items-center justify-center bg-ink-muted/30 text-xl shrink-0 rounded-xl overflow-hidden">
+          <div className="flex h-9 w-9 items-center justify-center text-xl shrink-0 rounded-xl overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)' }}>
             {league.emoji}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-display font-bold text-ink truncate leading-tight">{league.name}</p>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-ink/50">{league.country} · {league.sport}</p>
+            <p className="font-display font-bold text-white truncate leading-tight">{league.name}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-white/50">{league.country} · {league.sport}</p>
           </div>
         </button>
         <button
           onClick={() => setActiveTab('overview')}
-          className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full transition-all ${activeTab === 'overview' ? 'bg-masthead/20 text-masthead' : 'bg-ink/10 hover:bg-ink/20 text-ink/70 hover:text-ink'}`}
+          className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full transition-all ${activeTab === 'overview' ? 'bg-white/25 text-white' : 'bg-white/10 hover:bg-white/20 text-white/70 hover:text-white'}`}
           aria-label="Overview"
         >
           <Home size={14} />
@@ -236,7 +236,7 @@ export default function LeaguePage() {
         <div className="relative shrink-0">
           <button
             onClick={() => setShowTeams((s) => !s)}
-            className="flex items-center gap-1 h-8 px-2.5 rounded-full transition-all bg-ink/10 hover:bg-ink/20 text-ink/70 hover:text-ink text-[10px] font-bold uppercase tracking-wider"
+            className="flex items-center gap-1 h-8 px-2.5 rounded-full transition-all bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-[10px] font-bold uppercase tracking-wider"
           >
             Teams
             <ChevronDown size={10} className={`transition-transform ${showTeams ? 'rotate-180' : ''}`} />
@@ -274,7 +274,7 @@ export default function LeaguePage() {
               await refreshProfile();
             }
           }}
-          className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full transition-all ${isFollowing ? 'bg-masthead/20 text-masthead' : 'bg-ink/10 hover:bg-ink/20 text-ink/70 hover:text-ink'}`}
+          className={`shrink-0 flex items-center justify-center h-8 w-8 rounded-full transition-all ${isFollowing ? 'bg-white/25 text-white' : 'bg-white/10 hover:bg-white/20 text-white/70 hover:text-white'}`}
           title={isFollowing ? 'Unfollow league' : 'Follow league'}
         >
           {isFollowing ? <Check size={14} /> : <Plus size={14} />}
@@ -288,8 +288,9 @@ export default function LeaguePage() {
             key={tabId}
             onClick={() => setActiveTab(tabId)}
             className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-2 text-[9px] font-bold uppercase tracking-wider transition-colors border-b-2 relative ${
-              activeTab === tabId ? 'border-masthead text-masthead' : 'border-transparent text-ink-muted hover:text-ink'
+              activeTab === tabId ? '' : 'border-transparent text-ink-muted hover:text-ink'
             }`}
+            style={activeTab === tabId ? { borderColor: league.color, color: league.color } : {}}
           >
             <span className="relative">
               <Icon size={12} />
@@ -309,7 +310,7 @@ export default function LeaguePage() {
         <div className="flex-1 overflow-y-auto pb-8">
 
           {/* Stats strip */}
-          <div className="bg-nav-bg px-5 pb-4">
+          <div className="px-5 pb-4" style={{ background: league.color }}>
             <div className="flex gap-6 border-t border-white/20 pt-4">
               {[
                 { label: 'Fans',      value: followerCount },
