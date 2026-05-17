@@ -55,6 +55,7 @@ export default function NeighborhoodPage() {
   const [debateSetupMessageId, setDebateSetupMessageId] = useState<string | null>(null);
   const [typingUserId, setTypingUserId] = useState<string | null>(null);
   const [lastSeenChat, setLastSeenChat] = useState<string>(new Date(0).toISOString());
+  const [expandedAvatar, setExpandedAvatar] = useState<string | null>(null);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [pendingMediaUrl, setPendingMediaUrl] = useState<string | null>(null);
   const [pendingMediaType, setPendingMediaType] = useState<'photo' | 'link' | null>(null);
@@ -1015,7 +1016,11 @@ export default function NeighborhoodPage() {
                   href={`/users/${m!.id}`}
                   className={`flex items-center gap-3 px-1 py-2.5 border-b border-rule/50 last:border-0 ${i === 0 ? 'border-t border-rule/50' : ''} hover:bg-paper-dark transition-colors rounded`}
                 >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-paper-dark border border-rule text-lg shrink-0 overflow-hidden">
+                  <div
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-paper-dark border border-rule text-lg shrink-0 overflow-hidden"
+                    onClick={m!.avatar && typeof m!.avatar === 'string' && m!.avatar.startsWith('http') ? (e) => { e.preventDefault(); e.stopPropagation(); setExpandedAvatar(m!.avatar as string); } : undefined}
+                    style={m!.avatar && typeof m!.avatar === 'string' && m!.avatar.startsWith('http') ? { cursor: 'zoom-in' } : undefined}
+                  >
                     {m!.avatar && typeof m!.avatar === 'string' && m!.avatar.startsWith('http')
                       ? <img src={m!.avatar} alt="" className="w-full h-full object-cover" />
                       : m!.avatar}
@@ -2021,6 +2026,21 @@ export default function NeighborhoodPage() {
       )}
 
       {activeTab === 'media' && <MediaTab contextType="neighborhood" contextId={id} />}
+
+      {/* ── Avatar lightbox ──────────────────────────────────── */}
+      {expandedAvatar && (
+        <div
+          className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setExpandedAvatar(null)}
+        >
+          <img
+            src={expandedAvatar}
+            alt=""
+            className="max-w-[80vw] max-h-[80vh] rounded-2xl object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
