@@ -361,9 +361,8 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
             <>
               {/* Photo + Name row */}
               <div className="flex items-center gap-4">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="relative flex items-center justify-center w-16 h-16 rounded-2xl border-2 border-dashed border-rule hover:border-masthead transition-colors overflow-hidden shrink-0 bg-paper"
+                <label
+                  className="relative flex items-center justify-center w-16 h-16 rounded-2xl border-2 border-dashed border-rule hover:border-masthead transition-colors overflow-hidden shrink-0 bg-paper cursor-pointer"
                   title="Upload group photo"
                 >
                   {photoPreview ? (
@@ -374,14 +373,14 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-2xl">
                     <Camera size={18} className="text-white" />
                   </div>
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  className="hidden"
-                />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                  />
+                </label>
 
                 <div className="flex-1 min-w-0">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-ink-faint block mb-1.5">

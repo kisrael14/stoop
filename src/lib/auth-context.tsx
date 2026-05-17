@@ -66,8 +66,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const hoodIds = ((memberRows ?? []) as Array<{ neighborhood_id: string }>).map((m) => m.neighborhood_id);
     let neighborhoodMemberships: Array<{ id: string; name: string; emoji: string; photo_url?: string | null }> = [];
     if (hoodIds.length > 0) {
-      const { data: hoodsData } = await supabase.from('neighborhoods').select('id, name, emoji, photo_url').in('id', hoodIds);
-      neighborhoodMemberships = (hoodsData ?? []) as typeof neighborhoodMemberships;
+      const { data: hoodsWithPhoto, error: photoErr } = await supabase.from('neighborhoods').select('id, name, emoji, photo_url').in('id', hoodIds);
+      if (!photoErr) {
+        neighborhoodMemberships = (hoodsWithPhoto ?? []) as typeof neighborhoodMemberships;
+      } else {
+        // photo_url column may not exist yet — fall back to guaranteed columns
+        const { data: hoodsBasic } = await supabase.from('neighborhoods').select('id, name, emoji').in('id', hoodIds);
+        neighborhoodMemberships = (hoodsBasic ?? []) as typeof neighborhoodMemberships;
+      }
     }
 
     const leagues = ((leagueData ?? []) as Array<{ league_id: string }>).map((l) => l.league_id);
