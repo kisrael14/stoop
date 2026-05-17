@@ -301,7 +301,7 @@ export default function LeaguePage() {
         {/* Stats row */}
         <div className="flex gap-6 mt-5 pt-4 border-t border-white/20">
           {[
-            { label: 'Followers',  value: followerCount },
+            { label: 'Fans',       value: followerCount },
             { label: 'Teams',      value: leagueTeams.length },
             { label: 'Debates',    value: leagueDebates.length },
             { label: 'Hot Takes',  value: localHotTakes.length },
