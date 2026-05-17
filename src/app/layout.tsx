@@ -4,6 +4,7 @@ import './globals.css';
 import BottomNav from '@/components/BottomNav';
 import TopBar from '@/components/TopBar';
 import SwipeMain from '@/components/SwipeMain';
+import PersistentSidebar from '@/components/PersistentSidebar';
 import { AuthProvider } from '@/lib/auth-context';
 import { ThemeProvider } from '@/lib/theme-context';
 
@@ -52,9 +53,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="h-full bg-paper text-ink">
         <ThemeProvider>
           <AuthProvider>
-            <div className="relative mx-auto flex h-full max-w-md flex-col overflow-hidden shadow-2xl">
-              <SwipeMain>{children}</SwipeMain>
-              <BottomNav />
+            <div className="relative mx-auto flex h-full max-w-md flex-row overflow-hidden shadow-2xl">
+              <PersistentSidebar />
+              <div className="flex flex-1 flex-col overflow-hidden">
+                <SwipeMain>{children}</SwipeMain>
+                <BottomNav />
+              </div>
             </div>
             <TopBar />
           </AuthProvider>
