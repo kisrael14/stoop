@@ -39,6 +39,9 @@ const FANDOM_OPTIONS: { level: FandomLevel; label: string; emoji: string }[] = [
 
 const ICON_BTN = 'relative shrink-0 flex items-center justify-center h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-ink transition-all';
 const DROPDOWN_RIGHT = 'max(1rem, calc(50vw - 224px + 1rem))';
+// Sidebar is 68px wide; content area starts after it and is max 380px (448-68).
+const CONTENT_LEFT = 'max(68px, calc(50vw - 156px))';   // 50vw - 224px + 68px
+const CONTENT_WIDTH = 'min(380px, calc(100vw - 68px))';
 
 export default function TopBar() {
   const pathname = usePathname();
@@ -232,7 +235,7 @@ export default function TopBar() {
       )}
 
       {/* ── Top bar ─────────────────────────────────────── */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md h-14 z-50 bg-nav-bg flex items-center gap-2 px-4 shadow-[0_2px_12px_rgba(0,0,0,0.35)]">
+      <div className="fixed top-0 h-14 z-50 bg-nav-bg flex items-center gap-2 px-4 shadow-[0_2px_12px_rgba(0,0,0,0.35)]" style={{ left: CONTENT_LEFT, width: CONTENT_WIDTH }}>
 
         {searchOpen ? (
           /* Expanded search fills the bar */
@@ -310,7 +313,7 @@ export default function TopBar() {
 
       {/* ── Search results ─────────────────────────────── */}
       {searchOpen && q.length >= 1 && (
-        <div className="fixed top-14 left-1/2 -translate-x-1/2 w-full max-w-md z-50 bg-paper-dark border-t border-rule max-h-[70vh] overflow-y-auto shadow-2xl">
+        <div className="fixed top-14 z-50 bg-paper-dark border-t border-rule max-h-[70vh] overflow-y-auto shadow-2xl" style={{ left: CONTENT_LEFT, width: CONTENT_WIDTH }}>
 
           {matchedTeams.length > 0 && (
             <>
