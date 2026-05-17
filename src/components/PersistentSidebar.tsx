@@ -86,6 +86,16 @@ export default function PersistentSidebar() {
           );
         })}
 
+        {/* Create neighborhood + button — sits at end of Groups section */}
+        <button
+          onClick={() => setShowCreate(true)}
+          onMouseEnter={(e) => showTip(e, { label: 'New Neighborhood', sub1: 'Create a group' })}
+          onMouseLeave={hideTip}
+          className="flex items-center justify-center w-8 h-8 rounded-full shrink-0 border border-dashed border-rule text-ink-faint hover:text-masthead hover:border-masthead transition-colors"
+        >
+          <Plus size={14} />
+        </button>
+
         {/* Teams section */}
         <div className="w-full flex flex-col items-center gap-1 shrink-0 pt-1">
           <div className="w-8 h-px bg-rule" />
@@ -113,12 +123,10 @@ export default function PersistentSidebar() {
         })}
 
         {/* Leagues section */}
-        {leagues.length > 0 && (
-          <div className="w-full flex flex-col items-center gap-1 shrink-0 pt-1">
-            <div className="w-8 h-px bg-rule" />
-            <p className="text-[7px] font-bold uppercase tracking-[0.18em] text-ink/35">Leagues</p>
-          </div>
-        )}
+        <div className="w-full flex flex-col items-center gap-1 shrink-0 pt-1">
+          <div className="w-8 h-px bg-rule" />
+          <p className="text-[7px] font-bold uppercase tracking-[0.18em] text-ink/35">Leagues</p>
+        </div>
 
         {leagues.map((leagueId) => {
           const leagueTeam = ALL_TEAMS.find((tm) => tm.league === leagueId);
@@ -137,15 +145,14 @@ export default function PersistentSidebar() {
           );
         })}
 
-        {/* Add button */}
-        <div className="w-8 h-px bg-rule mx-auto shrink-0 mt-1" />
+        {/* Follow teams/leagues + button — sits at end of Leagues section */}
         <button
-          onClick={() => setShowCreate(true)}
-          onMouseEnter={(e) => showTip(e, { label: 'New Neighborhood', sub1: 'Create a group' })}
+          onClick={() => router.push('/discover')}
+          onMouseEnter={(e) => showTip(e, { label: 'Follow Teams & Leagues', sub1: 'Browse & search' })}
           onMouseLeave={hideTip}
-          className="flex items-center justify-center w-11 h-11 rounded-full shrink-0 border border-dashed border-rule text-ink-faint hover:text-masthead hover:border-masthead transition-colors"
+          className="flex items-center justify-center w-8 h-8 rounded-full shrink-0 border border-dashed border-rule text-ink-faint hover:text-field hover:border-field transition-colors"
         >
-          <Plus size={18} />
+          <Plus size={14} />
         </button>
       </aside>
 
