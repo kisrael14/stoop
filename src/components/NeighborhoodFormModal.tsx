@@ -40,7 +40,7 @@ interface Props {
 
 export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, onSaved }: Props) {
   const router = useRouter();
-  const { user: authUser } = useAuth();
+  const { user: authUser, refreshProfile } = useAuth();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createClient() as any;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -271,6 +271,7 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
       );
 
       markHoodSeen(hood.id);
+      await refreshProfile();
       onClose();
       router.push(`/neighborhoods/${hood.id}`);
       return;
@@ -340,6 +341,7 @@ export default function NeighborhoodFormModal({ mode, neighborhoodId, onClose, o
         )
     );
 
+    await refreshProfile();
     setSaving(false);
     onSaved?.();
     onClose();
