@@ -57,6 +57,7 @@ export default function NeighborhoodPage() {
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [pendingMediaUrl, setPendingMediaUrl] = useState<string | null>(null);
   const [pendingMediaType, setPendingMediaType] = useState<'photo' | 'link' | null>(null);
+  const [pendingMediaFile, setPendingMediaFile] = useState<File | null>(null);
   const [pendingLinkUrl, setPendingLinkUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -332,6 +333,11 @@ export default function NeighborhoodPage() {
     if (!inputText.trim() && !pendingMediaUrl) return;
     if (pendingTag === 'hot-take' && inputText.length > HOT_TAKE_MAX) return;
 
+    // Capture before state clears
+    const capturedMediaUrl = pendingMediaUrl;
+    const capturedMediaType = pendingMediaType;
+    const capturedMediaFile = pendingMediaFile;
+
     if (pendingTag === 'bet') {
       setBetSetupClaim(inputText.trim());
       setBetSetupMessageId(null);
@@ -362,6 +368,7 @@ export default function NeighborhoodPage() {
     setMessages((prev) => [...prev, msg]);
     setPendingMediaUrl(null);
     setPendingMediaType(null);
+    setPendingMediaFile(null);
     setPendingLinkUrl('');
     setAttachMenuOpen(false);
 
@@ -402,6 +409,30 @@ export default function NeighborhoodPage() {
         await supabase.from('hot_takes').insert({
           content: msgContent, author_id: authUser.id, neighborhood_id: id,
           neighborhood_name: effectiveChatName, is_public: false, team_ids: mergedTeamIds,
+        });
+      }
+
+      // Save photo/link to media section
+      if (capturedMediaUrl && capturedMediaType === 'photo' && capturedMediaFile) {
+        const ext = capturedMediaFile.name.split('.').pop() ?? 'jpg';
+        const path = `neighborhood/${id}/${Date.now()}.${ext}`;
+        const { data: up } = await supabase.storage.from('media-posts').upload(path, capturedMediaFile, { upsert: false });
+        if (up) {
+          const { data: urlData } = supabase.storage.from('media-posts').getPublicUrl(up.path);
+          const realUrl = urlData?.publicUrl;
+          if (realUrl) {
+            const msgId = savedMsg?.id ?? msg.id;
+            setMessages((prev) => prev.map((m) => m.id === msgId ? { ...m, mediaUrl: realUrl } : m));
+            await supabase.from('media_posts').insert({
+              author_id: authUser.id, context_type: 'neighborhood', context_id: id,
+              type: 'photo', url: realUrl, caption: msgContent || null, title: null,
+            });
+          }
+        }
+      } else if (capturedMediaUrl && capturedMediaType !== 'photo') {
+        await supabase.from('media_posts').insert({
+          author_id: authUser.id, context_type: 'neighborhood', context_id: id,
+          type: 'link', url: capturedMediaUrl, caption: msgContent || null, title: null,
         });
       }
     } else {
@@ -1257,6 +1288,7 @@ export default function NeighborhoodPage() {
                     if (file) {
                       setPendingMediaUrl(URL.createObjectURL(file));
                       setPendingMediaType('photo');
+                      setPendingMediaFile(file);
                       setAttachMenuOpen(false);
                     }
                   }}
@@ -1293,7 +1325,7 @@ export default function NeighborhoodPage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={pendingMediaUrl} alt="" className="h-16 rounded-xl object-cover border border-rule" />
                 <button
-                  onClick={() => { setPendingMediaUrl(null); setPendingMediaType(null); }}
+                  onClick={() => { setPendingMediaUrl(null); setPendingMediaType(null); setPendingMediaFile(null); }}
                   className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-nav-bg border border-rule text-ink hover:bg-paper-darker transition-colors"
                 >
                   <X size={10} />
@@ -1306,7 +1338,7 @@ export default function NeighborhoodPage() {
               <div className="mb-2 flex items-center gap-2 border border-rule bg-paper px-3 py-1.5 rounded-xl w-full">
                 <Link2 size={12} className="text-ink-muted shrink-0" />
                 <span className="text-xs text-ink-muted truncate flex-1">{pendingMediaUrl}</span>
-                <button onClick={() => { setPendingMediaUrl(null); setPendingMediaType(null); setPendingLinkUrl(''); }} className="text-ink-faint hover:text-ink shrink-0">
+                <button onClick={() => { setPendingMediaUrl(null); setPendingMediaType(null); setPendingMediaFile(null); setPendingLinkUrl(''); }} className="text-ink-faint hover:text-ink shrink-0">
                   <X size={12} />
                 </button>
               </div>
